@@ -10,7 +10,7 @@
 
 Floci is a fast, free, and open-source local AWS service emulator built for developers who need reliable AWS services in development and CI without cost, complexity, or vendor lock-in.
 
-## Supported Services
+## Supported Services 
 
 | Service | Protocol |
 |---|---|
