@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/hectorvent/floci/compare/1.0.4...1.0.5) (2026-03-23)
+
+
+### Bug Fixes
+
+* fix s3 createbucket response format for rust sdk compatibility ([#11](https://github.com/hectorvent/floci/issues/11)) ([0e29c65](https://github.com/hectorvent/floci/commit/0e29c65266e55f48118ec00a4e6971d6264b08f2))
+
 ## [1.0.4](https://github.com/hectorvent/floci/compare/1.0.3...1.0.4) (2026-03-20)
 
 
