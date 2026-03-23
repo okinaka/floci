@@ -139,7 +139,13 @@ public class S3Controller {
                 return Response.ok().build();
             }
 
-            s3Service.createBucket(bucket);
+            String locationConstraint = null;
+            if (body != null && body.length > 0) {
+                locationConstraint = XmlParser.extractFirst(new String(body, StandardCharsets.UTF_8),
+                        "LocationConstraint", null);
+            }
+            String region = locationConstraint != null ? locationConstraint : regionResolver.getDefaultRegion();
+            s3Service.createBucket(bucket, region);
             String lockEnabled = httpHeaders.getHeaderString("x-amz-bucket-object-lock-enabled");
             if ("true".equalsIgnoreCase(lockEnabled)) {
                 s3Service.putBucketVersioning(bucket, "Enabled");
@@ -721,8 +727,10 @@ public class S3Controller {
     // --- Bucket Location ---
 
     private Response handleGetBucketLocation(String bucket) {
-        s3Service.headBucket(bucket);
-        String region = regionResolver.getDefaultRegion();
+        String region = s3Service.getBucketRegion(bucket);
+        if (region == null) {
+            region = regionResolver.getDefaultRegion();
+        }
         String xml = new XmlBuilder()
                 .raw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
                 .start("LocationConstraint", AwsNamespaces.S3)

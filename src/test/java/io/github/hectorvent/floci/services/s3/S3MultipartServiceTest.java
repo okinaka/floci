@@ -24,7 +24,7 @@ class S3MultipartServiceTest {
     @BeforeEach
     void setUp() {
         s3Service = new S3Service(new InMemoryStorage<>(), new InMemoryStorage<>(), tempDir);
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
     }
 
     @Test

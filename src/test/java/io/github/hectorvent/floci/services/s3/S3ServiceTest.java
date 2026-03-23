@@ -30,27 +30,39 @@ class S3ServiceTest {
 
     @Test
     void createBucket() {
-        Bucket bucket = s3Service.createBucket("test-bucket");
+        Bucket bucket = s3Service.createBucket("test-bucket", "us-east-1");
         assertEquals("test-bucket", bucket.getName());
         assertNotNull(bucket.getCreationDate());
     }
 
     @Test
+    void createBucketStoresRegion() {
+        s3Service.createBucket("eu-bucket", "eu-central-1");
+        assertEquals("eu-central-1", s3Service.getBucketRegion("eu-bucket"));
+    }
+
+    @Test
+    void createBucketNullRegionWhenNotProvided() {
+        s3Service.createBucket("default-bucket", null);
+        assertNull(s3Service.getBucketRegion("default-bucket"));
+    }
+
+    @Test
     void createDuplicateBucketThrows() {
-        s3Service.createBucket("test-bucket");
-        assertThrows(AwsException.class, () -> s3Service.createBucket("test-bucket"));
+        s3Service.createBucket("test-bucket", "us-east-1");
+        assertThrows(AwsException.class, () -> s3Service.createBucket("test-bucket", "us-east-1"));
     }
 
     @Test
     void deleteBucket() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.deleteBucket("test-bucket");
         assertThrows(AwsException.class, () -> s3Service.deleteBucket("test-bucket"));
     }
 
     @Test
     void deleteNonEmptyBucketThrows() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "hello".getBytes(), "text/plain", null);
         assertThrows(AwsException.class, () -> s3Service.deleteBucket("test-bucket"));
     }
@@ -62,8 +74,8 @@ class S3ServiceTest {
 
     @Test
     void listBuckets() {
-        s3Service.createBucket("bucket-a");
-        s3Service.createBucket("bucket-b");
+        s3Service.createBucket("bucket-a", "us-east-1");
+        s3Service.createBucket("bucket-b", "us-east-1");
 
         List<Bucket> buckets = s3Service.listBuckets();
         assertEquals(2, buckets.size());
@@ -71,7 +83,7 @@ class S3ServiceTest {
 
     @Test
     void putAndGetObject() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         byte[] data = "Hello World".getBytes(StandardCharsets.UTF_8);
         S3Object put = s3Service.putObject("test-bucket", "greeting.txt", data, "text/plain", null);
 
@@ -85,7 +97,7 @@ class S3ServiceTest {
 
     @Test
     void putObjectWritesFileToDisk() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         byte[] data = "file content".getBytes(StandardCharsets.UTF_8);
         s3Service.putObject("test-bucket", "docs/readme.txt", data, "text/plain", null);
 
@@ -96,7 +108,7 @@ class S3ServiceTest {
 
     @Test
     void deleteObjectRemovesFileFromDisk() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "data".getBytes(), null, null);
 
         Path filePath = tempDir.resolve("s3/test-bucket/file.txt");
@@ -108,7 +120,7 @@ class S3ServiceTest {
 
     @Test
     void deleteBucketRemovesDirectory() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "data".getBytes(), null, null);
         s3Service.deleteObject("test-bucket", "file.txt");
         s3Service.deleteBucket("test-bucket");
@@ -118,7 +130,7 @@ class S3ServiceTest {
 
     @Test
     void getObjectNotFoundThrows() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         AwsException ex = assertThrows(AwsException.class, () ->
                 s3Service.getObject("test-bucket", "missing.txt"));
         assertEquals("NoSuchKey", ex.getErrorCode());
@@ -132,7 +144,7 @@ class S3ServiceTest {
 
     @Test
     void deleteObject() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "data".getBytes(), null, null);
         s3Service.deleteObject("test-bucket", "file.txt");
 
@@ -142,7 +154,7 @@ class S3ServiceTest {
 
     @Test
     void listObjects() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "docs/a.txt", "a".getBytes(), null, null);
         s3Service.putObject("test-bucket", "docs/b.txt", "b".getBytes(), null, null);
         s3Service.putObject("test-bucket", "images/pic.jpg", "img".getBytes(), null, null);
@@ -162,8 +174,8 @@ class S3ServiceTest {
 
     @Test
     void copyObject() {
-        s3Service.createBucket("source-bucket");
-        s3Service.createBucket("dest-bucket");
+        s3Service.createBucket("source-bucket", "us-east-1");
+        s3Service.createBucket("dest-bucket", "us-east-1");
         s3Service.putObject("source-bucket", "original.txt", "content".getBytes(), "text/plain", null);
 
         S3Object copy = s3Service.copyObject("source-bucket", "original.txt", "dest-bucket", "copy.txt");
@@ -178,7 +190,7 @@ class S3ServiceTest {
 
     @Test
     void copyObjectSameBucket() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "original.txt", "data".getBytes(), null, null);
         s3Service.copyObject("test-bucket", "original.txt", "test-bucket", "copy.txt");
 
@@ -187,7 +199,7 @@ class S3ServiceTest {
 
     @Test
     void headObject() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "hello".getBytes(), "text/plain", null);
 
         S3Object head = s3Service.headObject("test-bucket", "file.txt");
@@ -197,7 +209,7 @@ class S3ServiceTest {
 
     @Test
     void putObjectOverwrites() {
-        s3Service.createBucket("test-bucket");
+        s3Service.createBucket("test-bucket", "us-east-1");
         s3Service.putObject("test-bucket", "file.txt", "v1".getBytes(), null, null);
         s3Service.putObject("test-bucket", "file.txt", "v2".getBytes(), null, null);
 

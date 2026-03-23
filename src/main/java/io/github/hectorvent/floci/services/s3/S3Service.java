@@ -90,7 +90,7 @@ public class S3Service {
         }
     }
 
-    public Bucket createBucket(String bucketName) {
+    public Bucket createBucket(String bucketName, String region) {
         var existing = bucketStore.get(bucketName);
         if (existing.isPresent()) {
             throw new AwsException("BucketAlreadyOwnedByYou",
@@ -98,8 +98,9 @@ public class S3Service {
         }
 
         Bucket bucket = new Bucket(bucketName);
+        bucket.setRegion(region);
         bucketStore.put(bucketName, bucket);
-        LOG.infov("Created bucket: {0}", bucketName);
+        LOG.infov("Created bucket: {0} in region: {1}", bucketName, region);
         return bucket;
     }
 
@@ -434,6 +435,11 @@ public class S3Service {
 
     public void headBucket(String bucketName) {
         ensureBucketExists(bucketName);
+    }
+
+    public String getBucketRegion(String bucketName) {
+        ensureBucketExists(bucketName);
+        return bucketStore.get(bucketName).map(Bucket::getRegion).orElse(null);
     }
 
     // --- Batch Delete ---

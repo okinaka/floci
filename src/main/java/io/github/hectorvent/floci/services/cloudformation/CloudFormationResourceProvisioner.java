@@ -136,7 +136,7 @@ public class CloudFormationResourceProvisioner {
         if (bucketName == null || bucketName.isBlank()) {
             bucketName = "cfn-" + UUID.randomUUID().toString().substring(0, 12).toLowerCase();
         }
-        s3Service.createBucket(bucketName);
+        s3Service.createBucket(bucketName, region);
         r.setPhysicalId(bucketName);
         r.getAttributes().put("Arn", "arn:aws:s3:::" + bucketName);
         r.getAttributes().put("DomainName", bucketName + ".s3.amazonaws.com");
