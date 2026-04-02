@@ -263,20 +263,22 @@ public class S3Controller {
             }
 
             int max = (maxKeys != null && maxKeys > 0) ? maxKeys : 1000;
-            List<S3Object> objects = s3Service.listObjects(bucket, prefix, delimiter, max);
+            S3Service.ListObjectsResult result = s3Service.listObjectsWithPrefixes(bucket, prefix, delimiter, max);
+            List<S3Object> objects = result.objects();
+            List<String> commonPrefixes = result.commonPrefixes();
             boolean v2 = "2".equals(listType);
 
             XmlBuilder xml = new XmlBuilder()
                     .raw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
                     .start("ListBucketResult", AwsNamespaces.S3)
                     .elem("Name", bucket)
-                    .elem("Prefix", prefix)
+                    .elem("Prefix", prefix != null ? prefix : "")
                     .elem("Delimiter", delimiter)
                     .elem("MaxKeys", max);
             if (v2) {
-                xml.elem("KeyCount", objects.size());
+                xml.elem("KeyCount", objects.size() + commonPrefixes.size());
             }
-            xml.elem("IsTruncated", false);
+            xml.elem("IsTruncated", result.isTruncated());
             for (S3Object obj : objects) {
                 xml.start("Contents")
                    .elem("Key", obj.getKey())
@@ -285,6 +287,11 @@ public class S3Controller {
                    .elem("Size", obj.getSize())
                    .elem("StorageClass", obj.getStorageClass())
                    .end("Contents");
+            }
+            for (String cp : commonPrefixes) {
+                xml.start("CommonPrefixes")
+                   .elem("Prefix", cp)
+                   .end("CommonPrefixes");
             }
             xml.end("ListBucketResult");
             return Response.ok(xml.build()).build();

@@ -439,7 +439,13 @@ public class S3Service {
         }
     }
 
+    public record ListObjectsResult(List<S3Object> objects, List<String> commonPrefixes, boolean isTruncated) {}
+
     public List<S3Object> listObjects(String bucketName, String prefix, String delimiter, int maxKeys) {
+        return listObjectsWithPrefixes(bucketName, prefix, delimiter, maxKeys).objects();
+    }
+
+    public ListObjectsResult listObjectsWithPrefixes(String bucketName, String prefix, String delimiter, int maxKeys) {
         ensureBucketExists(bucketName);
 
         String keyPrefix = bucketName + "/";
@@ -453,21 +459,59 @@ public class S3Service {
                 .toList();
         allObjects = new ArrayList<>(allObjects);
 
+        // see https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-prefixes.html
+        List<String> commonPrefixes = List.of();
+
         if (delimiter != null && !delimiter.isEmpty()) {
-            // Filter to only return objects at this level (simulate directory listing)
-            allObjects = allObjects.stream()
-                    .filter(obj -> {
-                        String remainder = obj.getKey().substring(prefix != null ? prefix.length() : 0);
-                        return !remainder.contains(delimiter);
-                    })
-                    .toList();
+            Set<String> prefixSet = new LinkedHashSet<>();
+            List<S3Object> directObjects = new ArrayList<>();
+
+            for (S3Object obj : allObjects) {
+                String remainder = obj.getKey().substring(prefix != null ? prefix.length() : 0);
+                int delimIdx = remainder.indexOf(delimiter);
+                if (delimIdx >= 0) {
+                    String cp = (prefix != null ? prefix : "") + remainder.substring(0, delimIdx + delimiter.length());
+                    prefixSet.add(cp);
+                } else {
+                    directObjects.add(obj);
+                }
+            }
+
+            allObjects = directObjects;
+            commonPrefixes = new ArrayList<>(prefixSet);
+            Collections.sort(commonPrefixes);
         }
 
-        if (maxKeys > 0 && allObjects.size() > maxKeys) {
-            allObjects = allObjects.subList(0, maxKeys);
+        allObjects.sort(Comparator.comparing(S3Object::getKey));
+
+        // S3 counts both direct objects and common prefixes.
+        // Each common prefix group (e.g. "docs/") uses one entry regardless of
+        // how many keys it contains. Merge both sorted lists lexicographically
+        // and stop at maxKeys to try to match S3 ListObjectsV2 behavior.
+        // see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
+        boolean isTruncated = false;
+        if (maxKeys > 0) {
+            List<S3Object> limitedObjects = new ArrayList<>();
+            List<String> limitedPrefixes = new ArrayList<>();
+            int count = 0;
+            int directObjectCount = 0;
+            int commonPrefixCount = 0;
+            while (count < maxKeys && (directObjectCount < allObjects.size() || commonPrefixCount < commonPrefixes.size())) {
+                String objectKey = directObjectCount < allObjects.size() ? allObjects.get(directObjectCount).getKey() : null;
+                String prefixKey = commonPrefixCount < commonPrefixes.size() ? commonPrefixes.get(commonPrefixCount) : null;
+                if (objectKey != null && (prefixKey == null || objectKey.compareTo(prefixKey) <= 0)) {
+                    limitedObjects.add(allObjects.get(directObjectCount++));
+                } else {
+                    limitedPrefixes.add(commonPrefixes.get(commonPrefixCount++));
+                }
+                count++;
+            }
+            isTruncated = directObjectCount < allObjects.size() || commonPrefixCount < commonPrefixes.size();
+            allObjects = limitedObjects;
+            commonPrefixes = limitedPrefixes;
         }
 
-        return allObjects;
+        return new ListObjectsResult(allObjects, commonPrefixes, isTruncated);
     }
 
     public S3Object copyObject(String sourceBucket, String sourceKey,

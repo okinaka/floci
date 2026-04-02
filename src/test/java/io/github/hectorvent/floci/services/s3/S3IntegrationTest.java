@@ -161,6 +161,23 @@ class S3IntegrationTest {
 
     @Test
     @Order(12)
+    void listObjectsWithDelimiterReturnsCommonPrefixes() {
+        given()
+            .queryParam("delimiter", "/")
+            .queryParam("list-type", "2")
+        .when()
+            .get("/test-bucket")
+        .then()
+            .statusCode(200)
+            .body(containsString("<CommonPrefixes>"))
+            .body(containsString("<Prefix>data/</Prefix>"))
+            .body(containsString("<Key>greeting.txt</Key>"))
+            .body(containsString("<KeyCount>2</KeyCount>"))
+            .body(containsString("<IsTruncated>false</IsTruncated>"));
+    }
+
+    @Test
+    @Order(13)
     void copyObject() {
         given()
             .header("x-amz-copy-source", "/test-bucket/greeting.txt")
@@ -186,7 +203,7 @@ class S3IntegrationTest {
     }
 
     @Test
-    @Order(13)
+    @Order(14)
     void deleteObject() {
         given()
         .when()
@@ -203,7 +220,7 @@ class S3IntegrationTest {
     }
 
     @Test
-    @Order(14)
+    @Order(15)
     void deleteNonEmptyBucketFails() {
         given()
         .when()
