@@ -299,7 +299,7 @@ class CognitoServiceTest {
 
     @Test
     void adminCreateUserAutoGeneratesSub() {
-        UserPool pool = service.createUserPool("TestPool", "us-east-1");
+        UserPool pool = service.createUserPool(Map.of("PoolName", "TestPool"), "us-east-1");
         CognitoUser user = service.adminCreateUser(pool.getId(), "bob",
                 Map.of("email", "bob@example.com"), null);
 
@@ -310,7 +310,7 @@ class CognitoServiceTest {
 
     @Test
     void adminCreateUserPreservesExplicitSub() {
-        UserPool pool = service.createUserPool("TestPool", "us-east-1");
+        UserPool pool = service.createUserPool(Map.of("PoolName", "TestPool"), "us-east-1");
         String explicitSub = "aaaaaaaa-1111-2222-3333-444444444444";
         CognitoUser user = service.adminCreateUser(pool.getId(), "bob",
                 Map.of("email", "bob@example.com", "sub", explicitSub), null);
@@ -321,7 +321,7 @@ class CognitoServiceTest {
 
     @Test
     void signUpAutoGeneratesSub() {
-        UserPool pool = service.createUserPool("TestPool", "us-east-1");
+        UserPool pool = service.createUserPool(Map.of("PoolName", "TestPool"), "us-east-1");
         UserPoolClient client = service.createUserPoolClient(pool.getId(), "test-client",
                 false, false, List.of(), List.of());
 
@@ -392,7 +392,7 @@ class CognitoServiceTest {
 
     @Test
     void adminUserGlobalSignOutThrowsForNonexistentUser() {
-        UserPool pool = service.createUserPool("TestPool", "us-east-1");
+        UserPool pool = service.createUserPool(Map.of("PoolName", "TestPool"), "us-east-1");
         assertThrows(AwsException.class,
                 () -> service.adminUserGlobalSignOut(pool.getId(), "ghost"));
     }
