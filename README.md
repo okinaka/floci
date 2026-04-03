@@ -11,7 +11,7 @@
   <a href="https://github.com/hectorvent/floci/stargazers"><img src="https://img.shields.io/github/stars/hectorvent/floci?style=flat" alt="GitHub Stars"></a>
   <a href="https://github.com/hectorvent/floci/graphs/contributors"><img src="https://img.shields.io/github/contributors/hectorvent/floci" alt="GitHub Contributors"></a>
   <a href="https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw"><img src="https://img.shields.io/badge/Slack-Join%20the%20community-4A154B?logo=slack&logoColor=white" alt="Join Floci on Slack"></a>
-  
+
 </p>
 
 <p align="center">
@@ -232,6 +232,7 @@ All settings are overridable via environment variables (`FLOCI_` prefix).
 | `FLOCI_HOSTNAME` | *(unset)* | Override hostname in response URLs (for Docker Compose) |
 | `FLOCI_STORAGE_MODE` | `memory` | `memory` · `persistent` · `hybrid` · `wal` |
 | `FLOCI_STORAGE_PERSISTENT_PATH` | `./data` | Data directory |
+| `FLOCI_ECR_BASE_URI` | `public.ecr.aws` | AWS ECR Base URI to pull container images (e.g. Lambda) |
 
 → Full reference: [configuration docs](https://hectorvent.dev/floci/configuration/application-yml/)
 → Per-service storage overrides: [storage docs](https://hectorvent.dev/floci/configuration/storage/#per-service-storage-overrides)
