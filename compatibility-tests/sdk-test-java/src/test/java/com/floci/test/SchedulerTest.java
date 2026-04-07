@@ -28,6 +28,10 @@ class SchedulerTest {
             } catch (Exception ignored) {}
             try {
                 scheduler.deleteSchedule(DeleteScheduleRequest.builder()
+                        .name("dlc-schedule").build());
+            } catch (Exception ignored) {}
+            try {
+                scheduler.deleteSchedule(DeleteScheduleRequest.builder()
                         .name("grouped-schedule").groupName(GROUP_NAME).build());
             } catch (Exception ignored) {}
             try {
@@ -251,6 +255,36 @@ class SchedulerTest {
 
     @Test
     @Order(18)
+    @DisplayName("CreateSchedule - with DeadLetterConfig")
+    void createScheduleWithDeadLetterConfig() {
+        CreateScheduleResponse resp = scheduler.createSchedule(CreateScheduleRequest.builder()
+                .name("dlc-schedule")
+                .scheduleExpression("rate(10 minutes)")
+                .flexibleTimeWindow(FlexibleTimeWindow.builder().mode(FlexibleTimeWindowMode.OFF).build())
+                .target(Target.builder()
+                        .arn("arn:aws:lambda:us-east-1:000000000000:function:dlc-func")
+                        .roleArn("arn:aws:iam::000000000000:role/r")
+                        .deadLetterConfig(DeadLetterConfig.builder()
+                                .arn("arn:aws:sqs:us-east-1:000000000000:my-dlq")
+                                .build())
+                        .build())
+                .build());
+
+        assertThat(resp.scheduleArn()).isNotNull().contains("dlc-schedule");
+
+        GetScheduleResponse get = scheduler.getSchedule(GetScheduleRequest.builder()
+                .name("dlc-schedule").build());
+        assertThat(get.target().deadLetterConfig()).isNotNull();
+        assertThat(get.target().deadLetterConfig().arn())
+                .isEqualTo("arn:aws:sqs:us-east-1:000000000000:my-dlq");
+
+        // Cleanup
+        scheduler.deleteSchedule(DeleteScheduleRequest.builder()
+                .name("dlc-schedule").build());
+    }
+
+    @Test
+    @Order(20)
     @DisplayName("UpdateSchedule - update expression and state")
     void updateSchedule() {
         UpdateScheduleResponse resp = scheduler.updateSchedule(UpdateScheduleRequest.builder()
@@ -281,7 +315,7 @@ class SchedulerTest {
     }
 
     @Test
-    @Order(19)
+    @Order(21)
     @DisplayName("UpdateSchedule - non-existent returns ResourceNotFoundException")
     void updateScheduleNotFound() {
         assertThatThrownBy(() -> scheduler.updateSchedule(UpdateScheduleRequest.builder()
@@ -294,7 +328,7 @@ class SchedulerTest {
     }
 
     @Test
-    @Order(20)
+    @Order(22)
     @DisplayName("DeleteSchedule - delete schedule")
     void deleteSchedule() {
         scheduler.deleteSchedule(DeleteScheduleRequest.builder()
@@ -307,7 +341,7 @@ class SchedulerTest {
     }
 
     @Test
-    @Order(21)
+    @Order(23)
     @DisplayName("DeleteSchedule - non-existent returns ResourceNotFoundException")
     void deleteScheduleNotFound() {
         assertThatThrownBy(() -> scheduler.deleteSchedule(DeleteScheduleRequest.builder()
@@ -317,7 +351,7 @@ class SchedulerTest {
     }
 
     @Test
-    @Order(22)
+    @Order(24)
     @DisplayName("DeleteSchedule - delete schedule in group")
     void deleteScheduleInGroup() {
         scheduler.deleteSchedule(DeleteScheduleRequest.builder()
@@ -333,7 +367,7 @@ class SchedulerTest {
     }
 
     @Test
-    @Order(23)
+    @Order(25)
     @DisplayName("DeleteScheduleGroup - cleanup test group")
     void deleteScheduleGroupCleanup() {
         scheduler.deleteScheduleGroup(DeleteScheduleGroupRequest.builder()

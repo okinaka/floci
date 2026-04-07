@@ -2,6 +2,7 @@ package io.github.hectorvent.floci.services.scheduler;
 
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.common.RegionResolver;
+import io.github.hectorvent.floci.services.scheduler.model.DeadLetterConfig;
 import io.github.hectorvent.floci.services.scheduler.model.FlexibleTimeWindow;
 import io.github.hectorvent.floci.services.scheduler.model.RetryPolicy;
 import io.github.hectorvent.floci.services.scheduler.model.Schedule;
@@ -280,6 +281,11 @@ public class SchedulerController {
                     t.put("RetryPolicy", rp);
                 }
             }
+            if (s.getTarget().getDeadLetterConfig() != null) {
+                Map<String, Object> dlc = new HashMap<>();
+                dlc.put("Arn", s.getTarget().getDeadLetterConfig().getArn());
+                t.put("DeadLetterConfig", dlc);
+            }
             r.put("Target", t);
         }
         if (s.getDescription() != null) {
@@ -377,6 +383,14 @@ public class SchedulerController {
                 rp.setMaximumRetryAttempts(rpNode.get("MaximumRetryAttempts").asInt());
             }
             target.setRetryPolicy(rp);
+        }
+        if (node.has("DeadLetterConfig") && !node.get("DeadLetterConfig").isNull()) {
+            JsonNode dlcNode = node.get("DeadLetterConfig");
+            DeadLetterConfig dlc = new DeadLetterConfig();
+            if (dlcNode.has("Arn") && !dlcNode.get("Arn").isNull()) {
+                dlc.setArn(dlcNode.get("Arn").asText());
+            }
+            target.setDeadLetterConfig(dlc);
         }
         return target;
     }

@@ -320,6 +320,46 @@ class SchedulerIntegrationTest {
 
     @Test
     @Order(28)
+    void createScheduleWithDeadLetterConfig() {
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "ScheduleExpression": "rate(10 minutes)",
+                    "FlexibleTimeWindow": {"Mode": "OFF"},
+                    "Target": {
+                        "Arn": "arn:aws:lambda:us-east-1:000000000000:function:dlc-func",
+                        "RoleArn": "arn:aws:iam::000000000000:role/r",
+                        "DeadLetterConfig": {
+                            "Arn": "arn:aws:sqs:us-east-1:000000000000:my-dlq"
+                        }
+                    }
+                }
+                """)
+        .when()
+            .post("/schedules/dlc-schedule")
+        .then()
+            .statusCode(200)
+            .body("ScheduleArn", containsString("schedule/default/dlc-schedule"));
+
+        // Verify DeadLetterConfig is returned on get
+        given()
+        .when()
+            .get("/schedules/dlc-schedule")
+        .then()
+            .statusCode(200)
+            .body("Target.DeadLetterConfig.Arn", equalTo("arn:aws:sqs:us-east-1:000000000000:my-dlq"));
+
+        // Cleanup
+        given()
+        .when()
+            .delete("/schedules/dlc-schedule")
+        .then()
+            .statusCode(200);
+    }
+
+    @Test
+    @Order(29)
     void updateSchedule() {
         given()
             .contentType("application/json")
@@ -355,7 +395,7 @@ class SchedulerIntegrationTest {
     }
 
     @Test
-    @Order(29)
+    @Order(30)
     void updateScheduleNotFoundReturns404() {
         given()
             .contentType("application/json")
@@ -373,7 +413,7 @@ class SchedulerIntegrationTest {
     }
 
     @Test
-    @Order(30)
+    @Order(31)
     void deleteSchedule() {
         given()
         .when()
@@ -389,7 +429,7 @@ class SchedulerIntegrationTest {
     }
 
     @Test
-    @Order(31)
+    @Order(32)
     void deleteScheduleNotFoundReturns404() {
         given()
         .when()
@@ -399,7 +439,7 @@ class SchedulerIntegrationTest {
     }
 
     @Test
-    @Order(32)
+    @Order(33)
     void deleteScheduleInGroup() {
         given()
             .queryParam("groupName", "sched-test-group")

@@ -9,6 +9,7 @@ public class Target {
     private String roleArn;
     private String input;
     private RetryPolicy retryPolicy;
+    private DeadLetterConfig deadLetterConfig;
 
     public Target() {}
 
@@ -30,4 +31,7 @@ public class Target {
 
     public RetryPolicy getRetryPolicy() { return retryPolicy; }
     public void setRetryPolicy(RetryPolicy retryPolicy) { this.retryPolicy = retryPolicy; }
+
+    public DeadLetterConfig getDeadLetterConfig() { return deadLetterConfig; }
+    public void setDeadLetterConfig(DeadLetterConfig deadLetterConfig) { this.deadLetterConfig = deadLetterConfig; }
 }

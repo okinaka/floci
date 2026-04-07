@@ -3,6 +3,7 @@ package io.github.hectorvent.floci.services.scheduler;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.common.RegionResolver;
 import io.github.hectorvent.floci.core.storage.InMemoryStorage;
+import io.github.hectorvent.floci.services.scheduler.model.DeadLetterConfig;
 import io.github.hectorvent.floci.services.scheduler.model.FlexibleTimeWindow;
 import io.github.hectorvent.floci.services.scheduler.model.Schedule;
 import io.github.hectorvent.floci.services.scheduler.model.ScheduleGroup;
@@ -352,6 +353,36 @@ class SchedulerServiceTest {
         List<Schedule> result = service.listSchedules(null, null, "DISABLED", REGION);
         assertEquals(1, result.size());
         assertEquals("disabled-1", result.get(0).getName());
+    }
+
+    @Test
+    void createScheduleWithDeadLetterConfig() {
+        Target target = new Target("arn:aws:lambda:us-east-1:000000000000:function:my-func",
+                "arn:aws:iam::000000000000:role/my-role", null, null);
+        target.setDeadLetterConfig(new DeadLetterConfig("arn:aws:sqs:us-east-1:000000000000:dlq"));
+        Schedule s = service.createSchedule("dlc-schedule", null, "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null), target,
+                null, null, null, null, null, null, REGION);
+        assertNotNull(s.getTarget().getDeadLetterConfig());
+        assertEquals("arn:aws:sqs:us-east-1:000000000000:dlq",
+                s.getTarget().getDeadLetterConfig().getArn());
+    }
+
+    @Test
+    void updateSchedulePreservesDeadLetterConfig() {
+        Target target = new Target("arn:t", "arn:r", null, null);
+        target.setDeadLetterConfig(new DeadLetterConfig("arn:aws:sqs:us-east-1:000000000000:dlq"));
+        service.createSchedule("dlc-upd", null, "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null), target,
+                null, null, null, null, null, null, REGION);
+
+        Target updatedTarget = new Target("arn:t2", "arn:r2", null, null);
+        updatedTarget.setDeadLetterConfig(new DeadLetterConfig("arn:aws:sqs:us-east-1:000000000000:dlq-updated"));
+        Schedule updated = service.updateSchedule("dlc-upd", null, "rate(5 minutes)", null,
+                new FlexibleTimeWindow("OFF", null), updatedTarget,
+                null, null, null, null, null, null, REGION);
+        assertEquals("arn:aws:sqs:us-east-1:000000000000:dlq-updated",
+                updated.getTarget().getDeadLetterConfig().getArn());
     }
 
     @Test
