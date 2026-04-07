@@ -105,9 +105,7 @@ public class SchedulerService {
     }
 
     public void deleteScheduleGroup(String name, String region) {
-        if (name == null || name.isBlank()) {
-            throw new AwsException("ValidationException", "Name is required.", 400);
-        }
+        validateName(name);
         if (DEFAULT_GROUP.equals(name)) {
             throw new AwsException("ValidationException",
                     "Cannot delete the default schedule group.", 400);
@@ -149,8 +147,14 @@ public class SchedulerService {
     public Schedule createSchedule(ScheduleRequest req, String region) {
         validateName(req.getName());
         validateScheduleRequest(req);
-        String effectiveGroup = (req.getGroupName() == null || req.getGroupName().isBlank())
-                ? DEFAULT_GROUP : req.getGroupName();
+        boolean hasExplicitGroup = req.getGroupName() != null && !req.getGroupName().isBlank();
+        String effectiveGroup;
+        if (hasExplicitGroup) {
+            validateName(req.getGroupName());
+            effectiveGroup = req.getGroupName();
+        } else {
+            effectiveGroup = DEFAULT_GROUP;
+        }
         getScheduleGroup(effectiveGroup, region); // verify group exists
 
         String key = scheduleKey(region, effectiveGroup, req.getName());
@@ -195,8 +199,14 @@ public class SchedulerService {
     public Schedule updateSchedule(ScheduleRequest req, String region) {
         validateName(req.getName());
         validateScheduleRequest(req);
-        String effectiveGroup = (req.getGroupName() == null || req.getGroupName().isBlank())
-                ? DEFAULT_GROUP : req.getGroupName();
+        boolean hasExplicitGroup = req.getGroupName() != null && !req.getGroupName().isBlank();
+        String effectiveGroup;
+        if (hasExplicitGroup) {
+            validateName(req.getGroupName());
+            effectiveGroup = req.getGroupName();
+        } else {
+            effectiveGroup = DEFAULT_GROUP;
+        }
         String key = scheduleKey(region, effectiveGroup, req.getName());
         Schedule existing = scheduleStore.get(key)
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
