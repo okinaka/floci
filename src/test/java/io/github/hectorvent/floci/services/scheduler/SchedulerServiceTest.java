@@ -496,7 +496,7 @@ class SchedulerServiceTest {
     }
 
     @Test
-    void updateSchedulePreservesDeadLetterConfig() {
+    void updateScheduleOverwritesDeadLetterConfig() {
         Target target = new Target("arn:t", "arn:r", null, null);
         target.setDeadLetterConfig(new DeadLetterConfig("arn:aws:sqs:us-east-1:000000000000:dlq"));
         service.createSchedule(

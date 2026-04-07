@@ -193,9 +193,7 @@ public class SchedulerService {
     }
 
     public Schedule updateSchedule(ScheduleRequest req, String region) {
-        if (req.getName() == null || req.getName().isBlank()) {
-            throw new AwsException("ValidationException", "Name is required.", 400);
-        }
+        validateName(req.getName());
         validateScheduleRequest(req);
         String effectiveGroup = (req.getGroupName() == null || req.getGroupName().isBlank())
                 ? DEFAULT_GROUP : req.getGroupName();
