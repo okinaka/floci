@@ -301,7 +301,8 @@ class SchedulerIntegrationTest {
             .get("/schedules")
         .then()
             .statusCode(200)
-            .body("Schedules.Name", hasItem("my-schedule"));
+            .body("Schedules.Name", hasItem("my-schedule"))
+            .body("Schedules.Name", hasItem("grouped-schedule"));
     }
 
     @Test

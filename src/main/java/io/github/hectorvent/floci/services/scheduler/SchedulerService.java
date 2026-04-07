@@ -239,13 +239,18 @@ public class SchedulerService {
     }
 
     public List<Schedule> listSchedules(String groupName, String namePrefix, String state, String region) {
-        String effectiveGroup = (groupName == null || groupName.isBlank()) ? DEFAULT_GROUP : groupName;
-        String storagePrefix = "schedule:" + region + ":" + effectiveGroup + ":";
+        String storagePrefix;
+        if (groupName != null && !groupName.isBlank()) {
+            storagePrefix = "schedule:" + region + ":" + groupName + ":";
+        } else {
+            storagePrefix = "schedule:" + region + ":";
+        }
         return scheduleStore.scan(k -> {
             if (!k.startsWith(storagePrefix)) {
                 return false;
             }
-            String scheduleName = k.substring(storagePrefix.length());
+            // Extract schedule name (last segment after the last colon)
+            String scheduleName = k.substring(k.lastIndexOf(':') + 1);
             if (namePrefix != null && !namePrefix.isBlank() && !scheduleName.startsWith(namePrefix)) {
                 return false;
             }

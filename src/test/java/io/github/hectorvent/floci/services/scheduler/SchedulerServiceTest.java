@@ -288,6 +288,39 @@ class SchedulerServiceTest {
     }
 
     @Test
+    void listSchedulesAcrossGroups() {
+        service.createScheduleGroup("group-a", null, REGION);
+        service.createSchedule("s-default", null, "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null),
+                new Target("arn:t", "arn:r", null, null),
+                null, null, null, null, null, null, REGION);
+        service.createSchedule("s-group-a", "group-a", "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null),
+                new Target("arn:t", "arn:r", null, null),
+                null, null, null, null, null, null, REGION);
+        List<Schedule> result = service.listSchedules(null, null, null, REGION);
+        assertEquals(2, result.size());
+        assertTrue(result.stream().anyMatch(s -> "s-default".equals(s.getName())));
+        assertTrue(result.stream().anyMatch(s -> "s-group-a".equals(s.getName())));
+    }
+
+    @Test
+    void listSchedulesFilteredByGroup() {
+        service.createScheduleGroup("group-b", null, REGION);
+        service.createSchedule("s-in-default", null, "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null),
+                new Target("arn:t", "arn:r", null, null),
+                null, null, null, null, null, null, REGION);
+        service.createSchedule("s-in-group-b", "group-b", "rate(1 hour)", null,
+                new FlexibleTimeWindow("OFF", null),
+                new Target("arn:t", "arn:r", null, null),
+                null, null, null, null, null, null, REGION);
+        List<Schedule> result = service.listSchedules("group-b", null, null, REGION);
+        assertEquals(1, result.size());
+        assertEquals("s-in-group-b", result.get(0).getName());
+    }
+
+    @Test
     void listSchedulesWithNamePrefix() {
         service.createSchedule("alpha-1", null, "rate(1 hour)", null,
                 new FlexibleTimeWindow("OFF", null),

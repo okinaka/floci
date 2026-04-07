@@ -219,13 +219,16 @@ class SchedulerTest {
 
     @Test
     @Order(16)
-    @DisplayName("ListSchedules - default group contains schedule")
+    @DisplayName("ListSchedules - no group returns all schedules across groups")
     void listSchedules() {
         ListSchedulesResponse resp = scheduler.listSchedules(ListSchedulesRequest.builder().build());
 
-        boolean found = resp.schedules().stream()
+        boolean foundDefault = resp.schedules().stream()
                 .anyMatch(s -> SCHEDULE_NAME.equals(s.name()));
-        assertThat(found).isTrue();
+        assertThat(foundDefault).isTrue();
+        boolean foundGrouped = resp.schedules().stream()
+                .anyMatch(s -> "grouped-schedule".equals(s.name()));
+        assertThat(foundGrouped).isTrue();
     }
 
     @Test
