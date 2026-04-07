@@ -148,6 +148,7 @@ public class SchedulerService {
 
     public Schedule createSchedule(ScheduleRequest req, String region) {
         validateName(req.getName());
+        validateScheduleRequest(req);
         String effectiveGroup = (req.getGroupName() == null || req.getGroupName().isBlank())
                 ? DEFAULT_GROUP : req.getGroupName();
         getScheduleGroup(effectiveGroup, region); // verify group exists
@@ -195,6 +196,7 @@ public class SchedulerService {
         if (req.getName() == null || req.getName().isBlank()) {
             throw new AwsException("ValidationException", "Name is required.", 400);
         }
+        validateScheduleRequest(req);
         String effectiveGroup = (req.getGroupName() == null || req.getGroupName().isBlank())
                 ? DEFAULT_GROUP : req.getGroupName();
         String key = scheduleKey(region, effectiveGroup, req.getName());
@@ -272,6 +274,29 @@ public class SchedulerService {
         if (!NAME_PATTERN.matcher(name).matches()) {
             throw new AwsException("ValidationException",
                     "Name must match pattern [0-9a-zA-Z-_.]{1,64}: " + name, 400);
+        }
+    }
+
+    private void validateScheduleRequest(ScheduleRequest req) {
+        if (req.getScheduleExpression() == null || req.getScheduleExpression().isBlank()) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Value null at 'scheduleExpression' failed to satisfy constraint: Member must not be null", 400);
+        }
+        if (req.getFlexibleTimeWindow() == null) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Value null at 'flexibleTimeWindow' failed to satisfy constraint: Member must not be null", 400);
+        }
+        if (req.getTarget() == null) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Value null at 'target' failed to satisfy constraint: Member must not be null", 400);
+        }
+        if (req.getTarget().getArn() == null || req.getTarget().getArn().isBlank()) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Value null at 'target.arn' failed to satisfy constraint: Member must not be null", 400);
+        }
+        if (req.getTarget().getRoleArn() == null || req.getTarget().getRoleArn().isBlank()) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Value null at 'target.roleArn' failed to satisfy constraint: Member must not be null", 400);
         }
     }
 

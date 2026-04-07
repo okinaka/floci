@@ -221,6 +221,75 @@ class SchedulerServiceTest {
     }
 
     @Test
+    void createScheduleMissingExpressionThrows() {
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.createSchedule(
+                        newRequest("s", null, null,
+                                new FlexibleTimeWindow("OFF", null),
+                                new Target("arn:t", "arn:r", null, null)),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
+    void createScheduleMissingFlexibleTimeWindowThrows() {
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.createSchedule(
+                        newRequest("s", null, "rate(1 hour)", null,
+                                new Target("arn:t", "arn:r", null, null)),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
+    void createScheduleMissingTargetThrows() {
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.createSchedule(
+                        newRequest("s", null, "rate(1 hour)",
+                                new FlexibleTimeWindow("OFF", null), null),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
+    void createScheduleMissingTargetArnThrows() {
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.createSchedule(
+                        newRequest("s", null, "rate(1 hour)",
+                                new FlexibleTimeWindow("OFF", null),
+                                new Target(null, "arn:r", null, null)),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
+    void createScheduleMissingTargetRoleArnThrows() {
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.createSchedule(
+                        newRequest("s", null, "rate(1 hour)",
+                                new FlexibleTimeWindow("OFF", null),
+                                new Target("arn:t", null, null, null)),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
+    void updateScheduleMissingRequiredFieldsThrows() {
+        service.createSchedule(
+                newRequest("val-upd", null, "rate(1 hour)",
+                        new FlexibleTimeWindow("OFF", null),
+                        new Target("arn:t", "arn:r", null, null)),
+                REGION);
+        AwsException e = assertThrows(AwsException.class, () ->
+                service.updateSchedule(
+                        newRequest("val-upd", null, null,
+                                new FlexibleTimeWindow("OFF", null),
+                                new Target("arn:t", "arn:r", null, null)),
+                        REGION));
+        assertEquals("ValidationException", e.getErrorCode());
+    }
+
+    @Test
     void createScheduleDuplicateThrows() {
         service.createSchedule(
                 newRequest("dup", null, "rate(1 hour)",
