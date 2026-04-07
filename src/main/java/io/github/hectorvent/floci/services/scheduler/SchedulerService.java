@@ -99,6 +99,7 @@ public class SchedulerService {
         if (DEFAULT_GROUP.equals(effectiveName)) {
             return getOrCreateDefaultGroup(region);
         }
+        validateName(effectiveName);
         return groupStore.get(groupKey(region, effectiveName))
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
                         "ScheduleGroup not found: " + effectiveName, 404));
@@ -147,14 +148,7 @@ public class SchedulerService {
     public Schedule createSchedule(ScheduleRequest req, String region) {
         validateName(req.getName());
         validateScheduleRequest(req);
-        boolean hasExplicitGroup = req.getGroupName() != null && !req.getGroupName().isBlank();
-        String effectiveGroup;
-        if (hasExplicitGroup) {
-            validateName(req.getGroupName());
-            effectiveGroup = req.getGroupName();
-        } else {
-            effectiveGroup = DEFAULT_GROUP;
-        }
+        String effectiveGroup = resolveAndValidateGroup(req.getGroupName());
         getScheduleGroup(effectiveGroup, region); // verify group exists
 
         String key = scheduleKey(region, effectiveGroup, req.getName());
@@ -187,10 +181,8 @@ public class SchedulerService {
     }
 
     public Schedule getSchedule(String name, String groupName, String region) {
-        if (name == null || name.isBlank()) {
-            throw new AwsException("ValidationException", "Name is required.", 400);
-        }
-        String effectiveGroup = (groupName == null || groupName.isBlank()) ? DEFAULT_GROUP : groupName;
+        validateName(name);
+        String effectiveGroup = resolveAndValidateGroup(groupName);
         return scheduleStore.get(scheduleKey(region, effectiveGroup, name))
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
                         "Schedule not found: " + name, 404));
@@ -199,14 +191,7 @@ public class SchedulerService {
     public Schedule updateSchedule(ScheduleRequest req, String region) {
         validateName(req.getName());
         validateScheduleRequest(req);
-        boolean hasExplicitGroup = req.getGroupName() != null && !req.getGroupName().isBlank();
-        String effectiveGroup;
-        if (hasExplicitGroup) {
-            validateName(req.getGroupName());
-            effectiveGroup = req.getGroupName();
-        } else {
-            effectiveGroup = DEFAULT_GROUP;
-        }
+        String effectiveGroup = resolveAndValidateGroup(req.getGroupName());
         String key = scheduleKey(region, effectiveGroup, req.getName());
         Schedule existing = scheduleStore.get(key)
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
@@ -236,10 +221,8 @@ public class SchedulerService {
     }
 
     public void deleteSchedule(String name, String groupName, String region) {
-        if (name == null || name.isBlank()) {
-            throw new AwsException("ValidationException", "Name is required.", 400);
-        }
-        String effectiveGroup = (groupName == null || groupName.isBlank()) ? DEFAULT_GROUP : groupName;
+        validateName(name);
+        String effectiveGroup = resolveAndValidateGroup(groupName);
         String key = scheduleKey(region, effectiveGroup, name);
         scheduleStore.get(key)
                 .orElseThrow(() -> new AwsException("ResourceNotFoundException",
@@ -251,6 +234,7 @@ public class SchedulerService {
     public List<Schedule> listSchedules(String groupName, String namePrefix, String state, String region) {
         String storagePrefix;
         if (groupName != null && !groupName.isBlank()) {
+            validateName(groupName);
             storagePrefix = "schedule:" + region + ":" + groupName + ":";
         } else {
             storagePrefix = "schedule:" + region + ":";
@@ -283,6 +267,14 @@ public class SchedulerService {
             throw new AwsException("ValidationException",
                     "Name must match pattern [0-9a-zA-Z-_.]{1,64}: " + name, 400);
         }
+    }
+
+    private String resolveAndValidateGroup(String groupName) {
+        if (groupName == null || groupName.isBlank()) {
+            return DEFAULT_GROUP;
+        }
+        validateName(groupName);
+        return groupName;
     }
 
     private void validateScheduleRequest(ScheduleRequest req) {
