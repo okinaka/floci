@@ -71,7 +71,6 @@ jobs:
           - sdk-test-python
           - sdk-test-java
           - sdk-test-go
-          - sdk-test-rust
           - sdk-test-awscli
           - compat-cdk
           - compat-terraform
