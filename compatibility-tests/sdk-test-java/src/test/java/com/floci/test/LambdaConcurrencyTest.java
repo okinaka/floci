@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime;
 
 import static org.assertj.core.api.Assertions.*;
 
-@DisplayName("Lambda - PutFunctionConcurrency")
+@DisplayName("Lambda - Function concurrency")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LambdaConcurrencyTest {
 

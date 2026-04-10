@@ -60,13 +60,26 @@ public class LambdaConcurrencyController {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> request = objectMapper.readValue(body, Map.class);
-            Object raw = request.get("ReservedConcurrentExecutions");
-            if (!(raw instanceof Number)) {
+            if (!request.containsKey("ReservedConcurrentExecutions")
+                    || request.get("ReservedConcurrentExecutions") == null) {
                 throw new AwsException("InvalidParameterValueException",
                         "ReservedConcurrentExecutions is required", 400);
             }
+            Object raw = request.get("ReservedConcurrentExecutions");
+            // Jackson parses JSON integer literals as Integer or Long. Anything else
+            // (Double, BigDecimal, String, etc.) must be rejected — AWS does not
+            // silently truncate 1.5 to 1.
+            if (!(raw instanceof Integer) && !(raw instanceof Long)) {
+                throw new AwsException("InvalidParameterValueException",
+                        "ReservedConcurrentExecutions must be an integer", 400);
+            }
+            long longValue = ((Number) raw).longValue();
+            if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
+                throw new AwsException("InvalidParameterValueException",
+                        "ReservedConcurrentExecutions is out of range", 400);
+            }
             LambdaFunction fn = lambdaService.putFunctionConcurrency(
-                    region, functionName, ((Number) raw).intValue());
+                    region, functionName, (int) longValue);
             ObjectNode root = objectMapper.createObjectNode();
             root.put("ReservedConcurrentExecutions", fn.getReservedConcurrentExecutions());
             return Response.ok(root).build();
