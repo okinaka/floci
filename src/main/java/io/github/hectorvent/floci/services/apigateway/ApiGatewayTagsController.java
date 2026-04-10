@@ -12,24 +12,30 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * AWS API Gateway tag endpoints at /tags/{resourceArn}.
+ *
+ * <p>HTTP and JSON concerns live here; ARN parsing and storage delegation live in
+ * {@link ApiGatewayTagHandler}. A later refactor will move the {@code /tags/{arn}} route
+ * to a shared dispatcher so that Scheduler/EFS can coexist on the same path.
  */
 @Path("/tags")
 @Produces(MediaType.APPLICATION_JSON)
 public class ApiGatewayTagsController {
 
-    private final ApiGatewayService service;
+    private final ApiGatewayTagHandler tagHandler;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ApiGatewayTagsController(ApiGatewayService service, RegionResolver regionResolver,
+    public ApiGatewayTagsController(ApiGatewayTagHandler tagHandler,
+                                    RegionResolver regionResolver,
                                     ObjectMapper objectMapper) {
-        this.service = service;
+        this.tagHandler = tagHandler;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -38,8 +44,7 @@ public class ApiGatewayTagsController {
     @Path("/{arn: .*}")
     public Response getTags(@Context HttpHeaders headers, @PathParam("arn") String arn) {
         String region = regionResolver.resolveRegion(headers);
-        String apiId = apiIdFromArn(arn);
-        Map<String, String> tags = service.getTags(region, apiId);
+        Map<String, String> tags = tagHandler.listTags(region, arn);
         ObjectNode root = objectMapper.createObjectNode();
         ObjectNode tagsNode = root.putObject("tags");
         tags.forEach(tagsNode::put);
@@ -52,12 +57,11 @@ public class ApiGatewayTagsController {
                                 @PathParam("arn") String arn,
                                 String body) {
         String region = regionResolver.resolveRegion(headers);
-        String apiId = apiIdFromArn(arn);
         try {
             JsonNode node = objectMapper.readTree(body);
-            Map<String, String> tags = new java.util.HashMap<>();
+            Map<String, String> tags = new HashMap<>();
             node.path("tags").fields().forEachRemaining(e -> tags.put(e.getKey(), e.getValue().asText()));
-            service.tagResource(region, apiId, tags);
+            tagHandler.tagResource(region, arn, tags);
             return Response.noContent().build();
         } catch (AwsException e) {
             throw e;
@@ -72,19 +76,7 @@ public class ApiGatewayTagsController {
                                   @PathParam("arn") String arn,
                                   @QueryParam("tagKeys") List<String> tagKeys) {
         String region = regionResolver.resolveRegion(headers);
-        String apiId = apiIdFromArn(arn);
-        service.untagResource(region, apiId, tagKeys);
+        tagHandler.untagResource(region, arn, tagKeys);
         return Response.noContent().build();
-    }
-
-    /**
-     * Extracts apiId from ARN: arn:aws:apigateway:region::/restapis/{apiId}
-     */
-    private String apiIdFromArn(String arn) {
-        String[] parts = arn.split("/restapis/");
-        if (parts.length < 2) {
-            throw new AwsException("BadRequestException", "Invalid resource ARN: " + arn, 400);
-        }
-        return parts[1].split("/")[0];
     }
 }
