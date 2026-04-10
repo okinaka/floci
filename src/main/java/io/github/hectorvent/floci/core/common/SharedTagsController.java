@@ -114,8 +114,10 @@ public class SharedTagsController {
         String serviceKey = parts[2];
         TagHandler handler = handlersByServiceKey.get(serviceKey);
         if (handler == null) {
+            // Surface an unregistered service as an invalid-ARN error so floci's
+            // internal routing isn't leaked to the client.
             throw new AwsException("BadRequestException",
-                    "No tag handler registered for service: " + serviceKey, 400);
+                    "Invalid resource ARN: " + arn, 400);
         }
         return handler;
     }
