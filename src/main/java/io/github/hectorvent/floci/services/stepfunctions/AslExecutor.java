@@ -9,6 +9,7 @@ import io.github.hectorvent.floci.services.lambda.LambdaFunctionStore;
 import io.github.hectorvent.floci.services.lambda.model.InvocationType;
 import io.github.hectorvent.floci.services.lambda.model.InvokeResult;
 import io.github.hectorvent.floci.services.lambda.model.LambdaFunction;
+import io.github.hectorvent.floci.services.sqs.SqsJsonHandler;
 import io.github.hectorvent.floci.services.stepfunctions.model.Execution;
 import io.github.hectorvent.floci.services.stepfunctions.model.HistoryEvent;
 import io.github.hectorvent.floci.services.stepfunctions.model.StateMachine;
@@ -48,6 +49,7 @@ public class AslExecutor {
     private final LambdaFunctionStore functionStore;
     private final DynamoDbService dynamoDbService;
     private final DynamoDbJsonHandler dynamoDbJsonHandler;
+    private final SqsJsonHandler sqsJsonHandler;
     private final ObjectMapper objectMapper;
     private final JsonataEvaluator jsonataEvaluator;
     private final Instance<StepFunctionsService> sfnService;
@@ -60,12 +62,14 @@ public class AslExecutor {
     @Inject
     public AslExecutor(LambdaExecutorService lambdaExecutor, LambdaFunctionStore functionStore,
                        DynamoDbService dynamoDbService, DynamoDbJsonHandler dynamoDbJsonHandler,
+                       SqsJsonHandler sqsJsonHandler,
                        ObjectMapper objectMapper, JsonataEvaluator jsonataEvaluator,
                        Instance<StepFunctionsService> sfnService) {
         this.lambdaExecutor = lambdaExecutor;
         this.functionStore = functionStore;
         this.dynamoDbService = dynamoDbService;
         this.dynamoDbJsonHandler = dynamoDbJsonHandler;
+        this.sqsJsonHandler = sqsJsonHandler;
         this.objectMapper = objectMapper;
         this.jsonataEvaluator = jsonataEvaluator;
         this.sfnService = sfnService;
@@ -341,6 +345,18 @@ public class AslExecutor {
             return invokeAwsSdkDynamoDb(camelCaseAction, input, region);
         }
 
+        // SQS optimized integration
+        if (resource.equals("arn:aws:states:::sqs:sendMessage")) {
+            String region = extractRegionFromArn(sm.getStateMachineArn());
+            return invokeOptimizedSqsSendMessage(input, region);
+        }
+
+        // AWS SDK service integration: SQS SendMessage
+        if (resource.equals("arn:aws:states:::aws-sdk:sqs:sendMessage")) {
+            String region = extractRegionFromArn(sm.getStateMachineArn());
+            return invokeAwsSdkSqsSendMessage(input, region);
+        }
+
         // Nested state machine integration
         if (resource.startsWith("arn:aws:states:::states:startExecution")) {
             String mode = resource.substring("arn:aws:states:::states:startExecution".length());
@@ -556,6 +572,82 @@ public class AslExecutor {
             return jsonNode;
         }
         return objectMapper.createObjectNode();
+    }
+
+    private JsonNode invokeOptimizedSqsSendMessage(JsonNode input, String region) {
+        ObjectNode request = normalizeSqsSendMessageInput(input);
+        return invokeSqsAction("SendMessage", request, region, "SQS.");
+    }
+
+    private JsonNode invokeAwsSdkSqsSendMessage(JsonNode input, String region) {
+        return invokeSqsAction("SendMessage", normalizeSqsSendMessageInput(input), region, "Sqs.", true);
+    }
+
+    private ObjectNode normalizeSqsSendMessageInput(JsonNode input) {
+        ObjectNode request = input != null && input.isObject()
+                ? ((ObjectNode) input.deepCopy())
+                : objectMapper.createObjectNode();
+
+        JsonNode messageBody = request.get("MessageBody");
+        if (messageBody != null && !messageBody.isTextual() && !messageBody.isNull()) {
+            request.put("MessageBody", messageBody.toString());
+        }
+        return request;
+    }
+
+    private JsonNode invokeSqsAction(String action, JsonNode input, String region, String errorPrefix) {
+        return invokeSqsAction(action, input, region, errorPrefix, false);
+    }
+
+    private JsonNode invokeSqsAction(String action, JsonNode input, String region, String errorPrefix, boolean awsSdkStyleErrors) {
+        jakarta.ws.rs.core.Response response;
+        try {
+            response = sqsJsonHandler.handle(action, input, region);
+        } catch (AwsException e) {
+            throw new FailStateException(errorPrefix + normalizeSqsErrorCode(e.getErrorCode(), awsSdkStyleErrors), e.getMessage());
+        } catch (Exception e) {
+            throw new FailStateException(errorPrefix + "InternalServerError",
+                    e.getMessage() != null ? e.getMessage() : "SQS error");
+        }
+
+        Object entity = response.getEntity();
+        int status = response.getStatus();
+
+        if (status >= 400) {
+            if (entity instanceof AwsErrorResponse err) {
+                throw new FailStateException(errorPrefix + normalizeSqsErrorCode(err.type(), awsSdkStyleErrors), err.message());
+            }
+            if (entity instanceof JsonNode errorNode) {
+                String errorName = normalizeSqsErrorCode(errorNode.path("__type").asText("UnknownError"), awsSdkStyleErrors);
+                String errorMessage = errorNode.path("message").asText(
+                        errorNode.path("Message").asText("SQS operation failed"));
+                throw new FailStateException(errorPrefix + errorName, errorMessage);
+            }
+            throw new FailStateException(errorPrefix + "ServiceException", "SQS operation failed");
+        }
+
+        if (entity instanceof JsonNode jsonNode) {
+            return jsonNode;
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    private String normalizeSqsErrorCode(String errorCode, boolean awsSdkStyleErrors) {
+        if (!awsSdkStyleErrors || errorCode == null || errorCode.isBlank()) {
+            return errorCode;
+        }
+        return switch (errorCode) {
+            case "AWS.SimpleQueueService.NonExistentQueue" -> "QueueDoesNotExistException";
+            case "UnsupportedOperation" -> "UnsupportedOperationException";
+            case "ReceiptHandleIsInvalid" -> "ReceiptHandleIsInvalidException";
+            case "QueueAlreadyExists" -> "QueueNameExistsException";
+            case "InvalidAddress" -> "InvalidAddressException";
+            case "InvalidSecurity" -> "InvalidSecurityException";
+            case "InvalidMessageContents" -> "InvalidMessageContentsException";
+            case "OverLimit" -> "OverLimitException";
+            case "RequestThrottled" -> "RequestThrottledException";
+            default -> errorCode;
+        };
     }
 
     private StateResult executeChoiceState(JsonNode stateDef, JsonNode input, boolean jsonata, JsonNode context) throws Exception {
