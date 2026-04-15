@@ -358,6 +358,58 @@ class CognitoIntegrationTest {
                 "IdToken should not contain client_id");
     }
 
+    // ── Issue #452: IdToken contains aud claim ─────────────────────────
+
+    @Test
+    @Order(32)
+    void idTokenContainsAudClaimMatchingClientId() throws Exception {
+        JsonNode auth = cognitoJson("InitiateAuth", """
+                {
+                  "ClientId": "%s",
+                  "AuthFlow": "USER_PASSWORD_AUTH",
+                  "AuthParameters": { "USERNAME": "%s", "PASSWORD": "%s" }
+                }
+                """.formatted(clientId, username, password));
+        String idToken = auth.path("AuthenticationResult").path("IdToken").asText();
+        JsonNode payload = decodeJwtPayload(idToken);
+        assertEquals(clientId, payload.path("aud").asText(),
+                "IdToken must contain aud claim set to the requesting client ID");
+    }
+
+    @Test
+    @Order(33)
+    void accessTokenDoesNotContainAudClaim() throws Exception {
+        String accessToken = initiateAuthAndGetAccessToken();
+        JsonNode payload = decodeJwtPayload(accessToken);
+        assertTrue(payload.path("aud").isMissingNode(),
+                "AccessToken should not contain aud claim");
+    }
+
+    @Test
+    @Order(34)
+    void idTokenFromRefreshTokenContainsAudClaim() throws Exception {
+        JsonNode authResp = cognitoJson("InitiateAuth", """
+                {
+                  "ClientId": "%s",
+                  "AuthFlow": "USER_PASSWORD_AUTH",
+                  "AuthParameters": { "USERNAME": "%s", "PASSWORD": "%s" }
+                }
+                """.formatted(clientId, username, password));
+        String refreshToken = authResp.path("AuthenticationResult").path("RefreshToken").asText();
+
+        JsonNode refreshed = cognitoJson("InitiateAuth", """
+                {
+                  "ClientId": "%s",
+                  "AuthFlow": "REFRESH_TOKEN_AUTH",
+                  "AuthParameters": { "REFRESH_TOKEN": "%s" }
+                }
+                """.formatted(clientId, refreshToken));
+        String idToken = refreshed.path("AuthenticationResult").path("IdToken").asText();
+        JsonNode payload = decodeJwtPayload(idToken);
+        assertEquals(clientId, payload.path("aud").asText(),
+                "IdToken from refresh flow must contain aud claim set to the requesting client ID");
+    }
+
     // ── Issue #416: ListUserPoolClients response matches spec ──────────
 
     @Test

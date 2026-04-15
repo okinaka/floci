@@ -835,8 +835,8 @@ public class CognitoService {
         }
         // Fallback for legacy tokens: emit minimal tokens using clientId from request
         Map<String, Object> auth = new HashMap<>();
-        auth.put("AccessToken", generateTokenString("access", "unknown", pool));
-        auth.put("IdToken", generateTokenString("id", "unknown", pool));
+        auth.put("AccessToken", generateTokenString("access", "unknown", pool, clientId));
+        auth.put("IdToken", generateTokenString("id", "unknown", pool, clientId));
         auth.put("ExpiresIn", 3600);
         auth.put("TokenType", "Bearer");
         Map<String, Object> result = new HashMap<>();
@@ -901,30 +901,36 @@ public class CognitoService {
         String clientIdFragment = (clientId != null && !clientId.isBlank() && "access".equals(type))
                 ? ",\"client_id\":\"" + escapeJson(clientId) + "\""
                 : "";
+        String audFragment = (clientId != null && !clientId.isBlank() && "id".equals(type))
+                ? ",\"aud\":\"" + escapeJson(clientId) + "\""
+                : "";
         String payloadJson = String.format(
                 "{\"sub\":\"%s\",\"event_id\":\"%s\",\"token_use\":\"%s\",\"auth_time\":%d," +
                 "\"iss\":\"%s\",\"exp\":%d,\"iat\":%d," +
-                "\"username\":\"%s\",\"email\":\"%s\",\"cognito:username\":\"%s\"%s%s}",
+                "\"username\":\"%s\",\"email\":\"%s\",\"cognito:username\":\"%s\"%s%s%s}",
                 escapeJson(sub), UUID.randomUUID(), type, now,
                 escapeJson(getIssuer(pool.getId())), now + 3600, now,
-                user.getUsername(), email, user.getUsername(), clientIdFragment, groupsFragment
+                user.getUsername(), email, user.getUsername(), clientIdFragment, audFragment, groupsFragment
         );
         String payload = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
         return signJwt(header, payload, getSigningPrivateKey(pool));
     }
 
-    private String generateTokenString(String type, String username, UserPool pool) {
+    private String generateTokenString(String type, String username, UserPool pool, String clientId) {
         long now = System.currentTimeMillis() / 1000L;
         String headerJson = String.format(
                 "{\"alg\":\"RS256\",\"typ\":\"JWT\",\"kid\":\"%s\"}",
                 escapeJson(getSigningKeyId(pool)));
         String header = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
+        String audFragment = (clientId != null && !clientId.isBlank() && "id".equals(type))
+                ? ",\"aud\":\"" + escapeJson(clientId) + "\""
+                : "";
         String payloadJson = String.format(
                 "{\"sub\":\"%s\",\"token_use\":\"%s\",\"iss\":\"%s\"," +
-                "\"exp\":%d,\"iat\":%d,\"username\":\"%s\"}",
-                UUID.randomUUID(), type, escapeJson(getIssuer(pool.getId())), now + 3600, now, username
+                "\"exp\":%d,\"iat\":%d,\"username\":\"%s\"%s}",
+                UUID.randomUUID(), type, escapeJson(getIssuer(pool.getId())), now + 3600, now, username, audFragment
         );
         String payload = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
