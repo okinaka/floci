@@ -295,6 +295,14 @@ public class LambdaController {
         if (esm.getFunctionResponseTypes() != null) {
             esm.getFunctionResponseTypes().forEach(responseTypes::add);
         }
+        // Only emit ScalingConfig when a cap is actually set — AWS omits the
+        // field entirely on mappings with no MaximumConcurrency rather than
+        // returning an empty object.
+        Integer maxConcurrency = esm.getMaximumConcurrency();
+        if (maxConcurrency != null) {
+            ObjectNode scaling = node.putObject("ScalingConfig");
+            scaling.put("MaximumConcurrency", maxConcurrency.intValue());
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> result = objectMapper.convertValue(node, Map.class);
         return result;

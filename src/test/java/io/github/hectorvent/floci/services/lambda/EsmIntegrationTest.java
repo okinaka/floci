@@ -254,4 +254,165 @@ class EsmIntegrationTest {
         .then()
             .statusCode(404);
     }
+
+    // ──────────────────────────── ScalingConfig ────────────────────────────
+
+    @Test
+    @Order(40)
+    void createEventSourceMappingWithScalingConfigRoundTrips() {
+        String uuid = given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "BatchSize": 5,
+                    "ScalingConfig": { "MaximumConcurrency": 7 }
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(202)
+            .body("ScalingConfig.MaximumConcurrency", equalTo(7))
+        .extract()
+            .path("UUID");
+
+        given()
+        .when()
+            .get(LAMBDA_BASE + "/event-source-mappings/" + uuid)
+        .then()
+            .statusCode(200)
+            .body("ScalingConfig.MaximumConcurrency", equalTo(7));
+
+        given().delete(LAMBDA_BASE + "/event-source-mappings/" + uuid).then().statusCode(202);
+    }
+
+    @Test
+    @Order(41)
+    void createEventSourceMappingRejectsMaximumConcurrencyBelowMinimum() {
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "ScalingConfig": { "MaximumConcurrency": 1 }
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(400)
+            .body("message", containsString("between 2 and 1000"));
+    }
+
+    @Test
+    @Order(42)
+    void createEventSourceMappingRejectsMaximumConcurrencyAboveMaximum() {
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "ScalingConfig": { "MaximumConcurrency": 1001 }
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(400)
+            .body("message", containsString("between 2 and 1000"));
+    }
+
+    @Test
+    @Order(43)
+    void createEventSourceMappingRejectsScalingConfigOnNonSqsSource() {
+        // MaximumConcurrency is SQS-only in AWS. Kinesis uses ParallelizationFactor.
+        String kinesisArn = "arn:aws:kinesis:" + REGION + ":" + ACCOUNT_ID + ":stream/irrelevant";
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "ScalingConfig": { "MaximumConcurrency": 5 }
+                }
+                """.formatted(FUNCTION_NAME, kinesisArn))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(400)
+            .body("message", containsString("only supported for Amazon SQS"));
+    }
+
+    @Test
+    @Order(44)
+    void responseOmitsScalingConfigWhenUnset() {
+        // A mapping created without ScalingConfig should not expose the key
+        // in subsequent responses — AWS omits the field rather than returning
+        // an empty object.
+        String uuid = given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "BatchSize": 2
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(202)
+            .body("$", not(hasKey("ScalingConfig")))
+        .extract()
+            .path("UUID");
+
+        given().delete(LAMBDA_BASE + "/event-source-mappings/" + uuid).then().statusCode(202);
+    }
+
+    @Test
+    @Order(45)
+    void updateEventSourceMappingAddsAndClearsScalingConfig() {
+        String uuid = given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "BatchSize": 4
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(202)
+            .body("$", not(hasKey("ScalingConfig")))
+        .extract()
+            .path("UUID");
+
+        // Add
+        given()
+            .contentType("application/json")
+            .body("{ \"ScalingConfig\": { \"MaximumConcurrency\": 3 } }")
+        .when()
+            .put(LAMBDA_BASE + "/event-source-mappings/" + uuid)
+        .then()
+            .statusCode(202)
+            .body("ScalingConfig.MaximumConcurrency", equalTo(3));
+
+        // Clear by sending an empty ScalingConfig (AWS semantics)
+        given()
+            .contentType("application/json")
+            .body("{ \"ScalingConfig\": {} }")
+        .when()
+            .put(LAMBDA_BASE + "/event-source-mappings/" + uuid)
+        .then()
+            .statusCode(202)
+            .body("$", not(hasKey("ScalingConfig")));
+
+        given().delete(LAMBDA_BASE + "/event-source-mappings/" + uuid).then().statusCode(202);
+    }
 }

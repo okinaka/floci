@@ -5,11 +5,12 @@ import io.github.hectorvent.floci.core.common.AwsArnUtils;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.common.RegionResolver;
 import io.github.hectorvent.floci.services.lambda.model.EventSourceMapping;
-import io.github.hectorvent.floci.services.lambda.model.InvokeResult;
 import io.github.hectorvent.floci.services.lambda.model.InvocationType;
+import io.github.hectorvent.floci.services.lambda.model.InvokeResult;
 import io.github.hectorvent.floci.services.lambda.model.LambdaAlias;
 import io.github.hectorvent.floci.services.lambda.model.LambdaFunction;
 import io.github.hectorvent.floci.services.lambda.model.LambdaUrlConfig;
+import io.github.hectorvent.floci.services.lambda.model.ScalingConfig;
 import io.github.hectorvent.floci.services.lambda.zip.CodeStore;
 import io.github.hectorvent.floci.services.lambda.zip.ZipExtractor;
 import io.github.hectorvent.floci.services.s3.S3Service;
@@ -442,6 +443,8 @@ public class LambdaService {
                 ? (List<String>) request.get("FunctionResponseTypes")
                 : new ArrayList<>();
 
+        ScalingConfig scalingConfig = parseScalingConfig(request, eventSourceArn);
+
         String queueUrl = eventSourceArn.contains(":sqs:") ? AwsArnUtils.arnToQueueUrl(eventSourceArn, config.effectiveBaseUrl()) : null;
 
         EventSourceMapping esm = new EventSourceMapping();
@@ -454,6 +457,7 @@ public class LambdaService {
         esm.setBatchSize(batchSize);
         esm.setEnabled(enabled);
         esm.setState(enabled ? "Enabled" : "Disabled");
+        esm.setScalingConfig(scalingConfig);
         esm.setFunctionResponseTypes(functionResponseTypes);
         esm.setLastModified(System.currentTimeMillis());
 
@@ -463,6 +467,45 @@ public class LambdaService {
         }
         LOG.infov("Created ESM {0}: {1} → {2}", esm.getUuid(), eventSourceArn, resolvedName);
         return esm;
+    }
+
+    /**
+     * Parses {@code ScalingConfig} out of a create/update request and applies
+     * AWS-level validation: {@code MaximumConcurrency} must be in [2, 1000]
+     * and is only valid on SQS event sources. Returns {@code null} when no
+     * config was supplied or when the supplied config has no cap (AWS treats
+     * an empty ScalingConfig as "clear the cap").
+     */
+    private ScalingConfig parseScalingConfig(Map<String, Object> request, String eventSourceArn) {
+        Object raw = request.get("ScalingConfig");
+        if (!(raw instanceof Map<?, ?>)) {
+            return null;
+        }
+        Map<?, ?> map = (Map<?, ?>) raw;
+        Object mc = map.get("MaximumConcurrency");
+        if (mc == null) {
+            return null;
+        }
+        int value;
+        if (mc instanceof Number) {
+            value = ((Number) mc).intValue();
+        } else {
+            try {
+                value = Integer.parseInt(mc.toString());
+            } catch (NumberFormatException e) {
+                throw new AwsException("InvalidParameterValueException",
+                        "ScalingConfig.MaximumConcurrency must be an integer", 400);
+            }
+        }
+        if (value < 2 || value > 1000) {
+            throw new AwsException("InvalidParameterValueException",
+                    "ScalingConfig.MaximumConcurrency must be between 2 and 1000 (got " + value + ")", 400);
+        }
+        if (eventSourceArn == null || !eventSourceArn.contains(":sqs:")) {
+            throw new AwsException("InvalidParameterValueException",
+                    "ScalingConfig.MaximumConcurrency is only supported for Amazon SQS event source mappings", 400);
+        }
+        return new ScalingConfig(value);
     }
 
     private void startPollingHelper(EventSourceMapping esm) {
@@ -513,6 +556,11 @@ public class LambdaService {
             boolean nowEnabled = !Boolean.FALSE.equals(request.get("Enabled"));
             esm.setEnabled(nowEnabled);
             esm.setState(nowEnabled ? "Enabled" : "Disabled");
+        }
+        if (request.containsKey("ScalingConfig")) {
+            // AWS: passing ScalingConfig resets it. An empty object or one
+            // with MaximumConcurrency=null clears the cap.
+            esm.setScalingConfig(parseScalingConfig(request, esm.getEventSourceArn()));
         }
 
         esm.setLastModified(System.currentTimeMillis());
