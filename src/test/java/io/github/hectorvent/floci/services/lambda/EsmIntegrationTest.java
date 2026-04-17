@@ -388,6 +388,44 @@ class EsmIntegrationTest {
 
     @Test
     @Order(46)
+    void createEventSourceMappingRejectsStringMaximumConcurrency() {
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "ScalingConfig": { "MaximumConcurrency": "7" }
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(400)
+            .body("message", containsString("numeric"));
+    }
+
+    @Test
+    @Order(47)
+    void createEventSourceMappingRejectsNonObjectScalingConfig() {
+        given()
+            .contentType("application/json")
+            .body("""
+                {
+                    "FunctionName": "%s",
+                    "EventSourceArn": "%s",
+                    "ScalingConfig": "not-an-object"
+                }
+                """.formatted(FUNCTION_NAME, QUEUE_ARN))
+        .when()
+            .post(LAMBDA_BASE + "/event-source-mappings")
+        .then()
+            .statusCode(400)
+            .body("message", containsString("JSON object"));
+    }
+
+    @Test
+    @Order(48)
     void responseOmitsScalingConfigWhenUnset() {
         // A mapping created without ScalingConfig should not expose the key
         // in subsequent responses — AWS omits the field rather than returning
@@ -413,7 +451,7 @@ class EsmIntegrationTest {
     }
 
     @Test
-    @Order(47)
+    @Order(49)
     void updateEventSourceMappingAddsAndClearsScalingConfig() {
         String uuid = given()
             .contentType("application/json")

@@ -478,46 +478,42 @@ public class LambdaService {
      */
     private ScalingConfig parseScalingConfig(Map<String, Object> request, String eventSourceArn) {
         Object raw = request.get("ScalingConfig");
-        if (!(raw instanceof Map<?, ?>)) {
+        if (raw == null) {
             return null;
+        }
+        if (!(raw instanceof Map<?, ?>)) {
+            throw new AwsException("InvalidParameterValueException",
+                    "ScalingConfig must be a JSON object", 400);
         }
         boolean isSqs = eventSourceArn != null && eventSourceArn.contains(":sqs:");
         Map<?, ?> map = (Map<?, ?>) raw;
         Object mc = map.get("MaximumConcurrency");
         if (mc == null) {
-            // Empty ScalingConfig ({}) on SQS means "clear the cap".
-            // On non-SQS sources ScalingConfig is not valid at all.
             if (!isSqs) {
                 throw new AwsException("InvalidParameterValueException",
                         "ScalingConfig is only supported for Amazon SQS event source mappings", 400);
             }
             return null;
         }
-        int value;
-        if (mc instanceof Number) {
-            double d = ((Number) mc).doubleValue();
-            if (d != Math.floor(d)) {
-                throw new AwsException("InvalidParameterValueException",
-                        "ScalingConfig.MaximumConcurrency must be an integer", 400);
-            }
-            value = ((Number) mc).intValue();
-        } else {
-            try {
-                value = Integer.parseInt(mc.toString());
-            } catch (NumberFormatException e) {
-                throw new AwsException("InvalidParameterValueException",
-                        "ScalingConfig.MaximumConcurrency must be an integer", 400);
-            }
-        }
-        if (value < 2 || value > 1000) {
+        if (!(mc instanceof Number)) {
             throw new AwsException("InvalidParameterValueException",
-                    "ScalingConfig.MaximumConcurrency must be between 2 and 1000 (got " + value + ")", 400);
+                    "ScalingConfig.MaximumConcurrency must be a numeric value", 400);
+        }
+        double d = ((Number) mc).doubleValue();
+        if (d != Math.floor(d)) {
+            throw new AwsException("InvalidParameterValueException",
+                    "ScalingConfig.MaximumConcurrency must be an integer", 400);
+        }
+        long longValue = ((Number) mc).longValue();
+        if (longValue < 2 || longValue > 1000) {
+            throw new AwsException("InvalidParameterValueException",
+                    "ScalingConfig.MaximumConcurrency must be between 2 and 1000 (got " + longValue + ")", 400);
         }
         if (!isSqs) {
             throw new AwsException("InvalidParameterValueException",
                     "ScalingConfig is only supported for Amazon SQS event source mappings", 400);
         }
-        return new ScalingConfig(value);
+        return new ScalingConfig((int) longValue);
     }
 
     private void startPollingHelper(EventSourceMapping esm) {
