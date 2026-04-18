@@ -1,6 +1,5 @@
 package io.github.hectorvent.floci.services.ses;
 
-import io.github.hectorvent.floci.core.common.RegionResolver;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -25,14 +24,11 @@ import java.util.List;
 public class SesInspectionController {
 
     private final SesService sesService;
-    private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesInspectionController(SesService sesService, RegionResolver regionResolver,
-                                    ObjectMapper objectMapper) {
+    public SesInspectionController(SesService sesService, ObjectMapper objectMapper) {
         this.sesService = sesService;
-        this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
 
@@ -47,7 +43,11 @@ public class SesInspectionController {
             }
             ObjectNode node = objectMapper.createObjectNode();
             node.put("Id", email.getMessageId());
-            node.put("Region", email.getRegion() != null ? email.getRegion() : "");
+            if (email.getRegion() != null) {
+                node.put("Region", email.getRegion());
+            } else {
+                node.putNull("Region");
+            }
             node.put("Source", email.getSource());
 
             if (email.isRaw()) {
