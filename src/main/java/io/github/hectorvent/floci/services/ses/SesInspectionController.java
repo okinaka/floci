@@ -56,7 +56,7 @@ public class SesInspectionController {
                 node.put("RawData", email.getRawData());
             } else {
                 ObjectNode destination = node.putObject("Destination");
-                if (email.getToAddresses() != null) {
+                if (email.getToAddresses() != null && !email.getToAddresses().isEmpty()) {
                     ArrayNode toArr = destination.putArray("ToAddresses");
                     email.getToAddresses().forEach(toArr::add);
                 }

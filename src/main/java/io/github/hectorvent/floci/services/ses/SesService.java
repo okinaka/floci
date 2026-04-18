@@ -95,10 +95,9 @@ public class SesService {
         return identityStore.get(key).orElse(null);
     }
 
-    public String sendEmail(String region, String source,
-                            List<String> toAddresses, List<String> ccAddresses,
+    public String sendEmail(String source, List<String> toAddresses, List<String> ccAddresses,
                             List<String> bccAddresses, List<String> replyToAddresses,
-                            String subject, String bodyText, String bodyHtml) {
+                            String subject, String bodyText, String bodyHtml, String region) {
         if (source == null || source.isBlank()) {
             throw new AwsException("InvalidParameterValue", "Source email is required.", 400);
         }
