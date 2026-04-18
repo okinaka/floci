@@ -118,6 +118,76 @@ public class ContainerLifecycleManager {
     }
 
     /**
+     * Creates a container without starting it. Use {@link #startCreated} to
+     * start it after any pre-start setup (e.g. copying files into the
+     * container filesystem).
+     *
+     * @return the container ID
+     */
+    public String create(ContainerSpec spec) {
+        LOG.debugv("Creating container (no start) from spec: image={0}, name={1}", spec.image(), spec.name());
+
+        imageCacheService.ensureImageExists(spec.image());
+
+        HostConfig hostConfig = buildHostConfig(spec);
+
+        CreateContainerCmd createCmd = dockerClient.createContainerCmd(spec.image())
+                .withHostConfig(hostConfig);
+
+        if (spec.name() != null) {
+            createCmd.withName(spec.name());
+        }
+        if (spec.env() != null && !spec.env().isEmpty()) {
+            createCmd.withEnv(spec.env());
+        }
+        if (spec.cmd() != null && !spec.cmd().isEmpty()) {
+            createCmd.withCmd(spec.cmd());
+        }
+        if (spec.entrypoint() != null && !spec.entrypoint().isEmpty()) {
+            createCmd.withEntrypoint(spec.entrypoint());
+        }
+        if (spec.exposedPorts() != null && !spec.exposedPorts().isEmpty()) {
+            ExposedPort[] exposed = spec.exposedPorts().stream()
+                    .map(ExposedPort::tcp)
+                    .toArray(ExposedPort[]::new);
+            createCmd.withExposedPorts(exposed);
+        }
+
+        CreateContainerResponse response = createCmd.exec();
+        String containerId = response.getId();
+        LOG.infov("Created container {0} (name={1}, not yet started)", containerId, spec.name());
+        return containerId;
+    }
+
+    /**
+     * Starts a previously created container and resolves its endpoints.
+     *
+     * @param containerId the container ID returned by {@link #create}
+     * @param spec the original spec (needed for network and endpoint resolution)
+     * @return information about the running container including resolved endpoints
+     */
+    public ContainerInfo startCreated(String containerId, ContainerSpec spec) {
+        dockerClient.startContainerCmd(containerId).exec();
+        LOG.infov("Started container {0}", containerId);
+
+        if (spec.networkMode() != null && !spec.networkMode().isBlank() && spec.hasPortBindings()) {
+            try {
+                dockerClient.connectToNetworkCmd()
+                        .withContainerId(containerId)
+                        .withNetworkId(spec.networkMode())
+                        .exec();
+                LOG.debugv("Connected container {0} to network {1}", containerId, spec.networkMode());
+            } catch (Exception e) {
+                LOG.warnv("Could not connect container {0} to network {1}: {2}",
+                        containerId, spec.networkMode(), e.getMessage());
+            }
+        }
+
+        Map<Integer, EndpointInfo> endpoints = resolveEndpoints(containerId, spec);
+        return new ContainerInfo(containerId, endpoints);
+    }
+
+    /**
      * Stops and removes a container, closing any associated log stream.
      *
      * @param containerId the container ID to stop and remove

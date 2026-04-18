@@ -165,9 +165,9 @@ public class ContainerLauncher {
 
         ContainerSpec spec = specBuilder.build();
 
-        // Create container (but don't start yet - need to copy code first for Zip packages)
-        ContainerInfo info = lifecycleManager.createAndStart(spec);
-        String containerId = info.containerId();
+        // Create container without starting — provided.* runtimes exec
+        // /var/runtime/bootstrap on start, so code must be copied first.
+        String containerId = lifecycleManager.create(spec);
         LOG.infov("Created container {0} for function {1}", containerId, fn.getFunctionName());
 
         // Copy code into container via Docker API tar stream (works inside Docker too)
@@ -189,6 +189,9 @@ public class ContainerLauncher {
                 }
             }
         }
+
+        // Now start the container with code in place
+        ContainerInfo info = lifecycleManager.startCreated(containerId, spec);
 
         ContainerHandle handle = new ContainerHandle(containerId, fn.getFunctionName(), runtimeApiServer, ContainerState.WARM);
 
