@@ -60,11 +60,11 @@ public class SesInspectionController {
                     ArrayNode toArr = destination.putArray("ToAddresses");
                     email.getToAddresses().forEach(toArr::add);
                 }
-                if (email.getCcAddresses() != null) {
+                if (email.getCcAddresses() != null && !email.getCcAddresses().isEmpty()) {
                     ArrayNode ccArr = destination.putArray("CcAddresses");
                     email.getCcAddresses().forEach(ccArr::add);
                 }
-                if (email.getBccAddresses() != null) {
+                if (email.getBccAddresses() != null && !email.getBccAddresses().isEmpty()) {
                     ArrayNode bccArr = destination.putArray("BccAddresses");
                     email.getBccAddresses().forEach(bccArr::add);
                 }
