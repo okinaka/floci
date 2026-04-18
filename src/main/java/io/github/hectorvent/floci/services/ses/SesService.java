@@ -1,5 +1,6 @@
 package io.github.hectorvent.floci.services.ses;
 
+import io.github.hectorvent.floci.config.EmulatorConfig;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
@@ -26,7 +27,8 @@ public class SesService {
     private final StorageBackend<String, Boolean> accountSettingsStore;
 
     @Inject
-    public SesService(StorageFactory storageFactory) {
+    @SuppressWarnings("unused") // EmulatorConfig is unused but required for CDI init ordering
+    public SesService(StorageFactory storageFactory, EmulatorConfig config) {
         this.identityStore = storageFactory.create("ses", "ses-identities.json",
                 new TypeReference<Map<String, Identity>>() {});
         this.emailStore = storageFactory.create("ses", "ses-emails.json",
