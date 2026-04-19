@@ -33,6 +33,10 @@ class LambdaTest {
                 lambda.deleteFunction(DeleteFunctionRequest.builder()
                         .functionName("sdk-test-ruby-fn").build());
             } catch (Exception ignored) {}
+            try {
+                lambda.deleteFunction(DeleteFunctionRequest.builder()
+                        .functionName("sdk-test-provided-fn").build());
+            } catch (Exception ignored) {}
             lambda.close();
         }
     }

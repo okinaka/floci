@@ -11,6 +11,7 @@ import io.github.hectorvent.floci.services.lambda.model.LambdaFunction;
 import io.github.hectorvent.floci.services.lambda.runtime.RuntimeApiServer;
 import io.github.hectorvent.floci.services.lambda.runtime.RuntimeApiServerFactory;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CopyArchiveToContainerCmd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,7 @@ class ContainerLauncherTest {
     @Mock EcrRegistryManager ecrRegistryManager;
     @Mock RuntimeApiServer runtimeApiServer;
     @Mock DockerClient dockerClient;
+    @Mock CopyArchiveToContainerCmd copyCmd;
 
     @TempDir
     Path tempDir;
@@ -74,6 +76,12 @@ class ContainerLauncherTest {
                 new ContainerLifecycleManager.ContainerInfo("container-123", Map.of());
         when(lifecycleManager.startCreated(eq("container-123"), any())).thenReturn(info);
         when(lifecycleManager.getDockerClient()).thenReturn(dockerClient);
+
+        // Stub the Docker copy chain so copyDirToContainer / copyFileToContainer
+        // don't throw when the mock DockerClient is used.
+        when(dockerClient.copyArchiveToContainerCmd(any())).thenReturn(copyCmd);
+        when(copyCmd.withRemotePath(any())).thenReturn(copyCmd);
+        when(copyCmd.withTarInputStream(any())).thenReturn(copyCmd);
     }
 
     @Test
@@ -107,16 +115,18 @@ class ContainerLauncherTest {
 
         launcher.launch(fn);
 
-        // Verify ordering: create → getDockerClient (for copy) → startCreated
-        InOrder inOrder = inOrder(lifecycleManager);
+        // Verify ordering: create → Docker copy (to /var/task) → startCreated
+        InOrder inOrder = inOrder(lifecycleManager, dockerClient);
         inOrder.verify(lifecycleManager).create(any());
-        inOrder.verify(lifecycleManager).getDockerClient();
+        inOrder.verify(dockerClient).copyArchiveToContainerCmd("container-123");
         inOrder.verify(lifecycleManager).startCreated(eq("container-123"), any());
+
+        // createAndStart must NOT be called — Lambda uses the split path
+        verify(lifecycleManager, never()).createAndStart(any());
     }
 
     @Test
     void launchProvidedRuntime_copiesBootstrapBeforeStart() throws Exception {
-        // Set up code dir with a bootstrap file
         Path codePath = Files.createDirectory(tempDir.resolve("provided-code"));
         Files.writeString(codePath.resolve("bootstrap"), "#!/bin/sh\necho hello");
 
@@ -129,15 +139,19 @@ class ContainerLauncherTest {
         launcher.launch(fn);
 
         // The critical invariant: create must happen before any Docker copy,
-        // and start must happen after. This is what #466 broke — it called
-        // createAndStart so the container ran /var/runtime/bootstrap before
-        // the file was copied in, causing exit 127.
-        InOrder inOrder = inOrder(lifecycleManager);
+        // and start must happen after. This is the exact regression from #466.
+        InOrder inOrder = inOrder(lifecycleManager, dockerClient);
         inOrder.verify(lifecycleManager).create(any());
-        inOrder.verify(lifecycleManager, atLeastOnce()).getDockerClient();
+        // Two copies: code to /var/task + bootstrap to /var/runtime
+        inOrder.verify(dockerClient, times(2)).copyArchiveToContainerCmd("container-123");
         inOrder.verify(lifecycleManager).startCreated(eq("container-123"), any());
 
-        // createAndStart must NOT be called — Lambda uses the split path
+        // Verify both /var/task and /var/runtime were targeted
+        ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
+        verify(copyCmd, atLeast(2)).withRemotePath(pathCaptor.capture());
+        assertTrue(pathCaptor.getAllValues().contains("/var/task"));
+        assertTrue(pathCaptor.getAllValues().contains("/var/runtime"));
+
         verify(lifecycleManager, never()).createAndStart(any());
     }
 }
