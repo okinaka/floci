@@ -48,73 +48,16 @@ public class ContainerLifecycleManager {
     }
 
     /**
-     * Creates and starts a container from the given specification.
-     * Automatically pulls the image if not present locally.
+     * Creates and immediately starts a container. Delegates to
+     * {@link #create} and {@link #startCreated}. Suitable when no
+     * filesystem modifications are needed between creation and start.
      *
      * @param spec the container specification
      * @return information about the created container including resolved endpoints
      */
     public ContainerInfo createAndStart(ContainerSpec spec) {
-        LOG.debugv("Creating container from spec: image={0}, name={1}", spec.image(), spec.name());
-
-        // Ensure image is available
-        imageCacheService.ensureImageExists(spec.image());
-
-        // Build HostConfig
-        HostConfig hostConfig = buildHostConfig(spec);
-
-        // Create container command
-        CreateContainerCmd createCmd = dockerClient.createContainerCmd(spec.image())
-                .withHostConfig(hostConfig);
-
-        if (spec.name() != null) {
-            createCmd.withName(spec.name());
-        }
-        if (spec.env() != null && !spec.env().isEmpty()) {
-            createCmd.withEnv(spec.env());
-        }
-        if (spec.cmd() != null && !spec.cmd().isEmpty()) {
-            createCmd.withCmd(spec.cmd());
-        }
-        if (spec.entrypoint() != null && !spec.entrypoint().isEmpty()) {
-            createCmd.withEntrypoint(spec.entrypoint());
-        }
-        if (spec.exposedPorts() != null && !spec.exposedPorts().isEmpty()) {
-            ExposedPort[] exposed = spec.exposedPorts().stream()
-                    .map(ExposedPort::tcp)
-                    .toArray(ExposedPort[]::new);
-            createCmd.withExposedPorts(exposed);
-        }
-
-        // Create the container
-        CreateContainerResponse response = createCmd.exec();
-        String containerId = response.getId();
-        LOG.infov("Created container {0} (name={1})", containerId, spec.name());
-
-        // Start the container
-        dockerClient.startContainerCmd(containerId).exec();
-        LOG.infov("Started container {0}", containerId);
-
-        // For containers with port bindings, withNetworkMode was skipped during creation
-        // (it suppresses port publishing on macOS Docker Desktop). Connect to the
-        // configured network now, after the host port bindings are established.
-        if (spec.networkMode() != null && !spec.networkMode().isBlank() && spec.hasPortBindings()) {
-            try {
-                dockerClient.connectToNetworkCmd()
-                        .withContainerId(containerId)
-                        .withNetworkId(spec.networkMode())
-                        .exec();
-                LOG.debugv("Connected container {0} to network {1}", containerId, spec.networkMode());
-            } catch (Exception e) {
-                LOG.warnv("Could not connect container {0} to network {1}: {2}",
-                        containerId, spec.networkMode(), e.getMessage());
-            }
-        }
-
-        // Resolve endpoints
-        Map<Integer, EndpointInfo> endpoints = resolveEndpoints(containerId, spec);
-
-        return new ContainerInfo(containerId, endpoints);
+        String containerId = create(spec);
+        return startCreated(containerId, spec);
     }
 
     /**
