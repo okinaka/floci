@@ -24,23 +24,27 @@ public class SesService {
     private final StorageBackend<String, Identity> identityStore;
     private final StorageBackend<String, SentEmail> emailStore;
     private final StorageBackend<String, Boolean> accountSettingsStore;
+    private final SmtpRelay smtpRelay;
 
     @Inject
-    public SesService(StorageFactory storageFactory) {
+    public SesService(StorageFactory storageFactory, SmtpRelay smtpRelay) {
         this.identityStore = storageFactory.create("ses", "ses-identities.json",
                 new TypeReference<Map<String, Identity>>() {});
         this.emailStore = storageFactory.create("ses", "ses-emails.json",
                 new TypeReference<Map<String, SentEmail>>() {});
         this.accountSettingsStore = storageFactory.create("ses", "ses-account-settings.json",
                 new TypeReference<Map<String, Boolean>>() {});
+        this.smtpRelay = smtpRelay;
     }
 
     SesService(StorageBackend<String, Identity> identityStore,
                StorageBackend<String, SentEmail> emailStore,
-               StorageBackend<String, Boolean> accountSettingsStore) {
+               StorageBackend<String, Boolean> accountSettingsStore,
+               SmtpRelay smtpRelay) {
         this.identityStore = identityStore;
         this.emailStore = emailStore;
         this.accountSettingsStore = accountSettingsStore;
+        this.smtpRelay = smtpRelay;
     }
 
     public Identity verifyEmailIdentity(String emailAddress, String region) {
@@ -128,6 +132,9 @@ public class SesService {
                 bccAddresses, replyToAddresses, subject, bodyText, bodyHtml);
         emailStore.put("email::" + region + "::" + messageId, email);
 
+        smtpRelay.relay(source, toAddresses, ccAddresses, bccAddresses,
+                replyToAddresses, subject, bodyText, bodyHtml);
+
         LOG.infov("SES email sent: from={0}, to={1}, subject={2}, messageId={3}",
                 source, toAddresses, subject, messageId);
         return messageId;
@@ -145,6 +152,8 @@ public class SesService {
                 destinations != null ? destinations : Collections.emptyList(),
                 rawMessage);
         emailStore.put("email::" + region + "::" + messageId, email);
+
+        smtpRelay.relayRaw(source, destinations, rawMessage);
 
         LOG.infov("SES raw email sent: from={0}, messageId={1}", source, messageId);
         return messageId;

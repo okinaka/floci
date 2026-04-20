@@ -48,6 +48,17 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-config-yaml</artifactId>
         </dependency>
+        <!-- Vert.x mail client for SES SMTP relay -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mail-client</artifactId>
+        </dependency>
+        <!-- MIME parsing for raw email relay -->
+        <dependency>
+            <groupId>org.apache.james</groupId>
+            <artifactId>apache-mime4j-dom</artifactId>
+            <version>0.8.11</version>
+        </dependency>
 
         <!-- Jackson for JSON storage serialization -->
         <dependency>
