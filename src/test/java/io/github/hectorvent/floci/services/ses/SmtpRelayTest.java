@@ -176,6 +176,28 @@ class SmtpRelayTest {
     }
 
     @Test
+    void relayRaw_destinationsEmpty_extractsBccFromHeaders() {
+        SmtpRelay relay = enabledRelay();
+
+        String rawMime = "From: s@example.com\r\n"
+                + "To: t@example.com\r\n"
+                + "Cc: c@example.com\r\n"
+                + "Bcc: b@example.com\r\n"
+                + "Subject: BccHeader\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "\r\n"
+                + "body";
+        relay.relayRaw("envelope@example.com", null, rawMime);
+
+        ArgumentCaptor<MailMessage> captor = ArgumentCaptor.forClass(MailMessage.class);
+        verify(mailClient).sendMail(captor.capture());
+        MailMessage sent = captor.getValue();
+        assertEquals(List.of("t@example.com"), sent.getTo());
+        assertEquals(List.of("c@example.com"), sent.getCc());
+        assertEquals(List.of("b@example.com"), sent.getBcc());
+    }
+
+    @Test
     void relayRaw_fallsBackToEnvelopeAddresses() {
         SmtpRelay relay = enabledRelay();
 
@@ -216,6 +238,32 @@ class SmtpRelayTest {
         verify(mailClient).sendMail(captor.capture());
         assertEquals("plain text", captor.getValue().getText().trim());
         assertEquals("<p>html</p>", captor.getValue().getHtml().trim());
+    }
+
+    @Test
+    void relayRaw_multipartMixedWithTextAttachment_preservesBody() {
+        SmtpRelay relay = enabledRelay();
+
+        String rawMime = "From: s@example.com\r\n"
+                + "To: t@example.com\r\n"
+                + "Subject: Mixed\r\n"
+                + "Content-Type: multipart/mixed; boundary=\"outer\"\r\n"
+                + "\r\n"
+                + "--outer\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "\r\n"
+                + "real body\r\n"
+                + "--outer\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "Content-Disposition: attachment; filename=\"notes.txt\"\r\n"
+                + "\r\n"
+                + "attachment content that must not clobber body\r\n"
+                + "--outer--";
+        relay.relayRaw("from@example.com", List.of("to@example.com"), rawMime);
+
+        ArgumentCaptor<MailMessage> captor = ArgumentCaptor.forClass(MailMessage.class);
+        verify(mailClient).sendMail(captor.capture());
+        assertEquals("real body", captor.getValue().getText().trim());
     }
 
     @Test

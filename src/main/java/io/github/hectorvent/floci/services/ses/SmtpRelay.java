@@ -220,6 +220,10 @@ public class SmtpRelay {
                 if (ccList != null && !ccList.isEmpty()) {
                     mail.setCc(toMailboxAddresses(ccList));
                 }
+                MailboxList bccList = message.getBcc() != null ? message.getBcc().flatten() : null;
+                if (bccList != null && !bccList.isEmpty()) {
+                    mail.setBcc(toMailboxAddresses(bccList));
+                }
             }
 
             // Subject
@@ -243,11 +247,13 @@ public class SmtpRelay {
     private static void extractBodyFromEntity(Entity entity, MailMessage mail) {
         Body body = entity.getBody();
         if (body instanceof TextBody textBody) {
-            String text = readTextBody(textBody);
-            if ("text/html".equalsIgnoreCase(entity.getMimeType())) {
-                mail.setHtml(text);
-            } else if ("text/plain".equalsIgnoreCase(entity.getMimeType())) {
-                mail.setText(text);
+            // Keep the first text/plain and text/html parts encountered so that a
+            // text-typed attachment later in a multipart/mixed message cannot
+            // clobber the body already picked up from multipart/alternative.
+            if ("text/html".equalsIgnoreCase(entity.getMimeType()) && mail.getHtml() == null) {
+                mail.setHtml(readTextBody(textBody));
+            } else if ("text/plain".equalsIgnoreCase(entity.getMimeType()) && mail.getText() == null) {
+                mail.setText(readTextBody(textBody));
             }
         } else if (body instanceof Multipart multipart) {
             for (Entity part : multipart.getBodyParts()) {
