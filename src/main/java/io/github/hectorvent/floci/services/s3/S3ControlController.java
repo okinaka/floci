@@ -35,6 +35,10 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_XML)
 public class S3ControlController {
 
+    private static final String AMZ_REQUEST_ID = "x-amz-request-id";
+    private static final String AMZN_REQUEST_ID = "x-amzn-RequestId";
+    private static final String AMZ_ID_2 = "x-amz-id-2";
+
     private final S3Service s3Service;
 
     @Inject
@@ -150,20 +154,31 @@ public class S3ControlController {
 
     /**
      * S3 Control is a REST-XML protocol, so error responses must also be XML.
-     * The global {@code AwsExceptionMapper} emits JSON, which trips up the
-     * Go SDK's XML error deserializer with "unexpected EOF".
+     * AWS S3 Control wraps errors in an {@code <ErrorResponse xmlns=...>} envelope
+     * containing the inner {@code <Error>} block and a top-level {@code <RequestId>}.
+     *
+     * <p>References: AWS Go SDK v2 s3control error deserializer expects this wrapper;
+     * bare {@code <Error>} collapses to "UnknownError" at the SDK layer.
+     * See issue #557.
      */
     private Response xmlErrorResponse(AwsException e) {
+        String requestId = UUID.randomUUID().toString();
         String xml = new XmlBuilder()
                 .raw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+                .start("ErrorResponse", AwsNamespaces.S3_CONTROL)
                 .start("Error")
                 .elem("Code", e.getErrorCode())
                 .elem("Message", e.getMessage())
-                .elem("RequestId", UUID.randomUUID().toString())
+                .elem("RequestId", requestId)
                 .end("Error")
+                .elem("RequestId", requestId)
+                .end("ErrorResponse")
                 .build();
         return Response.status(e.getHttpStatus())
                 .type(MediaType.APPLICATION_XML)
+                .header(AMZ_REQUEST_ID, requestId)
+                .header(AMZN_REQUEST_ID, requestId)
+                .header(AMZ_ID_2, requestId)
                 .entity(xml)
                 .build();
     }
