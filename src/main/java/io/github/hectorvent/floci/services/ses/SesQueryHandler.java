@@ -4,7 +4,10 @@ import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.common.AwsNamespaces;
 import io.github.hectorvent.floci.core.common.AwsQueryResponse;
 import io.github.hectorvent.floci.core.common.XmlBuilder;
+import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -24,10 +27,12 @@ public class SesQueryHandler {
     private static final Logger LOG = Logger.getLogger(SesQueryHandler.class);
 
     private final SesService sesService;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    public SesQueryHandler(SesService sesService) {
+    public SesQueryHandler(SesService sesService, ObjectMapper objectMapper) {
         this.sesService = sesService;
+        this.objectMapper = objectMapper;
     }
 
     public Response handle(String action, MultivaluedMap<String, String> params, String region) {
@@ -51,6 +56,12 @@ public class SesQueryHandler {
                 case "SetIdentityNotificationTopic" -> handleSetIdentityNotificationTopic(params, region);
                 case "GetIdentityNotificationAttributes" -> handleGetIdentityNotificationAttributes(params, region);
                 case "GetIdentityDkimAttributes" -> handleGetIdentityDkimAttributes(params, region);
+                case "CreateTemplate" -> handleCreateTemplate(params, region);
+                case "UpdateTemplate" -> handleUpdateTemplate(params, region);
+                case "GetTemplate" -> handleGetTemplate(params, region);
+                case "DeleteTemplate" -> handleDeleteTemplate(params, region);
+                case "ListTemplates" -> handleListTemplates(region);
+                case "SendTemplatedEmail" -> handleSendTemplatedEmail(params, region);
                 default -> AwsQueryResponse.error("UnsupportedOperation",
                         "Operation " + action + " is not supported by SES.", AwsNamespaces.SES, 400);
             };
@@ -244,6 +255,105 @@ public class SesQueryHandler {
         }
         xml.end("DkimAttributes");
         return Response.ok(AwsQueryResponse.envelope("GetIdentityDkimAttributes", AwsNamespaces.SES, xml.build())).build();
+    }
+
+    // --- Templates ---
+
+    private Response handleCreateTemplate(MultivaluedMap<String, String> params, String region) {
+        EmailTemplate template = readTemplateParams(params);
+        sesService.createTemplate(template, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("CreateTemplate", AwsNamespaces.SES)).build();
+    }
+
+    private Response handleUpdateTemplate(MultivaluedMap<String, String> params, String region) {
+        EmailTemplate template = readTemplateParams(params);
+        sesService.updateTemplate(template, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("UpdateTemplate", AwsNamespaces.SES)).build();
+    }
+
+    private Response handleGetTemplate(MultivaluedMap<String, String> params, String region) {
+        String templateName = getParam(params, "TemplateName");
+        EmailTemplate template = sesService.getTemplate(templateName, region);
+        var xml = new XmlBuilder().start("Template")
+                .elem("TemplateName", template.getTemplateName());
+        if (template.getSubject() != null) {
+            xml.elem("SubjectPart", template.getSubject());
+        }
+        if (template.getTextPart() != null) {
+            xml.elem("TextPart", template.getTextPart());
+        }
+        if (template.getHtmlPart() != null) {
+            xml.elem("HtmlPart", template.getHtmlPart());
+        }
+        xml.end("Template");
+        return Response.ok(AwsQueryResponse.envelope("GetTemplate", AwsNamespaces.SES, xml.build())).build();
+    }
+
+    private Response handleDeleteTemplate(MultivaluedMap<String, String> params, String region) {
+        String templateName = getParam(params, "TemplateName");
+        sesService.deleteTemplate(templateName, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("DeleteTemplate", AwsNamespaces.SES)).build();
+    }
+
+    private Response handleListTemplates(String region) {
+        List<EmailTemplate> templates = sesService.listTemplates(region);
+        var xml = new XmlBuilder().start("TemplatesMetadata");
+        for (EmailTemplate t : templates) {
+            xml.start("member")
+                    .elem("Name", t.getTemplateName());
+            if (t.getCreatedTimestamp() != null) {
+                xml.elem("CreatedTimestamp", t.getCreatedTimestamp().toString());
+            }
+            xml.end("member");
+        }
+        xml.end("TemplatesMetadata");
+        return Response.ok(AwsQueryResponse.envelope("ListTemplates", AwsNamespaces.SES, xml.build())).build();
+    }
+
+    private Response handleSendTemplatedEmail(MultivaluedMap<String, String> params, String region) {
+        String source = getParam(params, "Source");
+        List<String> toAddresses = extractMembers(params, "Destination.ToAddresses");
+        List<String> ccAddresses = extractMembers(params, "Destination.CcAddresses");
+        List<String> bccAddresses = extractMembers(params, "Destination.BccAddresses");
+        List<String> replyToAddresses = extractMembers(params, "ReplyToAddresses");
+        String templateName = getParam(params, "Template");
+        String templateArn = getParam(params, "TemplateArn");
+        String templateDataRaw = getParam(params, "TemplateData");
+
+        boolean hasName = templateName != null && !templateName.isBlank();
+        boolean hasArn = templateArn != null && !templateArn.isBlank();
+        if (!hasName && !hasArn) {
+            throw new AwsException("InvalidParameterValue",
+                    "Template or TemplateArn is required.", 400);
+        }
+        String resolvedName = hasName ? templateName : SesService.templateNameFromArn(templateArn);
+
+        JsonNode templateData = parseTemplateData(templateDataRaw);
+        String messageId = sesService.sendTemplatedEmail(source, toAddresses, ccAddresses,
+                bccAddresses, replyToAddresses, resolvedName, templateData, region);
+
+        String result = new XmlBuilder().elem("MessageId", messageId).build();
+        return Response.ok(AwsQueryResponse.envelope("SendTemplatedEmail", AwsNamespaces.SES, result)).build();
+    }
+
+    private EmailTemplate readTemplateParams(MultivaluedMap<String, String> params) {
+        String name = getParam(params, "Template.TemplateName");
+        String subject = getParam(params, "Template.SubjectPart");
+        String text = getParam(params, "Template.TextPart");
+        String html = getParam(params, "Template.HtmlPart");
+        return new EmailTemplate(name, subject, text, html);
+    }
+
+    private JsonNode parseTemplateData(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(raw);
+        } catch (Exception e) {
+            throw new AwsException("InvalidTemplate",
+                    "Invalid TemplateData JSON: " + e.getMessage(), 400);
+        }
     }
 
     // --- Helpers ---

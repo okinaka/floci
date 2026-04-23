@@ -3,27 +3,36 @@ package io.github.hectorvent.floci.services.ses;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
+import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class SesService {
 
     private static final Logger LOG = Logger.getLogger(SesService.class);
 
+    private static final Pattern TEMPLATE_VARIABLE = Pattern.compile("\\{\\{\\s*([\\w-]+)\\s*\\}\\}");
+
     private final StorageBackend<String, Identity> identityStore;
     private final StorageBackend<String, SentEmail> emailStore;
     private final StorageBackend<String, Boolean> accountSettingsStore;
+    private final StorageBackend<String, EmailTemplate> templateStore;
     private final SmtpRelay smtpRelay;
 
     @Inject
@@ -34,16 +43,20 @@ public class SesService {
                 new TypeReference<Map<String, SentEmail>>() {});
         this.accountSettingsStore = storageFactory.create("ses", "ses-account-settings.json",
                 new TypeReference<Map<String, Boolean>>() {});
+        this.templateStore = storageFactory.create("ses", "ses-templates.json",
+                new TypeReference<Map<String, EmailTemplate>>() {});
         this.smtpRelay = smtpRelay;
     }
 
     SesService(StorageBackend<String, Identity> identityStore,
                StorageBackend<String, SentEmail> emailStore,
                StorageBackend<String, Boolean> accountSettingsStore,
+               StorageBackend<String, EmailTemplate> templateStore,
                SmtpRelay smtpRelay) {
         this.identityStore = identityStore;
         this.emailStore = emailStore;
         this.accountSettingsStore = accountSettingsStore;
+        this.templateStore = templateStore;
         this.smtpRelay = smtpRelay;
     }
 
@@ -237,6 +250,161 @@ public class SesService {
     public void setAccountSendingEnabled(String region, boolean enabled) {
         accountSettingsStore.put("sending::" + region, enabled);
         LOG.infov("Updated account sending enabled for region {0}: {1}", region, enabled);
+    }
+
+    // ──────────────────────────── Templates ────────────────────────────
+
+    public EmailTemplate createTemplate(EmailTemplate template, String region) {
+        validateTemplate(template);
+        String key = templateKey(region, template.getTemplateName());
+        if (templateStore.get(key).isPresent()) {
+            throw new AwsException("AlreadyExists",
+                    "Template " + template.getTemplateName() + " already exists.", 400);
+        }
+        Instant now = Instant.now();
+        template.setCreatedTimestamp(now);
+        template.setLastUpdatedTimestamp(now);
+        templateStore.put(key, template);
+        LOG.infov("Created SES template: {0} in region {1}", template.getTemplateName(), region);
+        return template;
+    }
+
+    public EmailTemplate getTemplate(String templateName, String region) {
+        return templateStore.get(templateKey(region, templateName))
+                .orElseThrow(() -> new AwsException("TemplateDoesNotExist",
+                        "Template " + templateName + " does not exist.", 400));
+    }
+
+    public EmailTemplate updateTemplate(EmailTemplate template, String region) {
+        validateTemplate(template);
+        String key = templateKey(region, template.getTemplateName());
+        EmailTemplate existing = templateStore.get(key)
+                .orElseThrow(() -> new AwsException("TemplateDoesNotExist",
+                        "Template " + template.getTemplateName() + " does not exist.", 400));
+        template.setCreatedTimestamp(existing.getCreatedTimestamp());
+        template.setLastUpdatedTimestamp(Instant.now());
+        templateStore.put(key, template);
+        LOG.infov("Updated SES template: {0} in region {1}", template.getTemplateName(), region);
+        return template;
+    }
+
+    public void deleteTemplate(String templateName, String region) {
+        String key = templateKey(region, templateName);
+        if (templateStore.get(key).isEmpty()) {
+            throw new AwsException("TemplateDoesNotExist",
+                    "Template " + templateName + " does not exist.", 400);
+        }
+        templateStore.delete(key);
+        LOG.infov("Deleted SES template: {0} in region {1}", templateName, region);
+    }
+
+    public List<EmailTemplate> listTemplates(String region) {
+        String prefix = "template::" + region + "::";
+        List<EmailTemplate> all = new ArrayList<>(templateStore.scan(k -> k.startsWith(prefix)));
+        all.sort(Comparator.comparing(EmailTemplate::getCreatedTimestamp,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(EmailTemplate::getTemplateName,
+                        Comparator.nullsLast(Comparator.naturalOrder())));
+        return all;
+    }
+
+    public String sendTemplatedEmail(String source, List<String> toAddresses, List<String> ccAddresses,
+                                     List<String> bccAddresses, List<String> replyToAddresses,
+                                     String templateName, JsonNode templateData, String region) {
+        EmailTemplate template = getTemplate(templateName, region);
+        return sendInlineTemplatedEmail(source, toAddresses, ccAddresses, bccAddresses,
+                replyToAddresses, template.getSubject(), template.getTextPart(),
+                template.getHtmlPart(), templateData, region);
+    }
+
+    public String sendInlineTemplatedEmail(String source, List<String> toAddresses, List<String> ccAddresses,
+                                            List<String> bccAddresses, List<String> replyToAddresses,
+                                            String subject, String textPart, String htmlPart,
+                                            JsonNode templateData, String region) {
+        boolean hasSubject = subject != null && !subject.isBlank();
+        boolean hasText = textPart != null && !textPart.isBlank();
+        boolean hasHtml = htmlPart != null && !htmlPart.isBlank();
+        if (!hasSubject && !hasText && !hasHtml) {
+            throw new AwsException("InvalidTemplate",
+                    "Template must have at least a subject, text, or html part.", 400);
+        }
+        return sendEmail(source, toAddresses, ccAddresses, bccAddresses, replyToAddresses,
+                applyTemplateData(subject, templateData),
+                applyTemplateData(textPart, templateData),
+                applyTemplateData(htmlPart, templateData),
+                region);
+    }
+
+    static String applyTemplateData(String text, JsonNode data) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        Matcher matcher = TEMPLATE_VARIABLE.matcher(text);
+        StringBuilder out = new StringBuilder();
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String replacement = "";
+            if (data != null && data.hasNonNull(key)) {
+                JsonNode value = data.get(key);
+                replacement = value.isValueNode() ? value.asText() : value.toString();
+            }
+            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
+    private static void validateTemplate(EmailTemplate template) {
+        if (template == null) {
+            throw new AwsException("InvalidTemplate", "Template is required.", 400);
+        }
+        validateTemplateName(template.getTemplateName());
+        boolean hasSubject = template.getSubject() != null && !template.getSubject().isBlank();
+        boolean hasText = template.getTextPart() != null && !template.getTextPart().isBlank();
+        boolean hasHtml = template.getHtmlPart() != null && !template.getHtmlPart().isBlank();
+        if (!hasSubject && !hasText && !hasHtml) {
+            throw new AwsException("InvalidTemplate",
+                    "Template must have at least a subject, text, or html part.", 400);
+        }
+    }
+
+    private static void validateTemplateName(String templateName) {
+        if (templateName == null || templateName.isBlank()) {
+            throw new AwsException("InvalidTemplate", "TemplateName is required.", 400);
+        }
+        if (Character.isWhitespace(templateName.charAt(0))
+                || Character.isWhitespace(templateName.charAt(templateName.length() - 1))) {
+            throw new AwsException("InvalidTemplate",
+                    "TemplateName must not contain leading or trailing whitespace.", 400);
+        }
+    }
+
+    private static String templateKey(String region, String templateName) {
+        validateTemplateName(templateName);
+        return "template::" + region + "::" + templateName;
+    }
+
+    /**
+     * Extracts the template name from an SES template ARN of the form
+     * {@code arn:aws:ses:<region>:<account>:template/<name>}. Region and
+     * account segments are not validated; only the {@code template/<name>}
+     * suffix is required.
+     */
+    public static String templateNameFromArn(String arn) {
+        if (arn == null || arn.isBlank()) {
+            throw new AwsException("InvalidParameterValue", "TemplateArn is required.", 400);
+        }
+        int marker = arn.indexOf(":template/");
+        if (!arn.startsWith("arn:") || marker < 0) {
+            throw new AwsException("InvalidParameterValue",
+                    "TemplateArn is not a valid SES template ARN: " + arn, 400);
+        }
+        String name = arn.substring(marker + ":template/".length());
+        if (name.isEmpty()) {
+            throw new AwsException("InvalidParameterValue",
+                    "TemplateArn is missing a template name: " + arn, 400);
+        }
+        return name;
     }
 
     private static String identityKey(String region, String identity) {

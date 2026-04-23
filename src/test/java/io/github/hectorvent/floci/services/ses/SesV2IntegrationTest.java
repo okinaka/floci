@@ -260,7 +260,6 @@ class SesV2IntegrationTest {
     @Test
     @Order(13)
     void sendEmail_template() {
-        // Re-create an identity for template test
         given()
             .contentType("application/json")
             .header("Authorization", AUTH_HEADER)
@@ -269,6 +268,23 @@ class SesV2IntegrationTest {
                 """)
         .when()
             .post("/v2/email/identities")
+        .then()
+            .statusCode(200);
+
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                    "TemplateName": "MyTemplate",
+                    "TemplateContent": {
+                        "Subject": "Hello {{name}}",
+                        "Text": "Hi {{name}}!"
+                    }
+                }
+                """)
+        .when()
+            .post("/v2/email/templates")
         .then()
             .statusCode(200);
 

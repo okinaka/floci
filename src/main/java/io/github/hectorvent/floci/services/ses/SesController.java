@@ -2,6 +2,7 @@ package io.github.hectorvent.floci.services.ses;
 
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.common.RegionResolver;
+import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -226,10 +227,38 @@ public class SesController {
                 messageId = sesService.sendEmail(fromEmailAddress, toAddresses, ccAddresses,
                         bccAddresses, replyToAddresses, subject, bodyText, bodyHtml, region);
             } else if (content.has("Template")) {
-                String subject = content.path("Template").path("TemplateName").asText("(template)");
-                String templateData = content.path("Template").path("TemplateData").asText("");
-                messageId = sesService.sendEmail(fromEmailAddress, toAddresses, ccAddresses,
-                        bccAddresses, replyToAddresses, subject, templateData, null, region);
+                JsonNode template = content.path("Template");
+                String templateName = template.path("TemplateName").asText(null);
+                String templateArn = template.path("TemplateArn").asText(null);
+                boolean hasName = templateName != null && !templateName.isBlank();
+                boolean hasArn = templateArn != null && !templateArn.isBlank();
+                boolean hasInline = template.has("TemplateContent");
+                int selectorCount = (hasName ? 1 : 0) + (hasArn ? 1 : 0) + (hasInline ? 1 : 0);
+                if (selectorCount > 1) {
+                    throw new AwsException("BadRequestException",
+                            "Content.Template must specify exactly one of TemplateName, TemplateArn, or TemplateContent.",
+                            400);
+                }
+                if (selectorCount == 0) {
+                    throw new AwsException("BadRequestException",
+                            "Content.Template requires TemplateName, TemplateArn, or TemplateContent.", 400);
+                }
+                JsonNode templateData = parseTemplateData(template.path("TemplateData").asText(""));
+                if (hasName || hasArn) {
+                    String resolvedName = hasName
+                            ? templateName
+                            : SesService.templateNameFromArn(templateArn);
+                    messageId = sesService.sendTemplatedEmail(fromEmailAddress, toAddresses, ccAddresses,
+                            bccAddresses, replyToAddresses, resolvedName, templateData, region);
+                } else {
+                    JsonNode inline = template.path("TemplateContent");
+                    String subject = inline.path("Subject").asText(null);
+                    String text = inline.path("Text").asText(null);
+                    String html = inline.path("Html").asText(null);
+                    messageId = sesService.sendInlineTemplatedEmail(fromEmailAddress, toAddresses,
+                            ccAddresses, bccAddresses, replyToAddresses,
+                            subject, text, html, templateData, region);
+                }
             } else {
                 throw new AwsException("BadRequestException",
                         "Content must contain Raw, Simple, or Template.", 400);
@@ -245,6 +274,93 @@ public class SesController {
             throw remapV1Exception(e);
         } catch (Exception e) {
             throw new AwsException("BadRequestException", e.getMessage(), 400);
+        }
+    }
+
+    // ──────────────────────────── Templates ────────────────────────────
+
+    @POST
+    @Path("/templates")
+    public Response createEmailTemplate(@Context HttpHeaders headers, String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = objectMapper.readTree(body);
+            String templateName = request.path("TemplateName").asText(null);
+            if (templateName == null || templateName.isBlank()) {
+                throw new AwsException("BadRequestException", "TemplateName is required.", 400);
+            }
+            EmailTemplate template = parseTemplateContent(templateName, request.path("TemplateContent"));
+            sesService.createTemplate(template, region);
+            LOG.infov("SES V2 CreateEmailTemplate: {0}", templateName);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        } catch (Exception e) {
+            throw new AwsException("BadRequestException", e.getMessage(), 400);
+        }
+    }
+
+    @GET
+    @Path("/templates")
+    public Response listEmailTemplates(@Context HttpHeaders headers) {
+        String region = regionResolver.resolveRegion(headers);
+        List<EmailTemplate> templates = sesService.listTemplates(region);
+        ObjectNode result = objectMapper.createObjectNode();
+        ArrayNode items = result.putArray("TemplatesMetadata");
+        for (EmailTemplate t : templates) {
+            ObjectNode item = objectMapper.createObjectNode();
+            item.put("TemplateName", t.getTemplateName());
+            if (t.getCreatedTimestamp() != null) {
+                item.put("CreatedTimestamp", t.getCreatedTimestamp().getEpochSecond());
+            }
+            items.add(item);
+        }
+        return Response.ok(result).build();
+    }
+
+    @GET
+    @Path("/templates/{templateName}")
+    public Response getEmailTemplate(@Context HttpHeaders headers,
+                                      @PathParam("templateName") String templateName) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            EmailTemplate template = sesService.getTemplate(templateName, region);
+            return Response.ok(buildTemplateResponse(template)).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        }
+    }
+
+    @PUT
+    @Path("/templates/{templateName}")
+    public Response updateEmailTemplate(@Context HttpHeaders headers,
+                                         @PathParam("templateName") String templateName,
+                                         String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = objectMapper.readTree(body);
+            EmailTemplate template = parseTemplateContent(templateName, request.path("TemplateContent"));
+            sesService.updateTemplate(template, region);
+            LOG.infov("SES V2 UpdateEmailTemplate: {0}", templateName);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        } catch (Exception e) {
+            throw new AwsException("BadRequestException", e.getMessage(), 400);
+        }
+    }
+
+    @DELETE
+    @Path("/templates/{templateName}")
+    public Response deleteEmailTemplate(@Context HttpHeaders headers,
+                                         @PathParam("templateName") String templateName) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            sesService.deleteTemplate(templateName, region);
+            LOG.infov("SES V2 DeleteEmailTemplate: {0}", templateName);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
         }
     }
 
@@ -354,10 +470,50 @@ public class SesController {
         return all;
     }
 
-    private static AwsException remapV1Exception(AwsException e) {
-        if ("InvalidParameterValue".equals(e.getErrorCode())) {
-            return new AwsException("BadRequestException", e.getMessage(), 400);
+    private EmailTemplate parseTemplateContent(String templateName, JsonNode content) {
+        String subject = content.path("Subject").asText(null);
+        String text = content.path("Text").asText(null);
+        String html = content.path("Html").asText(null);
+        return new EmailTemplate(templateName, subject, text, html);
+    }
+
+    private ObjectNode buildTemplateResponse(EmailTemplate template) {
+        ObjectNode result = objectMapper.createObjectNode();
+        result.put("TemplateName", template.getTemplateName());
+        ObjectNode content = result.putObject("TemplateContent");
+        if (template.getSubject() != null) {
+            content.put("Subject", template.getSubject());
         }
-        return e;
+        if (template.getTextPart() != null) {
+            content.put("Text", template.getTextPart());
+        }
+        if (template.getHtmlPart() != null) {
+            content.put("Html", template.getHtmlPart());
+        }
+        return result;
+    }
+
+    private JsonNode parseTemplateData(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(raw);
+        } catch (Exception e) {
+            throw new AwsException("BadRequestException",
+                    "Invalid TemplateData JSON: " + e.getMessage(), 400);
+        }
+    }
+
+    private static AwsException remapV1Exception(AwsException e) {
+        return switch (e.getErrorCode()) {
+            case "InvalidParameterValue", "InvalidTemplate" ->
+                    new AwsException("BadRequestException", e.getMessage(), 400);
+            case "TemplateDoesNotExist" ->
+                    new AwsException("NotFoundException", e.getMessage(), 404);
+            case "AlreadyExists" ->
+                    new AwsException("AlreadyExistsException", e.getMessage(), 400);
+            default -> e;
+        };
     }
 }

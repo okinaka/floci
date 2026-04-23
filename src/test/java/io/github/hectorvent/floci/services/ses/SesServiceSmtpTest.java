@@ -1,6 +1,7 @@
 package io.github.hectorvent.floci.services.ses;
 
 import io.github.hectorvent.floci.core.storage.InMemoryStorage;
+import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ class SesServiceSmtpTest {
                 new InMemoryStorage<String, Identity>(),
                 emailStore,
                 new InMemoryStorage<String, Boolean>(),
+                new InMemoryStorage<String, EmailTemplate>(),
                 smtpRelay);
     }
 
