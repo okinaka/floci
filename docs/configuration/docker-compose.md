@@ -7,7 +7,7 @@ For most services (SSM, SQS, SNS, S3, DynamoDB, Lambda, API Gateway, Cognito, KM
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     volumes:
@@ -23,7 +23,7 @@ ElastiCache and RDS work by proxying TCP connections to real Docker containers (
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"         # All AWS API calls
       - "6379-6399:6379-6399"  # ElastiCache / Redis proxy ports
@@ -56,7 +56,7 @@ in every URL it generates:
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     environment:
@@ -94,7 +94,7 @@ Hook scripts can be mounted into the container to run custom setup and teardown 
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     volumes:
@@ -111,7 +111,7 @@ By default Floci stores all data in memory — data is lost on restart. To persi
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     volumes:
@@ -128,7 +128,7 @@ Instead of bind-mounting a local directory, you can use Docker named volumes to 
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     volumes:
@@ -183,7 +183,7 @@ All `application.yml` options can be overridden via environment variables using 
 ```yaml title=".github/workflows/test.yml"
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
 

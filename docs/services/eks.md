@@ -33,7 +33,7 @@ Floci starts a **k3s** (`rancher/k3s`) container for each cluster. The k3s API s
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -83,7 +83,7 @@ Use `FLOCI_SERVICES_EKS_MOCK=true` when you only need the API shape:
 # docker-compose.yml — CI / test environment
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     environment:
       FLOCI_SERVICES_EKS_MOCK: "true"
 ```

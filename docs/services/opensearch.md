@@ -22,7 +22,7 @@ Floci starts an **OpenSearch** (`opensearchproject/opensearch:2`) Docker contain
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -119,7 +119,7 @@ Use `FLOCI_SERVICES_OPENSEARCH_MOCK=true` when you only need the API shape:
 # docker-compose.yml — CI / test environment
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     environment:
       FLOCI_SERVICES_OPENSEARCH_MOCK: "true"
 ```

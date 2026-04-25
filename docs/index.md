@@ -59,7 +59,7 @@ Floci emulates 31 AWS services. See the [Services Overview](services/index.md) f
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
     volumes:

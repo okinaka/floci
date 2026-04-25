@@ -150,7 +150,7 @@ Only the proxy-based services (ElastiCache and RDS) need port mappings in `docke
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"           # All AWS API calls
       - "6379-6399:6379-6399" # ElastiCache / Redis proxy (proxy in Floci)

@@ -75,7 +75,7 @@ The ECR registry sidecar container binds its host port directly — do **not** a
 # Correct — no ECR port range on the floci service
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
       - "6379-6399:6379-6399"   # ElastiCache

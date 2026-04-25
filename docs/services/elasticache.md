@@ -38,7 +38,7 @@ ElastiCache requires the Docker socket and port range exposure. For private regi
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
       - "6379-6399:6379-6399"   # ElastiCache proxy ports

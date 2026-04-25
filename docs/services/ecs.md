@@ -151,7 +151,7 @@ Set `FLOCI_SERVICES_ECS_MOCK=true` to run without Docker. In this mode tasks ski
 # docker-compose.yml — CI / test environment
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     environment:
       FLOCI_SERVICES_ECS_MOCK: "true"
 ```
@@ -160,7 +160,7 @@ services:
 # docker-compose.yml — local development (real containers)
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -175,7 +175,7 @@ When `mock: false` (the default), ECS launches real Docker containers and requir
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:

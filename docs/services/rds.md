@@ -46,7 +46,7 @@ RDS requires the Docker socket and port range exposure. For private registry aut
 ```yaml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports:
       - "4566:4566"
       - "7001-7099:7001-7099"   # RDS proxy ports

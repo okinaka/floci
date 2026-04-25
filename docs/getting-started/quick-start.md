@@ -11,7 +11,7 @@ This guide gets Floci running and verifies that AWS CLI commands work against it
     ```yaml
     services:
       floci:
-        image: hectorvent/floci:latest
+        image: floci/floci:latest
         ports:
           - "4566:4566"
         volumes:
@@ -36,7 +36,7 @@ This guide gets Floci running and verifies that AWS CLI commands work against it
     ```yaml
     services:
       floci:
-        image: hectorvent/floci:latest-jvm
+        image: floci/floci:latest-jvm
         ports:
           - "4566:4566"
         volumes:

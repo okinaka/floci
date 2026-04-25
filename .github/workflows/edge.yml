@@ -4,7 +4,7 @@ name: Edge
 # Runs on a weekly schedule (every Monday 00:00 UTC) and can be triggered manually.
 # Uses JVM-only build to keep runtime cost low (~2-3 min vs ~15 min for native).
 #
-# Published tag: hectorvent/floci:edge
+# Published tag: floci/floci:edge
 #
 # Required secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
 

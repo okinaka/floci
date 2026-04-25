@@ -147,7 +147,7 @@ git push origin release/1.1.x
 
 ### Edge builds
 
-The `edge.yml` workflow publishes a JVM-only `hectorvent/floci:edge` image from `main` every Monday at 00:00 UTC. It can also be triggered manually from the Actions tab.
+The `edge.yml` workflow publishes a JVM-only `floci/floci:edge` image from `main` every Monday at 00:00 UTC. It can also be triggered manually from the Actions tab.
 
 ## Testing Policy for Pull Requests
 

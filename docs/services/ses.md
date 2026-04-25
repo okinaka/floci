@@ -68,7 +68,7 @@ like [Mailpit](https://mailpit.axllent.org/) or any standard SMTP server.
 # docker-compose.yml
 services:
   floci:
-    image: hectorvent/floci:latest
+    image: floci/floci:latest
     ports: ["4566:4566"]
     environment:
       FLOCI_SERVICES_SES_SMTP_HOST: mailpit

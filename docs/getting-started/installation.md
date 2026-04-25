@@ -7,7 +7,7 @@ Floci can be run three ways: as a Docker image, as a pre-built native binary, or
 No installation required beyond Docker itself.
 
 ```bash
-docker pull hectorvent/floci:latest
+docker pull floci/floci:latest
 ```
 
 | Tag | Description |
@@ -29,7 +29,7 @@ The `latest` tag is the native image — a self-contained executable with no JVM
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest   # native — recommended
+    image: floci/floci:latest   # native — recommended
     ports:
       - "4566:4566"
 ```
@@ -39,7 +39,7 @@ Use the JVM image if you need broader platform compatibility or encounter native
 ```yaml title="docker-compose.yml"
 services:
   floci:
-    image: hectorvent/floci:latest-jvm
+    image: floci/floci:latest-jvm
     ports:
       - "4566:4566"
 ```
