@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -135,20 +136,20 @@ class SesServiceTemplateTest {
     void buildTestRenderMime_asciiBody_uses7bit() {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("Hello", "Hi there", "<p>Hi</p>", date, "BOUND");
-        assertEquals(true, mime.contains("Subject: Hello\r\n"));
-        assertEquals(true, mime.contains("Content-Type: multipart/alternative; boundary=\"BOUND\""));
-        assertEquals(true, mime.contains("Content-Transfer-Encoding: 7bit"));
-        assertEquals(false, mime.contains("Content-Transfer-Encoding: 8bit"));
-        assertEquals(true, mime.endsWith("--BOUND--\r\n"));
+        assertTrue(mime.contains("Subject: Hello\r\n"));
+        assertTrue(mime.contains("Content-Type: multipart/alternative; boundary=\"BOUND\""));
+        assertTrue(mime.contains("Content-Transfer-Encoding: 7bit"));
+        assertFalse(mime.contains("Content-Transfer-Encoding: 8bit"));
+        assertTrue(mime.endsWith("--BOUND--\r\n"));
     }
 
     @Test
     void buildTestRenderMime_utf8Body_uses8bit() {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("件名", "こんにちは", "<p>こんにちは</p>", date, "BOUND");
-        assertEquals(true, mime.contains("Subject: 件名\r\n"));
-        assertEquals(true, mime.contains("Content-Transfer-Encoding: 8bit"));
-        assertEquals(true, mime.contains("こんにちは"));
+        assertTrue(mime.contains("Subject: 件名\r\n"));
+        assertTrue(mime.contains("Content-Transfer-Encoding: 8bit"));
+        assertTrue(mime.contains("こんにちは"));
     }
 
     @Test
@@ -156,7 +157,7 @@ class SesServiceTemplateTest {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("Multi\r\nLine", "x", "x", date, "BOUND");
         // CR and LF are both C0 controls and are replaced with spaces.
-        assertEquals(true, mime.contains("Subject: Multi  Line\r\n"));
+        assertTrue(mime.contains("Subject: Multi  Line\r\n"));
     }
 
     @ParameterizedTest(name = "{0} -> {1}")
@@ -194,7 +195,7 @@ class SesServiceTemplateTest {
 
     @Test
     void parseRenderingData_emptyObject_accepted() {
-        assertEquals(true, SesService.parseRenderingData(MAPPER, "{}").isObject());
+        assertTrue(SesService.parseRenderingData(MAPPER, "{}").isObject());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -216,27 +217,27 @@ class SesServiceTemplateTest {
     void buildTestRenderMime_bodyWithBareLf_normalizedToCrlf() {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("S", "line1\nline2", "<p>x\ny</p>", date, "BOUND");
-        assertEquals(true, mime.contains("line1\r\nline2"));
-        assertEquals(true, mime.contains("x\r\ny"));
-        assertEquals(false, mime.contains("line1\nline2"));
+        assertTrue(mime.contains("line1\r\nline2"));
+        assertTrue(mime.contains("x\r\ny"));
+        assertFalse(mime.contains("line1\nline2"));
     }
 
     @Test
     void buildTestRenderMime_bodyEndingWithNewline_noExtraBlankLine() {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("S", "hello\n", "<p>hi</p>\n", date, "BOUND");
-        assertEquals(false, mime.contains("hello\r\n\r\n--BOUND"));
-        assertEquals(true, mime.contains("hello\r\n--BOUND"));
-        assertEquals(false, mime.contains("</p>\r\n\r\n--BOUND"));
-        assertEquals(true, mime.contains("</p>\r\n--BOUND"));
+        assertFalse(mime.contains("hello\r\n\r\n--BOUND"));
+        assertTrue(mime.contains("hello\r\n--BOUND"));
+        assertFalse(mime.contains("</p>\r\n\r\n--BOUND"));
+        assertTrue(mime.contains("</p>\r\n--BOUND"));
     }
 
     @Test
     void buildTestRenderMime_bodyWithoutTrailingNewline_addsCrlfBeforeBoundary() {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime("S", "hello", "<p>hi</p>", date, "BOUND");
-        assertEquals(true, mime.contains("hello\r\n--BOUND"));
-        assertEquals(true, mime.contains("</p>\r\n--BOUND"));
+        assertTrue(mime.contains("hello\r\n--BOUND"));
+        assertTrue(mime.contains("</p>\r\n--BOUND"));
     }
 
     @ParameterizedTest(name = "{0} -> {1}")
@@ -305,7 +306,7 @@ class SesServiceTemplateTest {
         java.time.ZonedDateTime date = java.time.ZonedDateTime.parse("2026-05-02T12:00:00Z");
         String mime = SesService.buildTestRenderMime(
                 "Hello\u0001World", "x", "x", date, "BOUND");
-        assertEquals(true, mime.contains("Subject: Hello World\r\n"));
-        assertEquals(false, mime.contains("\u0001"));
+        assertTrue(mime.contains("Subject: Hello World\r\n"));
+        assertFalse(mime.contains("\u0001"));
     }
 }
