@@ -4,11 +4,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.hectorvent.floci.core.common.AwsException;
+import io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link SesService#applyTemplateData} covering
@@ -152,41 +159,37 @@ class SesServiceTemplateTest {
         assertEquals(true, mime.contains("Subject: Multi  Line\r\n"));
     }
 
-    @Test
-    void pickTransferEncoding_asciiOnly() {
-        assertEquals("7bit", SesService.pickTransferEncoding("Hello world"));
-        assertEquals("7bit", SesService.pickTransferEncoding(""));
+    @ParameterizedTest(name = "{0} -> {1}")
+    @MethodSource("pickTransferEncodingCases")
+    void pickTransferEncoding_returnsExpected(String body, String expected) {
+        assertEquals(expected, SesService.pickTransferEncoding(body));
     }
 
-    @Test
-    void pickTransferEncoding_nonAscii() {
-        assertEquals("8bit", SesService.pickTransferEncoding("こんにちは"));
-        assertEquals("8bit", SesService.pickTransferEncoding("café"));
+    static Stream<Arguments> pickTransferEncodingCases() {
+        return Stream.of(
+                Arguments.of("ASCII text", "7bit"),
+                Arguments.of("", "7bit"),
+                Arguments.of("こんにちは", "8bit"),
+                Arguments.of("café", "8bit")
+        );
     }
 
-    @Test
-    void parseRenderingData_invalidJson_throwsInvalidRenderingParameter() {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parseRenderingDataInvalidCases")
+    void parseRenderingData_invalid_throwsInvalidRenderingParameter(String label, String raw) {
         AwsException ex = assertThrows(AwsException.class,
-                () -> SesService.parseRenderingData(MAPPER, "{not json"));
+                () -> SesService.parseRenderingData(MAPPER, raw));
         assertEquals("InvalidRenderingParameter", ex.getErrorCode());
     }
 
-    @Test
-    void parseRenderingData_nonObject_throwsInvalidRenderingParameter() {
-        AwsException ex = assertThrows(AwsException.class,
-                () -> SesService.parseRenderingData(MAPPER, "[1,2,3]"));
-        assertEquals("InvalidRenderingParameter", ex.getErrorCode());
-    }
-
-    @Test
-    void parseRenderingData_blank_throwsInvalidRenderingParameter() {
-        // Matches moto's TestRenderTemplate behavior: blank input is not valid JSON.
-        assertEquals("InvalidRenderingParameter",
-                assertThrows(AwsException.class, () -> SesService.parseRenderingData(MAPPER, null)).getErrorCode());
-        assertEquals("InvalidRenderingParameter",
-                assertThrows(AwsException.class, () -> SesService.parseRenderingData(MAPPER, "")).getErrorCode());
-        assertEquals("InvalidRenderingParameter",
-                assertThrows(AwsException.class, () -> SesService.parseRenderingData(MAPPER, "   ")).getErrorCode());
+    static Stream<Arguments> parseRenderingDataInvalidCases() {
+        return Stream.of(
+                Arguments.of("invalid JSON", "{not json"),
+                Arguments.of("non-object JSON (array)", "[1,2,3]"),
+                Arguments.of("null input", null),
+                Arguments.of("empty string", ""),
+                Arguments.of("whitespace-only", "   ")
+        );
     }
 
     @Test
@@ -194,24 +197,19 @@ class SesServiceTemplateTest {
         assertEquals(true, SesService.parseRenderingData(MAPPER, "{}").isObject());
     }
 
-    @Test
-    void normalizeToCrlf_lfOnly_convertedToCrlf() {
-        assertEquals("a\r\nb\r\nc", SesService.normalizeToCrlf("a\nb\nc"));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("normalizeToCrlfCases")
+    void normalizeToCrlf_normalizesAllVariants(String label, String input, String expected) {
+        assertEquals(expected, SesService.normalizeToCrlf(input));
     }
 
-    @Test
-    void normalizeToCrlf_crOnly_convertedToCrlf() {
-        assertEquals("a\r\nb\r\nc", SesService.normalizeToCrlf("a\rb\rc"));
-    }
-
-    @Test
-    void normalizeToCrlf_alreadyCrlf_unchanged() {
-        assertEquals("a\r\nb\r\nc", SesService.normalizeToCrlf("a\r\nb\r\nc"));
-    }
-
-    @Test
-    void normalizeToCrlf_mixed_normalizesAll() {
-        assertEquals("a\r\nb\r\nc\r\nd", SesService.normalizeToCrlf("a\nb\rc\r\nd"));
+    static Stream<Arguments> normalizeToCrlfCases() {
+        return Stream.of(
+                Arguments.of("LF only",       "a\nb\nc",       "a\r\nb\r\nc"),
+                Arguments.of("CR only",       "a\rb\rc",       "a\r\nb\r\nc"),
+                Arguments.of("already CRLF",  "a\r\nb\r\nc",   "a\r\nb\r\nc"),
+                Arguments.of("mixed",         "a\nb\rc\r\nd",  "a\r\nb\r\nc\r\nd")
+        );
     }
 
     @Test
@@ -241,40 +239,19 @@ class SesServiceTemplateTest {
         assertEquals(true, mime.contains("</p>\r\n--BOUND"));
     }
 
-    @Test
-    void mapErrorCodeToBulkStatus_invalidParameterValue() {
-        assertEquals(io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult.Status.INVALID_PARAMETER,
-                SesService.mapErrorCodeToBulkStatus("InvalidParameterValue"));
+    @ParameterizedTest(name = "{0} -> {1}")
+    @MethodSource("mapErrorCodeToBulkStatusCases")
+    void mapErrorCodeToBulkStatus_returnsExpected(String errorCode, BulkEmailEntryResult.Status expected) {
+        assertEquals(expected, SesService.mapErrorCodeToBulkStatus(errorCode));
     }
 
-    @Test
-    void mapErrorCodeToBulkStatus_missingRenderingAttribute() {
-        assertEquals(io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult.Status.INVALID_PARAMETER,
-                SesService.mapErrorCodeToBulkStatus("MissingRenderingAttribute"));
-    }
-
-    @Test
-    void mapErrorCodeToBulkStatus_invalidRenderingParameter() {
-        assertEquals(io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult.Status.INVALID_PARAMETER,
-                SesService.mapErrorCodeToBulkStatus("InvalidRenderingParameter"));
-    }
-
-    @Test
-    void mapErrorCodeToBulkStatus_unknownCode_failed() {
-        assertEquals(io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult.Status.FAILED,
-                SesService.mapErrorCodeToBulkStatus("SomethingElse"));
-    }
-
-    @Test
-    void sanitizeSubject_replacesC0ControlCharsWithSpace() {
-        assertEquals("a b c", SesService.sanitizeSubject("a\u0001b\u001fc"));
-        assertEquals("x y z", SesService.sanitizeSubject("x\ry\nz"));
-        assertEquals("a b", SesService.sanitizeSubject("a\u0007b"));
-    }
-
-    @Test
-    void sanitizeSubject_replacesDelWithSpace() {
-        assertEquals("a b", SesService.sanitizeSubject("a\u007fb"));
+    static Stream<Arguments> mapErrorCodeToBulkStatusCases() {
+        return Stream.of(
+                Arguments.of("InvalidParameterValue",     BulkEmailEntryResult.Status.INVALID_PARAMETER),
+                Arguments.of("MissingRenderingAttribute", BulkEmailEntryResult.Status.INVALID_PARAMETER),
+                Arguments.of("InvalidRenderingParameter", BulkEmailEntryResult.Status.INVALID_PARAMETER),
+                Arguments.of("SomethingElse",             BulkEmailEntryResult.Status.FAILED)
+        );
     }
 
     @Test
@@ -282,47 +259,45 @@ class SesServiceTemplateTest {
         assertEquals("", SesService.sanitizeSubject(null));
     }
 
-    @Test
-    void sanitizeSubject_preservesPrintableAndUnicode() {
-        assertEquals("Hello 太郎", SesService.sanitizeSubject("Hello 太郎"));
-        assertEquals("Hello!", SesService.sanitizeSubject("Hello!"));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("sanitizeSubjectCases")
+    void sanitizeSubject_returnsExpected(String label, String input, String expected) {
+        assertEquals(expected, SesService.sanitizeSubject(input));
     }
 
-    @Test
-    void stripXml10InvalidChars_keepsTabNewlineCarriageReturn() {
-        assertEquals("a\tb\nc\rd", SesService.stripXml10InvalidChars("a\tb\nc\rd"));
+    static Stream<Arguments> sanitizeSubjectCases() {
+        return Stream.of(
+                Arguments.of("C0 controls SOH/US",  "a\u0001b\u001fc", "a b c"),
+                Arguments.of("CR and LF",           "x\ry\nz",          "x y z"),
+                Arguments.of("BEL",                 "a\u0007b",          "a b"),
+                Arguments.of("DEL",                 "a\u007fb",          "a b"),
+                Arguments.of("Unicode preserved",   "Hello 太郎",          "Hello 太郎"),
+                Arguments.of("printable preserved", "Hello!",             "Hello!")
+        );
     }
 
-    @Test
-    void stripXml10InvalidChars_removesC0ControlsExceptWhitespace() {
-        assertEquals("abc", SesService.stripXml10InvalidChars("a\u0001b\u001fc"));
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\u0008b"));
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\u000bb"));
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\u000cb"));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("stripXml10InvalidCharsCases")
+    void stripXml10InvalidChars_returnsExpected(String label, String input, String expected) {
+        assertEquals(expected, SesService.stripXml10InvalidChars(input));
     }
 
-    @Test
-    void stripXml10InvalidChars_preservesUnicode() {
-        assertEquals("件名 太郎", SesService.stripXml10InvalidChars("件名 太郎"));
-    }
-
-    @Test
-    void stripXml10InvalidChars_removesNoncharacters() {
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\ufffeb"));
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\uffffb"));
-    }
-
-    @Test
-    void stripXml10InvalidChars_removesLoneSurrogates() {
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\ud800b")); // lone high
-        assertEquals("ab", SesService.stripXml10InvalidChars("a\udc00b")); // lone low
-    }
-
-    @Test
-    void stripXml10InvalidChars_preservesPairedSupplementary() {
+    static Stream<Arguments> stripXml10InvalidCharsCases() {
         // U+1F600 GRINNING FACE encoded as surrogate pair D83D DE00
-        String emoji = "😀";
-        assertEquals("a" + emoji + "b", SesService.stripXml10InvalidChars("a" + emoji + "b"));
+        String emoji = "\uD83D\uDE00";
+        return Stream.of(
+                Arguments.of("keeps tab/LF/CR",          "a\tb\nc\rd",        "a\tb\nc\rd"),
+                Arguments.of("removes C0 SOH/US",        "a\u0001b\u001fc",   "abc"),
+                Arguments.of("removes BS",               "a\u0008b",            "ab"),
+                Arguments.of("removes VT",               "a\u000bb",            "ab"),
+                Arguments.of("removes FF",               "a\u000cb",            "ab"),
+                Arguments.of("preserves Unicode",        "件名 太郎",            "件名 太郎"),
+                Arguments.of("removes noncharacter FFFE","a\ufffeb",            "ab"),
+                Arguments.of("removes noncharacter FFFF","a\uffffb",            "ab"),
+                Arguments.of("removes lone high surrogate", "a\ud800b",         "ab"),
+                Arguments.of("removes lone low surrogate",  "a\udc00b",         "ab"),
+                Arguments.of("preserves paired surrogate (emoji)", "a" + emoji + "b", "a" + emoji + "b")
+        );
     }
 
     @Test
