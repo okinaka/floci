@@ -285,6 +285,33 @@ class SchedulerIntegrationTest {
     }
 
     @Test
+    @Order(16)
+    void tagResourceWithEmptyBodyReturns400() {
+        // Null/blank request body must surface as the structured AWS validation error
+        // ("Value null at 'Tags' ...") rather than leaking a Jackson parser message.
+        given()
+            .contentType("application/json")
+        .when()
+            .post("/tags/" + TAGGED_GROUP_ARN)
+        .then()
+            .statusCode(400);
+    }
+
+    @Test
+    @Order(16)
+    void tagResourceWithNonObjectBodyReturns400() {
+        // A syntactically valid JSON array at the root must be rejected as a wire-shape
+        // error, not silently treated as "missing 'Tags'".
+        given()
+            .contentType("application/json")
+            .body("[1,2,3]")
+        .when()
+            .post("/tags/" + TAGGED_GROUP_ARN)
+        .then()
+            .statusCode(400);
+    }
+
+    @Test
     @Order(17)
     void tagResourceOnScheduleArnReturns400() {
         // AWS only allows tagging schedule groups, not individual schedules.

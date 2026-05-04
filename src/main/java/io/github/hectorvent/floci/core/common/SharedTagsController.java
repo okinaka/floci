@@ -101,8 +101,9 @@ public class SharedTagsController {
 
     private Response doTagResource(HttpHeaders headers, TagHandler handler, String arn, String body) {
         String region = regionResolver.resolveRegion(headers);
+        String effectiveBody = (body == null || body.isBlank()) ? "{}" : body;
         try {
-            JsonNode node = objectMapper.readTree(body);
+            JsonNode node = objectMapper.readTree(effectiveBody);
             Map<String, String> tags = parseTags(handler, node);
             handler.tagResource(region, arn, tags);
             return Response.noContent().build();
@@ -146,6 +147,10 @@ public class SharedTagsController {
     private Map<String, String> parseTags(TagHandler handler, JsonNode node) {
         Map<String, String> tags = new HashMap<>();
         String key = handler.tagsBodyKey();
+        if (handler.strictTagValidation() && !node.isObject()) {
+            throw new AwsException("ValidationException",
+                    "1 validation error detected: Request payload must be a JSON object", 400);
+        }
         JsonNode tagNode = node.get(key);
         if (tagNode == null || tagNode.isNull()) {
             if (handler.strictTagValidation()) {
