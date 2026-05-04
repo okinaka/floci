@@ -37,6 +37,11 @@ public class AppConfigTagHandler implements TagHandler {
     }
 
     @Override
+    public String tagsBodyKey() {
+        return "Tags";
+    }
+
+    @Override
     public Map<String, String> listTags(String region, String arn) {
         ResourceRef ref = parseArn(arn);
         return switch (ref.type()) {

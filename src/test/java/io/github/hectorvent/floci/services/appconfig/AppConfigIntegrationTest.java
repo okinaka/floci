@@ -233,7 +233,7 @@ class AppConfigIntegrationTest {
                 .when().get("/tags/" + arn)
                 .then()
                 .statusCode(200)
-                .body("tags", anEmptyMap());
+                .body("Tags", anEmptyMap());
     }
 
     @Test @Order(15)
@@ -241,7 +241,7 @@ class AppConfigIntegrationTest {
         String arn = "arn:aws:appconfig:us-east-1:000000000000:application/" + appId;
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"tags\": {\"env\": \"local\", \"team\": \"platform\"}}")
+                .body("{\"Tags\": {\"env\": \"local\", \"team\": \"platform\"}}")
                 .when().post("/tags/" + arn)
                 .then()
                 .statusCode(204);
@@ -254,8 +254,8 @@ class AppConfigIntegrationTest {
                 .when().get("/tags/" + arn)
                 .then()
                 .statusCode(200)
-                .body("tags.env", equalTo("local"))
-                .body("tags.team", equalTo("platform"));
+                .body("Tags.env", equalTo("local"))
+                .body("Tags.team", equalTo("platform"));
     }
 
     @Test @Order(17)
@@ -274,8 +274,8 @@ class AppConfigIntegrationTest {
                 .when().get("/tags/" + arn)
                 .then()
                 .statusCode(200)
-                .body("tags", not(hasKey("env")))
-                .body("tags.team", equalTo("platform"));
+                .body("Tags", not(hasKey("env")))
+                .body("Tags.team", equalTo("platform"));
     }
 
     // ──────────────────────────── Tags on non-application resources (no-op) ────────────────────────────
@@ -287,7 +287,7 @@ class AppConfigIntegrationTest {
                 .when().get("/tags/" + arn)
                 .then()
                 .statusCode(200)
-                .body("tags", anEmptyMap());
+                .body("Tags", anEmptyMap());
     }
 
     @Test @Order(20)
@@ -297,7 +297,7 @@ class AppConfigIntegrationTest {
                 .when().get("/tags/" + arn)
                 .then()
                 .statusCode(200)
-                .body("tags", anEmptyMap());
+                .body("Tags", anEmptyMap());
     }
 
     @Test @Order(21)
