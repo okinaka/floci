@@ -266,4 +266,44 @@ class AppConfigTest {
         // The RestAssured internal test sees "" (raw HTTP header value).
         assertThat(response.versionLabel()).isNull();
     }
+
+    @Test
+    @Order(50)
+    @DisplayName("TagResource / ListTagsForResource - SDK round-trip")
+    void tagAndListViaSdk() {
+        // Reproducer for the wire-format mismatch that previously made AWS SDK callers
+        // silently get an empty tag set: SDK serializes as {"Tags": {...}} (capital),
+        // floci must accept and echo back that exact shape.
+        String tagAppId = appConfig.createApplication(CreateApplicationRequest.builder()
+                .name("tag-roundtrip-app")
+                .build()).id();
+        String arn = "arn:aws:appconfig:us-east-1:000000000000:application/" + tagAppId;
+        try {
+            appConfig.tagResource(TagResourceRequest.builder()
+                    .resourceArn(arn)
+                    .tags(java.util.Map.of("env", "prod", "owner", "Alice"))
+                    .build());
+
+            ListTagsForResourceResponse listed = appConfig.listTagsForResource(
+                    ListTagsForResourceRequest.builder().resourceArn(arn).build());
+            assertThat(listed.tags())
+                    .containsEntry("env", "prod")
+                    .containsEntry("owner", "Alice");
+
+            appConfig.untagResource(UntagResourceRequest.builder()
+                    .resourceArn(arn)
+                    .tagKeys("env")
+                    .build());
+
+            assertThat(appConfig.listTagsForResource(
+                    ListTagsForResourceRequest.builder().resourceArn(arn).build()).tags())
+                    .doesNotContainKey("env")
+                    .containsEntry("owner", "Alice");
+        } finally {
+            try {
+                appConfig.deleteApplication(DeleteApplicationRequest.builder()
+                        .applicationId(tagAppId).build());
+            } catch (Exception ignored) {}
+        }
+    }
 }
