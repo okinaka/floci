@@ -84,12 +84,6 @@ public class PipesTargetInvoker {
         LOG.debugv("Pipe delivered to Lambda: {0}", arn);
     }
 
-    private void invokeSqs(String arn, String payload) {
-        String queueUrl = AwsArnUtils.arnToQueueUrl(arn, baseUrl);
-        sqsService.sendMessage(queueUrl, payload, 0);
-        LOG.debugv("Pipe delivered to SQS: {0}", arn);
-    }
-
     private void invokeSqs(String arn, String payload, String region) {
         String queueUrl = AwsArnUtils.arnToQueueUrl(arn, baseUrl);
         sqsService.sendMessage(queueUrl, payload, 0, region);
