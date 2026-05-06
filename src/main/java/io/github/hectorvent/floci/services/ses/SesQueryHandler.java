@@ -54,6 +54,7 @@ public class SesQueryHandler {
                 case "GetSendQuota" -> handleGetSendQuota(region);
                 case "GetSendStatistics" -> handleGetSendStatistics(region);
                 case "GetAccountSendingEnabled" -> handleGetAccountSendingEnabled(region);
+                case "UpdateAccountSendingEnabled" -> handleUpdateAccountSendingEnabled(params, region);
                 case "ListVerifiedEmailAddresses" -> handleListVerifiedEmailAddresses(region);
                 case "DeleteVerifiedEmailAddress" -> handleDeleteVerifiedEmailAddress(params, region);
                 case "SetIdentityNotificationTopic" -> handleSetIdentityNotificationTopic(params, region);
@@ -210,6 +211,12 @@ public class SesQueryHandler {
         return Response.ok(AwsQueryResponse.envelope("GetAccountSendingEnabled", AwsNamespaces.SES, result)).build();
     }
 
+    private Response handleUpdateAccountSendingEnabled(MultivaluedMap<String, String> params, String region) {
+        boolean enabled = parseOptionalBoolean(params, "Enabled", false);
+        sesService.setAccountSendingEnabled(region, enabled);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("UpdateAccountSendingEnabled", AwsNamespaces.SES)).build();
+    }
+
     private Response handleListVerifiedEmailAddresses(String region) {
         List<String> emails = sesService.getVerifiedEmailAddresses(region);
         var xml = new XmlBuilder().start("VerifiedEmailAddresses");
@@ -312,6 +319,18 @@ public class SesQueryHandler {
         String raw = params.getFirst(name);
         if (raw == null) {
             throw new AwsException("InvalidParameterValue", name + " is required.", 400);
+        }
+        if (!"true".equalsIgnoreCase(raw) && !"false".equalsIgnoreCase(raw)) {
+            throw new AwsException("InvalidParameterValue",
+                    name + " must be \"true\" or \"false\".", 400);
+        }
+        return Boolean.parseBoolean(raw);
+    }
+
+    private static boolean parseOptionalBoolean(MultivaluedMap<String, String> params, String name, boolean defaultValue) {
+        String raw = params.getFirst(name);
+        if (raw == null || raw.isEmpty()) {
+            return defaultValue;
         }
         if (!"true".equalsIgnoreCase(raw) && !"false".equalsIgnoreCase(raw)) {
             throw new AwsException("InvalidParameterValue",
