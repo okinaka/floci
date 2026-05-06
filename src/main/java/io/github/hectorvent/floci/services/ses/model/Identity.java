@@ -36,6 +36,18 @@ public class Identity {
     @JsonProperty("FeedbackForwardingEnabled")
     private boolean feedbackForwardingEnabled = true;
 
+    @JsonProperty("MailFromDomain")
+    private String mailFromDomain;
+
+    @JsonProperty("BehaviorOnMxFailure")
+    private String behaviorOnMxFailure = "UseDefaultValue";
+
+    @JsonProperty("MailFromDomainStatus")
+    private String mailFromDomainStatus = "Pending";
+
+    @JsonProperty("HeadersInNotificationsEnabled")
+    private Map<String, Boolean> headersInNotificationsEnabled = new HashMap<>();
+
     @JsonProperty("CreatedAt")
     private Instant createdAt;
 
@@ -74,6 +86,18 @@ public class Identity {
 
     public boolean isFeedbackForwardingEnabled() { return feedbackForwardingEnabled; }
     public void setFeedbackForwardingEnabled(boolean feedbackForwardingEnabled) { this.feedbackForwardingEnabled = feedbackForwardingEnabled; }
+
+    public String getMailFromDomain() { return mailFromDomain; }
+    public void setMailFromDomain(String mailFromDomain) { this.mailFromDomain = mailFromDomain; }
+
+    public String getBehaviorOnMxFailure() { return behaviorOnMxFailure; }
+    public void setBehaviorOnMxFailure(String behaviorOnMxFailure) { this.behaviorOnMxFailure = behaviorOnMxFailure; }
+
+    public String getMailFromDomainStatus() { return mailFromDomainStatus; }
+    public void setMailFromDomainStatus(String mailFromDomainStatus) { this.mailFromDomainStatus = mailFromDomainStatus; }
+
+    public Map<String, Boolean> getHeadersInNotificationsEnabled() { return headersInNotificationsEnabled; }
+    public void setHeadersInNotificationsEnabled(Map<String, Boolean> headersInNotificationsEnabled) { this.headersInNotificationsEnabled = headersInNotificationsEnabled; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

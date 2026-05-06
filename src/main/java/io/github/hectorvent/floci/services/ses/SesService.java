@@ -245,6 +245,67 @@ public class SesService {
         LOG.infov("Updated feedback forwarding for {0}: enabled={1}", identityValue, enabled);
     }
 
+    public void setMailFromDomain(String identityValue, String mailFromDomain,
+                                   String behaviorOnMxFailure, String region) {
+        String normalizedBehavior = null;
+        if (behaviorOnMxFailure != null) {
+            if (!"UseDefaultValue".equals(behaviorOnMxFailure)
+                    && !"RejectMessage".equals(behaviorOnMxFailure)) {
+                throw new AwsException("ValidationError",
+                        "1 validation error detected: Value at 'behaviorOnMXFailure' failed to satisfy "
+                                + "constraint: Member must satisfy enum value set: [RejectMessage, UseDefaultValue]", 400);
+            }
+            normalizedBehavior = behaviorOnMxFailure;
+        }
+        boolean clearing = mailFromDomain == null || mailFromDomain.isEmpty();
+        if (!clearing && mailFromDomain.isBlank()) {
+            throw new AwsException("InvalidParameterValue",
+                    "MailFromDomain must be a domain or an empty string to clear; whitespace is not accepted.", 400);
+        }
+        String key = identityKey(region, identityValue);
+        Identity identity = identityStore.get(key)
+                .orElseThrow(() -> new AwsException("InvalidParameterValue",
+                        "Identity <" + identityValue + "> does not exist.", 400));
+        identity.setMailFromDomain(clearing ? null : mailFromDomain);
+        identity.setMailFromDomainStatus(clearing ? "Pending" : "Success");
+        if (normalizedBehavior != null) {
+            identity.setBehaviorOnMxFailure(normalizedBehavior);
+        }
+        identityStore.put(key, identity);
+        LOG.infov("Updated MAIL FROM domain for {0}: domain={1}, behavior={2}",
+                identityValue, mailFromDomain, normalizedBehavior);
+    }
+
+    public Identity getMailFromAttributes(String identityValue, String region) {
+        String key = identityKey(region, identityValue);
+        return identityStore.get(key).orElse(null);
+    }
+
+    private static final java.util.List<String> NOTIFICATION_TYPES =
+            java.util.List.of("Bounce", "Complaint", "Delivery");
+
+    public void setHeadersInNotificationsEnabled(String identityValue, String notificationType,
+                                                   boolean enabled, String region) {
+        if (notificationType == null || notificationType.isBlank()) {
+            throw new AwsException("InvalidParameterValue",
+                    "NotificationType is required.", 400);
+        }
+        if (!NOTIFICATION_TYPES.contains(notificationType)) {
+            throw new AwsException("ValidationError",
+                    "1 validation error detected: Value at 'notificationType' failed to satisfy "
+                            + "constraint: Member must satisfy enum value set: "
+                            + NOTIFICATION_TYPES, 400);
+        }
+        String key = identityKey(region, identityValue);
+        Identity identity = identityStore.get(key)
+                .orElseThrow(() -> new AwsException("InvalidParameterValue",
+                        "Identity <" + identityValue + "> does not exist.", 400));
+        identity.getHeadersInNotificationsEnabled().put(notificationType, enabled);
+        identityStore.put(key, identity);
+        LOG.infov("Updated headers-in-notifications for {0}: {1}={2}",
+                identityValue, notificationType, enabled);
+    }
+
     public List<String> getVerifiedEmailAddresses(String region) {
         String prefix = "identity::" + region + "::";
         List<Identity> all = identityStore.scan(k -> k.startsWith(prefix));

@@ -58,6 +58,10 @@ public class SesQueryHandler {
                 case "DeleteVerifiedEmailAddress" -> handleDeleteVerifiedEmailAddress(params, region);
                 case "SetIdentityNotificationTopic" -> handleSetIdentityNotificationTopic(params, region);
                 case "GetIdentityNotificationAttributes" -> handleGetIdentityNotificationAttributes(params, region);
+                case "SetIdentityFeedbackForwardingEnabled" -> handleSetIdentityFeedbackForwardingEnabled(params, region);
+                case "SetIdentityHeadersInNotificationsEnabled" -> handleSetIdentityHeadersInNotificationsEnabled(params, region);
+                case "SetIdentityMailFromDomain" -> handleSetIdentityMailFromDomain(params, region);
+                case "GetIdentityMailFromDomainAttributes" -> handleGetIdentityMailFromDomainAttributes(params, region);
                 case "GetIdentityDkimAttributes" -> handleGetIdentityDkimAttributes(params, region);
                 case "CreateTemplate" -> handleCreateTemplate(params, region);
                 case "UpdateTemplate" -> handleUpdateTemplate(params, region);
@@ -243,10 +247,13 @@ public class SesQueryHandler {
                 xml.elem("BounceTopic", identity.getNotificationAttributes().getOrDefault("BounceTopic", ""));
                 xml.elem("ComplaintTopic", identity.getNotificationAttributes().getOrDefault("ComplaintTopic", ""));
                 xml.elem("DeliveryTopic", identity.getNotificationAttributes().getOrDefault("DeliveryTopic", ""));
-                xml.elem("ForwardingEnabled", "true");
-                xml.elem("HeadersInBounceNotificationsEnabled", "false");
-                xml.elem("HeadersInComplaintNotificationsEnabled", "false");
-                xml.elem("HeadersInDeliveryNotificationsEnabled", "false");
+                xml.elem("ForwardingEnabled", String.valueOf(identity.isFeedbackForwardingEnabled()));
+                xml.elem("HeadersInBounceNotificationsEnabled",
+                        String.valueOf(identity.getHeadersInNotificationsEnabled().getOrDefault("Bounce", false)));
+                xml.elem("HeadersInComplaintNotificationsEnabled",
+                        String.valueOf(identity.getHeadersInNotificationsEnabled().getOrDefault("Complaint", false)));
+                xml.elem("HeadersInDeliveryNotificationsEnabled",
+                        String.valueOf(identity.getHeadersInNotificationsEnabled().getOrDefault("Delivery", false)));
             }
             xml.end("value");
             xml.end("entry");
@@ -272,6 +279,66 @@ public class SesQueryHandler {
         }
         xml.end("DkimAttributes");
         return Response.ok(AwsQueryResponse.envelope("GetIdentityDkimAttributes", AwsNamespaces.SES, xml.build())).build();
+    }
+
+    private Response handleSetIdentityFeedbackForwardingEnabled(MultivaluedMap<String, String> params, String region) {
+        String identityValue = getParam(params, "Identity");
+        boolean enabled = parseRequiredBoolean(params, "ForwardingEnabled");
+        sesService.setFeedbackForwardingEnabled(identityValue, enabled, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("SetIdentityFeedbackForwardingEnabled", AwsNamespaces.SES)).build();
+    }
+
+    private Response handleSetIdentityHeadersInNotificationsEnabled(MultivaluedMap<String, String> params, String region) {
+        String identityValue = getParam(params, "Identity");
+        String notificationType = getParam(params, "NotificationType");
+        boolean enabled = parseRequiredBoolean(params, "Enabled");
+        sesService.setHeadersInNotificationsEnabled(identityValue, notificationType, enabled, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("SetIdentityHeadersInNotificationsEnabled", AwsNamespaces.SES)).build();
+    }
+
+    private Response handleSetIdentityMailFromDomain(MultivaluedMap<String, String> params, String region) {
+        String identityValue = getParam(params, "Identity");
+        String mailFromDomain = getParam(params, "MailFromDomain");
+        if (mailFromDomain == null) {
+            throw new AwsException("InvalidParameterValue",
+                    "MailFromDomain is required (use an empty string to clear the existing setting).", 400);
+        }
+        String behaviorOnMxFailure = getParam(params, "BehaviorOnMXFailure");
+        sesService.setMailFromDomain(identityValue, mailFromDomain, behaviorOnMxFailure, region);
+        return Response.ok(AwsQueryResponse.envelopeEmptyResult("SetIdentityMailFromDomain", AwsNamespaces.SES)).build();
+    }
+
+    private static boolean parseRequiredBoolean(MultivaluedMap<String, String> params, String name) {
+        String raw = params.getFirst(name);
+        if (raw == null) {
+            throw new AwsException("InvalidParameterValue", name + " is required.", 400);
+        }
+        if (!"true".equalsIgnoreCase(raw) && !"false".equalsIgnoreCase(raw)) {
+            throw new AwsException("InvalidParameterValue",
+                    name + " must be \"true\" or \"false\".", 400);
+        }
+        return Boolean.parseBoolean(raw);
+    }
+
+    private Response handleGetIdentityMailFromDomainAttributes(MultivaluedMap<String, String> params, String region) {
+        List<String> identities = extractMembers(params, "Identities");
+        var xml = new XmlBuilder().start("MailFromDomainAttributes");
+        for (String identityValue : identities) {
+            Identity identity = sesService.getMailFromAttributes(identityValue, region);
+            xml.start("entry");
+            xml.elem("key", identityValue);
+            xml.start("value");
+            xml.elem("MailFromDomain", identity != null && identity.getMailFromDomain() != null
+                    ? identity.getMailFromDomain() : "");
+            xml.elem("MailFromDomainStatus", identity != null
+                    ? identity.getMailFromDomainStatus() : "Pending");
+            xml.elem("BehaviorOnMXFailure", identity != null
+                    ? identity.getBehaviorOnMxFailure() : "UseDefaultValue");
+            xml.end("value");
+            xml.end("entry");
+        }
+        xml.end("MailFromDomainAttributes");
+        return Response.ok(AwsQueryResponse.envelope("GetIdentityMailFromDomainAttributes", AwsNamespaces.SES, xml.build())).build();
     }
 
     // --- Templates ---
