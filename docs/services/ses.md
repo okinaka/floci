@@ -32,6 +32,10 @@ Floci exposes the classic Amazon SES Query API used by `aws ses ...` commands an
 | `DeleteVerifiedEmailAddress`        | Delete a verified email identity                          |
 | `SetIdentityNotificationTopic`      | Store SNS notification topic ARNs for an identity         |
 | `GetIdentityNotificationAttributes` | Read stored notification topic settings                   |
+| `SetIdentityFeedbackForwardingEnabled`     | Toggle feedback forwarding for an identity        |
+| `SetIdentityHeadersInNotificationsEnabled` | Toggle headers-in-notifications per notification type |
+| `SetIdentityMailFromDomain`         | Set or clear the MAIL FROM domain for an identity         |
+| `GetIdentityMailFromDomainAttributes` | Read MAIL FROM domain settings                          |
 | `GetIdentityDkimAttributes`         | Return DKIM status for identities                         |
 | `CreateConfigurationSet`            | Create a configuration set                                |
 | `DescribeConfigurationSet`          | Read a configuration set                                  |
@@ -176,6 +180,7 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `DELETE` | `/v2/email/identities/{emailIdentity}` | `DeleteEmailIdentity` |
 | `PUT` | `/v2/email/identities/{emailIdentity}/dkim` | `PutEmailIdentityDkimAttributes` |
 | `PUT` | `/v2/email/identities/{emailIdentity}/feedback` | `PutEmailIdentityFeedbackAttributes` |
+| `PUT` | `/v2/email/identities/{emailIdentity}/mail-from` | `PutEmailIdentityMailFromAttributes` |
 | `POST` | `/v2/email/outbound-emails` | `SendEmail` (simple / raw / templated) |
 | `POST` | `/v2/email/outbound-bulk-emails` | `SendBulkEmail` (templated, multiple destinations) |
 | `GET` | `/v2/email/account` | `GetAccount` |
