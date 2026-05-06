@@ -288,7 +288,24 @@ class SesIdentityAttributesV1IntegrationTest {
         .then()
             .statusCode(400)
             .body(containsString("<Code>InvalidParameterValue</Code>"))
-            .body(containsString("Identity &lt;ghost-headers.floci.test&gt; does not exist."));
+            .body(containsString("Identity ghost-headers.floci.test is invalid. It must be a verified email address or domain."));
+    }
+
+    @Test
+    @Order(21)
+    void setIdentityFeedbackForwardingEnabled_unknownIdentity_returnsInvalidParameterValue() {
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", AUTH)
+            .formParam("Action", "SetIdentityFeedbackForwardingEnabled")
+            .formParam("Identity", "ghost-feedback.floci.test")
+            .formParam("ForwardingEnabled", "true")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(400)
+            .body(containsString("<Code>InvalidParameterValue</Code>"))
+            .body(containsString("Identity ghost-feedback.floci.test is invalid. Must be a verified email address or domain."));
     }
 
     @Test

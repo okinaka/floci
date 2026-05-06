@@ -8,17 +8,22 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.DeleteIdentityRequest;
 import software.amazon.awssdk.services.ses.model.GetIdentityMailFromDomainAttributesRequest;
 import software.amazon.awssdk.services.ses.model.GetIdentityMailFromDomainAttributesResponse;
+import software.amazon.awssdk.services.ses.model.GetIdentityNotificationAttributesRequest;
+import software.amazon.awssdk.services.ses.model.GetIdentityNotificationAttributesResponse;
 import software.amazon.awssdk.services.ses.model.IdentityMailFromDomainAttributes;
+import software.amazon.awssdk.services.ses.model.IdentityNotificationAttributes;
 import software.amazon.awssdk.services.ses.model.SetIdentityFeedbackForwardingEnabledRequest;
 import software.amazon.awssdk.services.ses.model.SetIdentityHeadersInNotificationsEnabledRequest;
 import software.amazon.awssdk.services.ses.model.SetIdentityMailFromDomainRequest;
 import software.amazon.awssdk.services.ses.model.VerifyDomainIdentityRequest;
 
 import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.BadRequestException;
 import software.amazon.awssdk.services.sesv2.model.CreateEmailIdentityRequest;
 import software.amazon.awssdk.services.sesv2.model.DeleteEmailIdentityRequest;
 import software.amazon.awssdk.services.sesv2.model.GetEmailIdentityRequest;
@@ -26,6 +31,7 @@ import software.amazon.awssdk.services.sesv2.model.GetEmailIdentityResponse;
 import software.amazon.awssdk.services.sesv2.model.PutEmailIdentityMailFromAttributesRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("SES Identity Attributes (MAIL FROM, DKIM, headers)")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -106,6 +112,22 @@ class SesIdentityAttributesTest {
         // success = no exception
     }
 
+    @Test
+    @Order(4)
+    void v1GetIdentityNotificationAttributes_reflectsForwardingAndHeaderFlags() {
+        // Order(2) disabled forwarding; Order(3) enabled headers-in-Bounce.
+        // The Get call should now return those values.
+        GetIdentityNotificationAttributesResponse response =
+                sesV1.getIdentityNotificationAttributes(GetIdentityNotificationAttributesRequest.builder()
+                        .identities(v1Domain).build());
+        IdentityNotificationAttributes attrs = response.notificationAttributes().get(v1Domain);
+        assertThat(attrs).isNotNull();
+        assertThat(attrs.forwardingEnabled()).isFalse();
+        assertThat(attrs.headersInBounceNotificationsEnabled()).isTrue();
+        assertThat(attrs.headersInComplaintNotificationsEnabled()).isFalse();
+        assertThat(attrs.headersInDeliveryNotificationsEnabled()).isFalse();
+    }
+
     // ───────────────────────── V2 ─────────────────────────
 
     @Test
@@ -129,5 +151,20 @@ class SesIdentityAttributesTest {
                 .isEqualTo("REJECT_MESSAGE");
         assertThat(response.mailFromAttributes().mailFromDomainStatusAsString())
                 .isEqualTo("SUCCESS");
+    }
+
+    @Test
+    @Order(11)
+    void v2PutEmailIdentityMailFromAttributes_unknownIdentity_throwsBadRequest() {
+        String missing = "sdk-missing-" + TestFixtures.uniqueName() + ".example.com";
+        assertThatThrownBy(() -> sesV2.putEmailIdentityMailFromAttributes(
+                PutEmailIdentityMailFromAttributesRequest.builder()
+                        .emailIdentity(missing)
+                        .mailFromDomain("mail." + missing)
+                        .behaviorOnMxFailure("USE_DEFAULT_VALUE")
+                        .build()))
+                .isInstanceOf(BadRequestException.class)
+                .extracting(e -> ((AwsServiceException) e).statusCode())
+                .isEqualTo(400);
     }
 }

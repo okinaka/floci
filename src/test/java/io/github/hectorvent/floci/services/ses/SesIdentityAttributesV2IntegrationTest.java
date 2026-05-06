@@ -105,6 +105,24 @@ class SesIdentityAttributesV2IntegrationTest {
     }
 
     @Test
+    @Order(11)
+    void putEmailIdentityFeedbackAttributes_unknownIdentity_returnsBadRequest() {
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {"EmailForwardingEnabled": true}
+                """)
+        .when()
+            .put("/v2/email/identities/ghost-feedback.floci.test/feedback")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("BadRequestException"))
+            .body("message", equalTo(
+                    "Identity ghost-feedback.floci.test is invalid. Must be a verified email address or domain."));
+    }
+
+    @Test
     @Order(6)
     void putEmailIdentityMailFromAttributes_invalidJson_returns400() {
         given()

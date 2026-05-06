@@ -238,8 +238,9 @@ public class SesService {
     public void setFeedbackForwardingEnabled(String identityValue, boolean enabled, String region) {
         String key = identityKey(region, identityValue);
         Identity identity = identityStore.get(key)
-                .orElseThrow(() -> new AwsException("NotFoundException",
-                        "Identity does not exist: " + identityValue, 404));
+                .orElseThrow(() -> new AwsException("InvalidParameterValue",
+                        "Identity " + identityValue
+                                + " is invalid. Must be a verified email address or domain.", 400));
         identity.setFeedbackForwardingEnabled(enabled);
         identityStore.put(key, identity);
         LOG.infov("Updated feedback forwarding for {0}: enabled={1}", identityValue, enabled);
@@ -299,7 +300,8 @@ public class SesService {
         String key = identityKey(region, identityValue);
         Identity identity = identityStore.get(key)
                 .orElseThrow(() -> new AwsException("InvalidParameterValue",
-                        "Identity <" + identityValue + "> does not exist.", 400));
+                        "Identity " + identityValue
+                                + " is invalid. It must be a verified email address or domain.", 400));
         identity.getHeadersInNotificationsEnabled().put(notificationType, enabled);
         identityStore.put(key, identity);
         LOG.infov("Updated headers-in-notifications for {0}: {1}={2}",
