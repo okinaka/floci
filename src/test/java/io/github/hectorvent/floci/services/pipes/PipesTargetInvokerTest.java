@@ -59,43 +59,47 @@ class PipesTargetInvokerTest {
 
     @Test
     void inputTemplate_replacesPlaceholders() {
+        String region = "us-east-1";
         ObjectNode tp = MAPPER.createObjectNode();
         tp.put("InputTemplate", "{\"id\": <$.messageId>, \"content\": <$.body>}");
 
-        Pipe pipe = createPipe("arn:aws:sqs:us-east-1:000000000000:target", tp);
+        Pipe pipe = createPipe("arn:aws:sqs:" + region + ":000000000000:target", tp);
         String payload = "{\"messageId\": \"msg-123\", \"body\": \"hello world\"}";
 
-        invoker.invoke(pipe, payload, "us-east-1");
+        invoker.invoke(pipe, payload, region);
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0));
+        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0), eq(region));
         String sent = captor.getValue();
         assertEquals("{\"id\": \"msg-123\", \"content\": \"hello world\"}", sent);
     }
 
     @Test
     void inputTemplate_missingFieldReplacesWithEmpty() {
+        String region = "us-east-1";
         ObjectNode tp = MAPPER.createObjectNode();
         tp.put("InputTemplate", "{\"id\": \"<$.nonexistent>\"}");
 
-        Pipe pipe = createPipe("arn:aws:sqs:us-east-1:000000000000:target", tp);
+        Pipe pipe = createPipe("arn:aws:sqs:" + region + ":000000000000:target", tp);
         String payload = "{\"messageId\": \"msg-123\"}";
 
-        invoker.invoke(pipe, payload, "us-east-1");
+        invoker.invoke(pipe, payload, region);
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0));
+        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0), eq(region));
         assertEquals("{\"id\": \"\"}", captor.getValue());
     }
 
     @Test
     void noInputTemplate_passesPayloadUnchanged() {
-        Pipe pipe = createPipe("arn:aws:sqs:us-east-1:000000000000:target", null);
+        String region = "us-east-1";
+
+        Pipe pipe = createPipe("arn:aws:sqs:" + region + ":000000000000:target", null);
         String payload = "{\"Records\": []}";
 
-        invoker.invoke(pipe, payload, "us-east-1");
+        invoker.invoke(pipe, payload, region);
 
-        verify(sqsService).sendMessage(anyString(), eq(payload), eq(0));
+        verify(sqsService).sendMessage(anyString(), eq(payload), eq(0), eq(region));
     }
 
     @Test
@@ -110,16 +114,17 @@ class PipesTargetInvokerTest {
 
     @Test
     void inputTemplate_objectValuePreservedAsJson() {
+        String region = "us-east-1";
         ObjectNode tp = MAPPER.createObjectNode();
         tp.put("InputTemplate", "{\"data\": <$.nested>}");
 
-        Pipe pipe = createPipe("arn:aws:sqs:us-east-1:000000000000:target", tp);
+        Pipe pipe = createPipe("arn:aws:sqs:" + region + ":000000000000:target", tp);
         String payload = "{\"nested\": {\"key\": \"value\"}}";
 
-        invoker.invoke(pipe, payload, "us-east-1");
+        invoker.invoke(pipe, payload, region);
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0));
+        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0), eq(region));
         assertEquals("{\"data\": {\"key\":\"value\"}}", captor.getValue());
     }
 
@@ -227,6 +232,7 @@ class PipesTargetInvokerTest {
 
     @Test
     void inputTemplate_nestedJsonString_endToEnd() {
+        String region = "us-east-1";
         ObjectNode tp = MAPPER.createObjectNode();
         tp.put("InputTemplate",
                 "{\"message\": <$.body.message>, \"messageType\": <$.body.messageType>}");
@@ -234,10 +240,10 @@ class PipesTargetInvokerTest {
         Pipe pipe = createPipe("arn:aws:sqs:us-east-1:000000000000:target", tp);
         String payload = "{\"body\": \"{\\\"message\\\": \\\"user registered\\\", \\\"messageType\\\": \\\"REGISTRATION\\\"}\"}";
 
-        invoker.invoke(pipe, payload, "us-east-1");
+        invoker.invoke(pipe, payload, region);
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0));
+        verify(sqsService).sendMessage(anyString(), captor.capture(), eq(0), eq(region));
         assertEquals(
                 "{\"message\": \"user registered\", \"messageType\": \"REGISTRATION\"}",
                 captor.getValue());
