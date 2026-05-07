@@ -17,7 +17,11 @@ import static org.hamcrest.Matchers.*;
 class SesIntegrationTest {
 
     private static String authorization(String service) {
-        return "AWS4-HMAC-SHA256 Credential=AKID/20260101/us-east-1/" + service + "/aws4_request";
+        return authorization(service, "us-east-1");
+    }
+
+    private static String authorization(String service, String region) {
+        return "AWS4-HMAC-SHA256 Credential=AKID/20260101/" + region + "/" + service + "/aws4_request";
     }
 
     @Test
@@ -452,5 +456,146 @@ class SesIntegrationTest {
         .then()
             .statusCode(400)
             .body(containsString("UnsupportedOperation"));
+    }
+
+    @Test
+    @Order(26)
+    void updateAccountSendingEnabled_treatsMissingOrBlankEnabledAsFalse() {
+        // Missing Enabled parameter
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200);
+
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "GetAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<Enabled>false</Enabled>"));
+
+        // restore so the next assertion observes the blank-string default cleanly
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "true")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200);
+
+        // Blank Enabled parameter (e.g. AWS CLI passing --enabled "") behaves the same
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200);
+
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "GetAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<Enabled>false</Enabled>"));
+
+        // restore default state for downstream tests
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "true")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200);
+    }
+
+    @Test
+    @Order(27)
+    void updateAccountSendingEnabled_isolatesPerRegion() {
+        // Disable sending in us-west-2 only; also exercises the response envelope shape
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email", "us-west-2"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "false")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<UpdateAccountSendingEnabledResponse"));
+
+        // us-west-2 reflects the disable
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email", "us-west-2"))
+            .formParam("Action", "GetAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<Enabled>false</Enabled>"));
+
+        // us-east-1 is unaffected
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "GetAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<Enabled>true</Enabled>"));
+
+        // re-enable us-west-2 and confirm the toggle round-tripped
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email", "us-west-2"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "true")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200);
+
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email", "us-west-2"))
+            .formParam("Action", "GetAccountSendingEnabled")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<Enabled>true</Enabled>"));
+    }
+
+    @Test
+    @Order(28)
+    void updateAccountSendingEnabled_invalidValue_returns400() {
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", authorization("email"))
+            .formParam("Action", "UpdateAccountSendingEnabled")
+            .formParam("Enabled", "yes")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(400)
+            .body(containsString("InvalidParameterValue"));
     }
 }

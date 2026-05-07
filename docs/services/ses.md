@@ -28,6 +28,7 @@ Floci exposes the classic Amazon SES Query API used by `aws ses ...` commands an
 | `GetSendQuota`                      | Return local send quota counters                          |
 | `GetSendStatistics`                 | Return aggregate delivery stats for sent messages         |
 | `GetAccountSendingEnabled`          | Report whether sending is enabled                         |
+| `UpdateAccountSendingEnabled`       | Enable or disable account-wide sending                    |
 | `ListVerifiedEmailAddresses`        | List verified email identities                            |
 | `DeleteVerifiedEmailAddress`        | Delete a verified email identity                          |
 | `SetIdentityNotificationTopic`      | Store SNS notification topic ARNs for an identity         |
