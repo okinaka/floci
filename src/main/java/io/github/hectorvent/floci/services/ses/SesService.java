@@ -1,5 +1,6 @@
 package io.github.hectorvent.floci.services.ses;
 
+import io.github.hectorvent.floci.core.common.AwsArnUtils;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
@@ -26,8 +27,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -472,6 +476,114 @@ public class SesService {
                     "ConfigurationSetName must be 1-64 characters and may only contain "
                             + "alphanumeric characters, underscores, and hyphens.", 400);
         }
+    }
+
+    public List<ConfigurationSet.Tag> listResourceTags(String arn, String region) {
+        ResourceRef ref = parseSesArn(arn);
+        return switch (ref.type()) {
+            case "configuration-set" -> listConfigurationSetTags(ref.name(), ref.region());
+            default -> throw new AwsException("NotFoundException",
+                    "Resource " + arn + " was not found.", 404);
+        };
+    }
+
+    public void tagResource(String arn, String region, List<ConfigurationSet.Tag> newTags) {
+        ResourceRef ref = parseSesArn(arn);
+        if (!ref.region().equals(region)) {
+            throw new AwsException("BadRequestException", "Failed to tag resource", 400);
+        }
+        if (newTags == null || newTags.isEmpty()) {
+            throw new AwsException("BadRequestException",
+                    "1 validation error detected: Value at 'tags' failed to satisfy constraint: "
+                            + "Member must have length greater than or equal to 1", 400);
+        }
+        for (ConfigurationSet.Tag t : newTags) {
+            validateTag(t);
+        }
+        switch (ref.type()) {
+            case "configuration-set" -> tagConfigurationSet(ref.name(), ref.region(), newTags);
+            default -> throw new AwsException("NotFoundException",
+                    "Resource " + arn + " was not found.", 404);
+        }
+    }
+
+    public void untagResource(String arn, String region, List<String> tagKeys) {
+        ResourceRef ref = parseSesArn(arn);
+        if (tagKeys == null || tagKeys.isEmpty()) {
+            throw new AwsException("BadRequestException",
+                    "1 validation error detected: Value at 'tagKeys' failed to satisfy constraint: "
+                            + "Member must have length greater than or equal to 1", 400);
+        }
+        switch (ref.type()) {
+            case "configuration-set" -> untagConfigurationSet(ref.name(), ref.region(), tagKeys);
+            default -> throw new AwsException("NotFoundException",
+                    "Resource " + arn + " was not found.", 404);
+        }
+    }
+
+    private List<ConfigurationSet.Tag> listConfigurationSetTags(String name, String region) {
+        ConfigurationSet cs = configSetStore.get(configSetKey(region, name))
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No ConfigurationSet present with name: " + name, 404));
+        return new ArrayList<>(cs.getTags());
+    }
+
+    private void tagConfigurationSet(String name, String region, List<ConfigurationSet.Tag> newTags) {
+        String key = configSetKey(region, name);
+        ConfigurationSet cs = configSetStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No ConfigurationSet present with name: " + name, 404));
+        Map<String, String> merged = new LinkedHashMap<>();
+        for (ConfigurationSet.Tag t : cs.getTags()) {
+            merged.put(t.key(), t.value());
+        }
+        for (ConfigurationSet.Tag t : newTags) {
+            merged.put(t.key(), t.value());
+        }
+        List<ConfigurationSet.Tag> out = new ArrayList<>();
+        merged.forEach((k, v) -> out.add(new ConfigurationSet.Tag(k, v)));
+        cs.setTags(out);
+        configSetStore.put(key, cs);
+        LOG.infov("Tagged SES configuration set: {0} (region {1}, +{2} tags)", name, region, newTags.size());
+    }
+
+    private void untagConfigurationSet(String name, String region, List<String> tagKeys) {
+        String key = configSetKey(region, name);
+        ConfigurationSet cs = configSetStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No ConfigurationSet present with name: " + name, 404));
+        Set<String> toRemove = new HashSet<>(tagKeys);
+        cs.getTags().removeIf(t -> toRemove.contains(t.key()));
+        configSetStore.put(key, cs);
+        LOG.infov("Untagged SES configuration set: {0} (region {1}, -{2} keys)", name, region, tagKeys.size());
+    }
+
+    private record ResourceRef(String region, String type, String name) {}
+
+    private static ResourceRef parseSesArn(String arn) {
+        if (arn == null || arn.isBlank()) {
+            throw new AwsException("BadRequestException", "ResourceArn is required.", 400);
+        }
+        AwsArnUtils.Arn parsed;
+        try {
+            parsed = AwsArnUtils.parse(arn);
+        } catch (IllegalArgumentException e) {
+            throw new AwsException("BadRequestException", "Invalid ARN: " + arn, 400);
+        }
+        if (!"ses".equals(parsed.service())) {
+            throw new AwsException("BadRequestException",
+                    "ResourceArn must be a SES ARN: " + arn, 400);
+        }
+        if (parsed.region().isEmpty() || parsed.accountId().isEmpty()) {
+            throw new AwsException("BadRequestException",
+                    "ResourceArn must include region and account: " + arn, 400);
+        }
+        String resource = parsed.resource();
+        int slash = resource.indexOf('/');
+        if (slash <= 0 || slash == resource.length() - 1) {
+            throw new AwsException("BadRequestException", "Invalid ARN: " + arn, 400);
+        }
+        return new ResourceRef(parsed.region(), resource.substring(0, slash), resource.substring(slash + 1));
     }
 
     static void validateTag(ConfigurationSet.Tag tag) {

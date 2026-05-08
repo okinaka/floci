@@ -196,5 +196,10 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `GET` | `/v2/email/configuration-sets` | `ListConfigurationSets` |
 | `GET` | `/v2/email/configuration-sets/{name}` | `GetConfigurationSet` |
 | `DELETE` | `/v2/email/configuration-sets/{name}` | `DeleteConfigurationSet` |
+| `POST` | `/v2/email/tags` | `TagResource` |
+| `DELETE` | `/v2/email/tags?ResourceArn=...&TagKeys=...` | `UntagResource` |
+| `GET` | `/v2/email/tags?ResourceArn=...` | `ListTagsForResource` |
+
+Tag operations currently support `arn:aws:ses:<region>:<account>:configuration-set/<name>` ARNs. Other resource types return `NotFoundException`.
 
 Identity, template, configuration-set, and sent-message state is shared between the v1 Query API and the v2 REST JSON API, so a template created with `CreateTemplate` resolves through `SendEmail` on v2 (and vice versa), a configuration set created with `CreateConfigurationSet` is visible to both `DescribeConfigurationSet` (v1) and `GetConfigurationSet` (v2), and every send appears in the same `GET /_aws/ses` inspection mailbox.
