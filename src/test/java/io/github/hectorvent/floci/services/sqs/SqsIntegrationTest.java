@@ -272,28 +272,27 @@ class SqsIntegrationTest {
             .body(containsString(taggedQueueName))
             .extract().xmlPath().getString("CreateQueueResponse.CreateQueueResult.QueueUrl");
 
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "ListQueueTags")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200)
-            .body(containsString("k1"))
-            .body(containsString("v1"))
-            .body(containsString("k2"))
-            .body(containsString("v2"));
-
-        // cleanup
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "DeleteQueue")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200);
+        try {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "ListQueueTags")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/")
+            .then()
+                .statusCode(200)
+                .body(containsString("k1"))
+                .body(containsString("v1"))
+                .body(containsString("k2"))
+                .body(containsString("v2"));
+        } finally {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "DeleteQueue")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/");
+        }
     }
 
     @Test
@@ -311,27 +310,27 @@ class SqsIntegrationTest {
             .statusCode(200)
             .extract().jsonPath().getString("QueueUrl");
 
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "ListQueueTags")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200)
-            .body(containsString("k1"))
-            .body(containsString("v1"))
-            .body(containsString("k2"))
-            .body(containsString("v2"));
-
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "DeleteQueue")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200);
+        try {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "ListQueueTags")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/")
+            .then()
+                .statusCode(200)
+                .body(containsString("k1"))
+                .body(containsString("v1"))
+                .body(containsString("k2"))
+                .body(containsString("v2"));
+        } finally {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "DeleteQueue")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/");
+        }
     }
 
     @Test
@@ -350,26 +349,26 @@ class SqsIntegrationTest {
             .statusCode(200)
             .extract().jsonPath().getString("QueueUrl");
 
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "ListQueueTags")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200)
-            .body(not(containsString("<Tag>")))
-            .body(not(containsString("k1")))
-            .body(not(containsString("v1")));
-
-        given()
-            .contentType("application/x-www-form-urlencoded")
-            .formParam("Action", "DeleteQueue")
-            .formParam("QueueUrl", taggedQueueUrl)
-        .when()
-            .post("/")
-        .then()
-            .statusCode(200);
+        try {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "ListQueueTags")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/")
+            .then()
+                .statusCode(200)
+                .body(not(containsString("<Tag>")))
+                .body(not(containsString("k1")))
+                .body(not(containsString("v1")));
+        } finally {
+            given()
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("Action", "DeleteQueue")
+                .formParam("QueueUrl", taggedQueueUrl)
+            .when()
+                .post("/");
+        }
     }
 
     @Test
