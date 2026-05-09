@@ -66,10 +66,7 @@ public class SqsJsonHandler {
     private Response handleCreateQueue(JsonNode request, String region) {
         String queueName = request.path("QueueName").asText(null);
         Map<String, String> attributes = jsonNodeToMap(request.path("Attributes"));
-        // Botocore sends "tags" (lowercase) for CreateQueue but "Tags" (uppercase) for TagQueue.
-        // Merge both to handle any client regardless of casing.
-        Map<String, String> tags = new HashMap<>(jsonNodeToMap(request.path("Tags")));
-        tags.putAll(jsonNodeToMap(request.path("tags")));
+        Map<String, String> tags = jsonNodeToMap(request.path("tags"));
         Queue queue = sqsService.createQueue(queueName, attributes, tags, region);
 
         ObjectNode response = objectMapper.createObjectNode();
