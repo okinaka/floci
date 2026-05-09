@@ -478,7 +478,7 @@ public class SesService {
         }
     }
 
-    public List<ConfigurationSet.Tag> listResourceTags(String arn, String region) {
+    public List<ConfigurationSet.Tag> listResourceTags(String arn) {
         ResourceRef ref = parseSesArn(arn);
         return switch (ref.type()) {
             case "configuration-set" -> listConfigurationSetTags(ref.name(), ref.region());
@@ -507,7 +507,7 @@ public class SesService {
         }
     }
 
-    public void untagResource(String arn, String region, List<String> tagKeys) {
+    public void untagResource(String arn, List<String> tagKeys) {
         ResourceRef ref = parseSesArn(arn);
         if (tagKeys == null || tagKeys.isEmpty()) {
             throw new AwsException("BadRequestException",

@@ -729,12 +729,10 @@ public class SesController {
 
     @DELETE
     @Path("/tags")
-    public Response untagResource(@Context HttpHeaders headers,
-                                   @QueryParam("ResourceArn") String arn,
+    public Response untagResource(@QueryParam("ResourceArn") String arn,
                                    @QueryParam("TagKeys") List<String> tagKeys) {
-        String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.untagResource(arn, region, tagKeys);
+            sesService.untagResource(arn, tagKeys);
             LOG.infov("SES V2 UntagResource: {0}", arn);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -744,11 +742,9 @@ public class SesController {
 
     @GET
     @Path("/tags")
-    public Response listTagsForResource(@Context HttpHeaders headers,
-                                         @QueryParam("ResourceArn") String arn) {
-        String region = regionResolver.resolveRegion(headers);
+    public Response listTagsForResource(@QueryParam("ResourceArn") String arn) {
         try {
-            List<ConfigurationSet.Tag> tags = sesService.listResourceTags(arn, region);
+            List<ConfigurationSet.Tag> tags = sesService.listResourceTags(arn);
             ObjectNode result = objectMapper.createObjectNode();
             ArrayNode arr = result.putArray("Tags");
             for (ConfigurationSet.Tag t : tags) {
