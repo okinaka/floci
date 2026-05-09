@@ -10,6 +10,7 @@ import io.github.hectorvent.floci.services.ses.model.ConfigurationSet;
 import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
+import io.github.hectorvent.floci.services.ses.model.Tag;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -358,6 +359,11 @@ public class SesService {
 
     public EmailTemplate createTemplate(EmailTemplate template, String region) {
         validateTemplate(template);
+        if (template.getTags() != null) {
+            for (Tag tag : template.getTags()) {
+                validateTag(tag);
+            }
+        }
         String key = templateKey(region, template.getTemplateName());
         if (templateStore.get(key).isPresent()) {
             throw new AwsException("AlreadyExists",
@@ -385,6 +391,8 @@ public class SesService {
                         "Template " + template.getTemplateName() + " does not exist.", 400));
         template.setCreatedTimestamp(existing.getCreatedTimestamp());
         template.setLastUpdatedTimestamp(Instant.now());
+        // Tags are managed exclusively via Tag/UntagResource — preserve them on update.
+        template.setTags(existing.getTags());
         templateStore.put(key, template);
         LOG.infov("Updated SES template: {0} in region {1}", template.getTemplateName(), region);
         return template;
@@ -417,7 +425,7 @@ public class SesService {
         }
         String key = configSetKey(region, configSet.getName());
         if (configSet.getTags() != null) {
-            for (ConfigurationSet.Tag tag : configSet.getTags()) {
+            for (Tag tag : configSet.getTags()) {
                 validateTag(tag);
             }
         }
@@ -478,16 +486,20 @@ public class SesService {
         }
     }
 
-    public List<ConfigurationSet.Tag> listResourceTags(String arn) {
+    public List<Tag> listResourceTags(String arn, String region) {
         ResourceRef ref = parseSesArn(arn);
         return switch (ref.type()) {
             case "configuration-set" -> listConfigurationSetTags(ref.name(), ref.region());
+            // AWS ListTagsForResource on template ARNs uses the signing region for lookup
+            // (the ARN region is effectively ignored), unlike configuration-set which routes
+            // by the ARN's region.
+            case "template" -> listEmailTemplateTags(ref.name(), region);
             default -> throw new AwsException("NotFoundException",
                     "Resource " + arn + " was not found.", 404);
         };
     }
 
-    public void tagResource(String arn, String region, List<ConfigurationSet.Tag> newTags) {
+    public void tagResource(String arn, String region, List<Tag> newTags) {
         ResourceRef ref = parseSesArn(arn);
         if (!ref.region().equals(region)) {
             throw new AwsException("BadRequestException", "Failed to tag resource", 400);
@@ -497,17 +509,18 @@ public class SesService {
                     "1 validation error detected: Value at 'tags' failed to satisfy constraint: "
                             + "Member must have length greater than or equal to 1", 400);
         }
-        for (ConfigurationSet.Tag t : newTags) {
+        for (Tag t : newTags) {
             validateTag(t);
         }
         switch (ref.type()) {
             case "configuration-set" -> tagConfigurationSet(ref.name(), ref.region(), newTags);
+            case "template" -> tagEmailTemplate(ref.name(), ref.region(), newTags);
             default -> throw new AwsException("NotFoundException",
                     "Resource " + arn + " was not found.", 404);
         }
     }
 
-    public void untagResource(String arn, List<String> tagKeys) {
+    public void untagResource(String arn, String region, List<String> tagKeys) {
         ResourceRef ref = parseSesArn(arn);
         if (tagKeys == null || tagKeys.isEmpty()) {
             throw new AwsException("BadRequestException",
@@ -516,33 +529,33 @@ public class SesService {
         }
         switch (ref.type()) {
             case "configuration-set" -> untagConfigurationSet(ref.name(), ref.region(), tagKeys);
+            case "template" -> {
+                // AWS UntagResource on template ARNs strictly requires the ARN region to match
+                // the signing region (rejects mismatch with BadRequestException), unlike
+                // configuration-set which routes the lookup to the ARN's region.
+                if (!ref.region().equals(region)) {
+                    throw new AwsException("BadRequestException", "Failed to untag resource", 400);
+                }
+                untagEmailTemplate(ref.name(), region, tagKeys);
+            }
             default -> throw new AwsException("NotFoundException",
                     "Resource " + arn + " was not found.", 404);
         }
     }
 
-    private List<ConfigurationSet.Tag> listConfigurationSetTags(String name, String region) {
+    private List<Tag> listConfigurationSetTags(String name, String region) {
         ConfigurationSet cs = configSetStore.get(configSetKey(region, name))
                 .orElseThrow(() -> new AwsException("NotFoundException",
                         "No ConfigurationSet present with name: " + name, 404));
         return new ArrayList<>(cs.getTags());
     }
 
-    private void tagConfigurationSet(String name, String region, List<ConfigurationSet.Tag> newTags) {
+    private void tagConfigurationSet(String name, String region, List<Tag> newTags) {
         String key = configSetKey(region, name);
         ConfigurationSet cs = configSetStore.get(key)
                 .orElseThrow(() -> new AwsException("NotFoundException",
                         "No ConfigurationSet present with name: " + name, 404));
-        Map<String, String> merged = new LinkedHashMap<>();
-        for (ConfigurationSet.Tag t : cs.getTags()) {
-            merged.put(t.key(), t.value());
-        }
-        for (ConfigurationSet.Tag t : newTags) {
-            merged.put(t.key(), t.value());
-        }
-        List<ConfigurationSet.Tag> out = new ArrayList<>();
-        merged.forEach((k, v) -> out.add(new ConfigurationSet.Tag(k, v)));
-        cs.setTags(out);
+        cs.setTags(mergeTags(cs.getTags(), newTags));
         configSetStore.put(key, cs);
         LOG.infov("Tagged SES configuration set: {0} (region {1}, +{2} tags)", name, region, newTags.size());
     }
@@ -556,6 +569,48 @@ public class SesService {
         cs.getTags().removeIf(t -> toRemove.contains(t.key()));
         configSetStore.put(key, cs);
         LOG.infov("Untagged SES configuration set: {0} (region {1}, -{2} keys)", name, region, tagKeys.size());
+    }
+
+    private List<Tag> listEmailTemplateTags(String name, String region) {
+        EmailTemplate template = templateStore.get(templateKey(region, name))
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No Template present with name: " + name, 404));
+        return new ArrayList<>(template.getTags());
+    }
+
+    private void tagEmailTemplate(String name, String region, List<Tag> newTags) {
+        String key = templateKey(region, name);
+        EmailTemplate template = templateStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No Template present with name: " + name, 404));
+        template.setTags(mergeTags(template.getTags(), newTags));
+        templateStore.put(key, template);
+        LOG.infov("Tagged SES template: {0} (region {1}, +{2} tags)", name, region, newTags.size());
+    }
+
+    private static List<Tag> mergeTags(List<Tag> existing,
+                                                         List<Tag> incoming) {
+        Map<String, String> merged = new LinkedHashMap<>();
+        for (Tag t : existing) {
+            merged.put(t.key(), t.value());
+        }
+        for (Tag t : incoming) {
+            merged.put(t.key(), t.value());
+        }
+        List<Tag> out = new ArrayList<>();
+        merged.forEach((k, v) -> out.add(new Tag(k, v)));
+        return out;
+    }
+
+    private void untagEmailTemplate(String name, String region, List<String> tagKeys) {
+        String key = templateKey(region, name);
+        EmailTemplate template = templateStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "No Template present with name: " + name, 404));
+        Set<String> toRemove = new HashSet<>(tagKeys);
+        template.getTags().removeIf(t -> toRemove.contains(t.key()));
+        templateStore.put(key, template);
+        LOG.infov("Untagged SES template: {0} (region {1}, -{2} keys)", name, region, tagKeys.size());
     }
 
     private record ResourceRef(String region, String type, String name) {}
@@ -586,7 +641,7 @@ public class SesService {
         return new ResourceRef(parsed.region(), resource.substring(0, slash), resource.substring(slash + 1));
     }
 
-    static void validateTag(ConfigurationSet.Tag tag) {
+    static void validateTag(Tag tag) {
         if (tag == null) {
             throw new AwsException("InvalidParameterValue", "Tag must not be null.", 400);
         }

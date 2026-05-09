@@ -120,6 +120,98 @@ class SesTagsV2IntegrationTest {
 
     @Test
     @Order(2)
+    void tags_lifecycle_onEmailTemplate() {
+        // Seed: create an email template we can tag against
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "TemplateName": "tag-tpl-1",
+                  "TemplateContent": {"Subject": "S", "Text": "T"}
+                }
+                """)
+        .when()
+            .post("/v2/email/templates")
+        .then()
+            .statusCode(200);
+
+        String arn = "arn:aws:ses:us-east-1:000000000000:template/tag-tpl-1";
+
+        // Initially empty
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+        .when()
+            .get("/v2/email/tags")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(0));
+
+        // Tag the template
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {"ResourceArn": "%s", "Tags": [
+                  {"Key": "env", "Value": "stg"},
+                  {"Key": "owner", "Value": "alice"}
+                ]}
+                """.formatted(arn))
+        .when()
+            .post("/v2/email/tags")
+        .then()
+            .statusCode(200);
+
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+        .when()
+            .get("/v2/email/tags")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(2));
+
+        // Remove a key
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+            .queryParam("TagKeys", "env")
+        .when()
+            .delete("/v2/email/tags")
+        .then()
+            .statusCode(200);
+
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+        .when()
+            .get("/v2/email/tags")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(1))
+            .body("Tags[0].Key", equalTo("owner"));
+    }
+
+    @Test
+    @Order(3)
+    void tagResource_unknownEmailTemplate_returns404() {
+        String arn = "arn:aws:ses:us-east-1:000000000000:template/missing-tpl";
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {"ResourceArn": "%s", "Tags": [{"Key": "env", "Value": "dev"}]}
+                """.formatted(arn))
+        .when()
+            .post("/v2/email/tags")
+        .then()
+            .statusCode(404)
+            .body(containsString("No Template present with name: missing-tpl"));
+    }
+
+    @Test
+    @Order(4)
     void tagResource_unknownConfigurationSet_returns404() {
         String arn = "arn:aws:ses:us-east-1:000000000000:configuration-set/missing-cs";
         given()
@@ -135,7 +227,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @Order(5)
     void listTagsForResource_unsupportedResourceType_returns404() {
         String arn = "arn:aws:ses:us-east-1:000000000000:identity/example.com";
         given()
@@ -148,7 +240,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(4)
+    @Order(6)
     void tagResource_invalidArn_returns400() {
         given()
             .contentType("application/json")
@@ -163,7 +255,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(5)
+    @Order(7)
     void tagResource_emptyTags_returns400() {
         String arn = "arn:aws:ses:us-east-1:000000000000:configuration-set/tag-cs-1";
         given()
@@ -179,7 +271,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(6)
+    @Order(8)
     void untagResource_missingTagKeys_returns400() {
         String arn = "arn:aws:ses:us-east-1:000000000000:configuration-set/tag-cs-1";
         given()
@@ -192,7 +284,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(7)
+    @Order(9)
     void tagResource_arnMissingRegion_returns400() {
         String arn = "arn:aws:ses::000000000000:configuration-set/tag-cs-1";
         given()
@@ -208,7 +300,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(8)
+    @Order(10)
     void tagResource_nonSesArn_returns400() {
         String arn = "arn:aws:s3:us-east-1:000000000000:bucket/my-bucket";
         given()
@@ -224,7 +316,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(9)
+    @Order(11)
     void tagResource_arnRegionMismatch_returns400() {
         // AWS rejects TagResource on ARN/signing region mismatch with BadRequestException
         // ("Failed to tag resource"). The behaviour differs from UntagResource, which
@@ -244,7 +336,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(10)
+    @Order(12)
     void untagResource_arnRegionMismatch_returns404() {
         // tag-cs-1 exists in us-east-1 but the ARN points to eu-west-1, so AWS
         // returns NotFoundException with the resource-specific message.
@@ -261,7 +353,7 @@ class SesTagsV2IntegrationTest {
     }
 
     @Test
-    @Order(11)
+    @Order(13)
     void tagResource_invalidConfigurationSetName_returns400() {
         // Whitespace in configuration-set name fails configSetKey validation,
         // which is remapped from InvalidParameterValue -> BadRequestException at the controller.
@@ -276,5 +368,43 @@ class SesTagsV2IntegrationTest {
             .post("/v2/email/tags")
         .then()
             .statusCode(400);
+    }
+
+    @Test
+    @Order(14)
+    void untagResource_template_arnRegionMismatch_returns400() {
+        // For template ARNs AWS rejects UntagResource on signing/ARN region mismatch with
+        // BadRequestException ("Failed to untag resource"), unlike ConfigurationSet which
+        // routes the lookup to the ARN's region and surfaces NotFound instead.
+        String arn = "arn:aws:ses:eu-west-1:000000000000:template/tag-tpl-1";
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+            .queryParam("TagKeys", "k")
+        .when()
+            .delete("/v2/email/tags")
+        .then()
+            .statusCode(400)
+            .body(containsString("Failed to untag resource"));
+    }
+
+    @Test
+    @Order(15)
+    void listTagsForResource_template_arnRegionIgnored_usesSigningRegion() {
+        // For template ARNs AWS ignores the ARN region for ListTagsForResource and
+        // resolves the template against the signing region instead. The seeded
+        // tag-tpl-1 lives in us-east-1 and was left with a single "owner=alice" tag
+        // by the lifecycle case at @Order(2); an eu-west-1 ARN must still surface it.
+        String arn = "arn:aws:ses:eu-west-1:000000000000:template/tag-tpl-1";
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+        .when()
+            .get("/v2/email/tags")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(1))
+            .body("Tags[0].Key", equalTo("owner"))
+            .body("Tags[0].Value", equalTo("alice"));
     }
 }

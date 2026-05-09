@@ -7,6 +7,7 @@ import io.github.hectorvent.floci.services.ses.model.BulkEmailEntryResult;
 import io.github.hectorvent.floci.services.ses.model.ConfigurationSet;
 import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
+import io.github.hectorvent.floci.services.ses.model.Tag;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -459,6 +460,10 @@ public class SesController {
                 throw new AwsException("BadRequestException", "TemplateName is required.", 400);
             }
             EmailTemplate template = parseTemplateContent(templateName, request.path("TemplateContent"));
+            List<Tag> parsedTags = parseTagsArray(request.path("Tags"));
+            if (parsedTags != null) {
+                template.setTags(parsedTags);
+            }
             sesService.createTemplate(template, region);
             LOG.infov("SES V2 CreateEmailTemplate: {0}", templateName);
             return Response.ok(objectMapper.createObjectNode()).build();
@@ -576,19 +581,9 @@ public class SesController {
                 throw new AwsException("BadRequestException", "ConfigurationSetName is required.", 400);
             }
             ConfigurationSet cs = new ConfigurationSet(name);
-            JsonNode tags = request.get("Tags");
-            if (tags != null && !tags.isNull()) {
-                if (!tags.isArray()) {
-                    throw new AwsException("BadRequestException",
-                            "Tags must be an array.", 400);
-                }
-                List<ConfigurationSet.Tag> tagList = new ArrayList<>();
-                for (JsonNode t : tags) {
-                    tagList.add(new ConfigurationSet.Tag(
-                            t.path("Key").asText(null),
-                            t.path("Value").asText(null)));
-                }
-                cs.setTags(tagList);
+            List<Tag> parsedTags = parseTagsArray(request.path("Tags"));
+            if (parsedTags != null) {
+                cs.setTags(parsedTags);
             }
             sesService.createConfigurationSet(cs, region);
             LOG.infov("SES V2 CreateConfigurationSet: {0}", name);
@@ -623,7 +618,7 @@ public class SesController {
             ObjectNode result = objectMapper.createObjectNode();
             result.put("ConfigurationSetName", cs.getName());
             ArrayNode tags = result.putArray("Tags");
-            for (ConfigurationSet.Tag t : cs.getTags()) {
+            for (Tag t : cs.getTags()) {
                 ObjectNode tagNode = objectMapper.createObjectNode();
                 tagNode.put("Key", t.key());
                 tagNode.put("Value", t.value());
@@ -707,15 +702,9 @@ public class SesController {
             if (arn == null || arn.isBlank()) {
                 throw new AwsException("BadRequestException", "ResourceArn is required.", 400);
             }
-            JsonNode tagsNode = request.path("Tags");
-            if (!tagsNode.isArray()) {
+            List<Tag> tags = parseTagsArray(request.path("Tags"));
+            if (tags == null) {
                 throw new AwsException("BadRequestException", "Tags must be an array.", 400);
-            }
-            List<ConfigurationSet.Tag> tags = new ArrayList<>();
-            for (JsonNode t : tagsNode) {
-                String key = t.path("Key").asText(null);
-                String value = t.path("Value").asText(null);
-                tags.add(new ConfigurationSet.Tag(key, value));
             }
             sesService.tagResource(arn, region, tags);
             LOG.infov("SES V2 TagResource: {0}", arn);
@@ -729,10 +718,12 @@ public class SesController {
 
     @DELETE
     @Path("/tags")
-    public Response untagResource(@QueryParam("ResourceArn") String arn,
+    public Response untagResource(@Context HttpHeaders headers,
+                                   @QueryParam("ResourceArn") String arn,
                                    @QueryParam("TagKeys") List<String> tagKeys) {
+        String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.untagResource(arn, tagKeys);
+            sesService.untagResource(arn, region, tagKeys);
             LOG.infov("SES V2 UntagResource: {0}", arn);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -742,12 +733,14 @@ public class SesController {
 
     @GET
     @Path("/tags")
-    public Response listTagsForResource(@QueryParam("ResourceArn") String arn) {
+    public Response listTagsForResource(@Context HttpHeaders headers,
+                                         @QueryParam("ResourceArn") String arn) {
+        String region = regionResolver.resolveRegion(headers);
         try {
-            List<ConfigurationSet.Tag> tags = sesService.listResourceTags(arn);
+            List<Tag> tags = sesService.listResourceTags(arn, region);
             ObjectNode result = objectMapper.createObjectNode();
             ArrayNode arr = result.putArray("Tags");
-            for (ConfigurationSet.Tag t : tags) {
+            for (Tag t : tags) {
                 ObjectNode tagNode = objectMapper.createObjectNode();
                 tagNode.put("Key", t.key());
                 tagNode.put("Value", t.value());
@@ -867,6 +860,13 @@ public class SesController {
         if (template.getHtmlPart() != null) {
             content.put("Html", template.getHtmlPart());
         }
+        ArrayNode tags = result.putArray("Tags");
+        for (Tag t : template.getTags()) {
+            ObjectNode tagNode = objectMapper.createObjectNode();
+            tagNode.put("Key", t.key());
+            tagNode.put("Value", t.value());
+            tags.add(tagNode);
+        }
         return result;
     }
 
@@ -921,6 +921,28 @@ public class SesController {
                     fieldName + " must be a JSON object.", 400);
         }
         return child;
+    }
+
+    /**
+     * Parse a JSON {@code Tags} array node into a list of tag records. Returns {@code null}
+     * when the node is missing or null so callers can decide whether that is an error
+     * (TagResource) or a no-op (CreateConfigurationSet / CreateEmailTemplate). Throws
+     * {@code BadRequestException} when the node is present but not an array.
+     */
+    private List<Tag> parseTagsArray(JsonNode tagsNode) {
+        if (tagsNode.isMissingNode() || tagsNode.isNull()) {
+            return null;
+        }
+        if (!tagsNode.isArray()) {
+            throw new AwsException("BadRequestException", "Tags must be an array.", 400);
+        }
+        List<Tag> out = new ArrayList<>();
+        for (JsonNode t : tagsNode) {
+            out.add(new Tag(
+                    t.path("Key").asText(null),
+                    t.path("Value").asText(null)));
+        }
+        return out;
     }
 
     private static AwsException remapV1Exception(AwsException e) {

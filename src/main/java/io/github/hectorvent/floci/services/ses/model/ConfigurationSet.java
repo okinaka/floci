@@ -36,10 +36,4 @@ public class ConfigurationSet {
 
     public List<Tag> getTags() { return tags; }
     public void setTags(List<Tag> tags) { this.tags = tags != null ? tags : new ArrayList<>(); }
-
-    @RegisterForReflection
-    public record Tag(
-            @JsonProperty("Key") String key,
-            @JsonProperty("Value") String value) {
-    }
 }
