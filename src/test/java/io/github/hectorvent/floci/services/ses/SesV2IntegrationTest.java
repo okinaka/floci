@@ -329,6 +329,49 @@ class SesV2IntegrationTest {
             .body("message", containsString("leading or trailing whitespace"));
     }
 
+    @Test
+    @Order(15)
+    void createEmailIdentity_withTags_visibleViaGetAndListTags() {
+        // Tags supplied to CreateEmailIdentity must round-trip through GetEmailIdentity
+        // and ListTagsForResource (template/configuration-set behaviour parallel).
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                    "EmailIdentity": "v2-tag-roundtrip.floci.test",
+                    "Tags": [
+                        {"Key": "team", "Value": "platform"},
+                        {"Key": "env", "Value": "stg"}
+                    ]
+                }
+                """)
+        .when()
+            .post("/v2/email/identities")
+        .then()
+            .statusCode(200);
+
+        given()
+            .header("Authorization", AUTH_HEADER)
+        .when()
+            .get("/v2/email/identities/v2-tag-roundtrip.floci.test")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(2))
+            .body("Tags.find { it.Key == 'team' }.Value", equalTo("platform"))
+            .body("Tags.find { it.Key == 'env' }.Value", equalTo("stg"));
+
+        String arn = "arn:aws:ses:us-east-1:000000000000:identity/v2-tag-roundtrip.floci.test";
+        given()
+            .header("Authorization", AUTH_HEADER)
+            .queryParam("ResourceArn", arn)
+        .when()
+            .get("/v2/email/tags")
+        .then()
+            .statusCode(200)
+            .body("Tags", hasSize(2));
+    }
+
     // ──────────────── DKIM Attributes ────────────────
 
     @Test
