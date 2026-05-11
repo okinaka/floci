@@ -201,6 +201,26 @@ class SesIntegrationTest {
     }
 
     @Test
+    @Order(20)
+    void sendRawEmail_withoutSource_acceptedWhenMimeFromPresent() {
+        // Regression for https://github.com/floci-io/floci/issues/797
+        // AWS SES SendRawEmail allows omitting the Source parameter when the
+        // raw MIME message contains a From: header.
+        given()
+            .contentType("application/x-www-form-urlencoded")
+            .header("Authorization", "AWS4-HMAC-SHA256 Credential=AKID/20260101/us-east-1/email/aws4_request")
+            .formParam("Action", "SendRawEmail")
+            .formParam("Destinations.member.1", "recipient@example.com")
+            .formParam("RawMessage.Data",
+                "From: sender@example.com\r\nTo: recipient@example.com\r\nSubject: hello\r\n\r\nbody\r\n")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .body(containsString("<MessageId>"));
+    }
+
+    @Test
     @Order(12)
     void getSendQuota() {
         given()
