@@ -201,7 +201,7 @@ class SesIntegrationTest {
     }
 
     @Test
-    @Order(20)
+    @Order(29)
     void sendRawEmail_withoutSource_acceptedWhenMimeFromPresent() {
         // Regression for https://github.com/floci-io/floci/issues/797
         // AWS SES SendRawEmail allows omitting the Source parameter when the
