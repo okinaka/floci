@@ -396,9 +396,10 @@ public class CodeBuildService {
 
         buildsFor(region).put(buildId, build);
 
+        Build response = build.snapshot();
         runner.startBuild(region, build, project, buildspecOverride);
 
-        return build;
+        return response;
     }
 
     public Build getBuild(String region, String buildId) {
@@ -406,7 +407,7 @@ public class CodeBuildService {
         if (build == null) {
             throw new AwsException("ResourceNotFoundException", "Build not found: " + buildId, 400);
         }
-        return build;
+        return build.snapshot();
     }
 
     public List<Build> batchGetBuilds(String region, List<String> buildIds) {
@@ -414,6 +415,7 @@ public class CodeBuildService {
         return buildIds.stream()
                 .map(store::get)
                 .filter(b -> b != null)
+                .map(Build::snapshot)
                 .collect(Collectors.toList());
     }
 

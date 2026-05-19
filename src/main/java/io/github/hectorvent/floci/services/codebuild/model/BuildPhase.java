@@ -12,11 +12,22 @@ public class BuildPhase {
     public BuildPhase() {}
 
     private String phaseType;
-    private String phaseStatus;
+    private volatile String phaseStatus;
     private Double startTime;
-    private Double endTime;
-    private Long durationInSeconds;
-    private List<Map<String, String>> contexts;
+    private volatile Double endTime;
+    private volatile Long durationInSeconds;
+    private volatile List<Map<String, String>> contexts;
+
+    public BuildPhase snapshot() {
+        BuildPhase copy = new BuildPhase();
+        copy.phaseType = this.phaseType;
+        copy.phaseStatus = this.phaseStatus;
+        copy.startTime = this.startTime;
+        copy.endTime = this.endTime;
+        copy.durationInSeconds = this.durationInSeconds;
+        copy.contexts = this.contexts;
+        return copy;
+    }
 
     public String getPhaseType() { return phaseType; }
     public void setPhaseType(String phaseType) { this.phaseType = phaseType; }

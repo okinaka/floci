@@ -3,6 +3,7 @@ package io.github.hectorvent.floci.services.codebuild.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,21 +15,51 @@ public class Build {
     private String id;
     private String arn;
     private Long buildNumber;
-    private String buildStatus;
-    private Boolean buildComplete;
-    private String currentPhase;
+    private volatile String buildStatus;
+    private volatile Boolean buildComplete;
+    private volatile String currentPhase;
     private String projectName;
     private String initiator;
     private Double startTime;
-    private Double endTime;
+    private volatile Double endTime;
     private ProjectSource source;
     private ProjectArtifacts artifacts;
     private ProjectEnvironment environment;
-    private Map<String, Object> logs;
+    private volatile Map<String, Object> logs;
     private List<BuildPhase> phases;
     private Integer timeoutInMinutes;
     private Integer queuedTimeoutInMinutes;
     private String encryptionKey;
+
+    public Build snapshot() {
+        Build copy = new Build();
+        copy.id = this.id;
+        copy.arn = this.arn;
+        copy.buildNumber = this.buildNumber;
+        copy.buildStatus = this.buildStatus;
+        copy.buildComplete = this.buildComplete;
+        copy.currentPhase = this.currentPhase;
+        copy.projectName = this.projectName;
+        copy.initiator = this.initiator;
+        copy.startTime = this.startTime;
+        copy.endTime = this.endTime;
+        copy.source = this.source;
+        copy.artifacts = this.artifacts;
+        copy.environment = this.environment;
+        copy.logs = this.logs;
+        copy.timeoutInMinutes = this.timeoutInMinutes;
+        copy.queuedTimeoutInMinutes = this.queuedTimeoutInMinutes;
+        copy.encryptionKey = this.encryptionKey;
+        List<BuildPhase> phasesRef = this.phases;
+        if (phasesRef != null) {
+            List<BuildPhase> phasesCopy = new ArrayList<>(phasesRef.size());
+            for (BuildPhase p : phasesRef) {
+                phasesCopy.add(p.snapshot());
+            }
+            copy.phases = phasesCopy;
+        }
+        return copy;
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
