@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -61,7 +62,7 @@ class ElbV2LambdaTargetDataPlaneIntegrationTest {
                 "    headers: { 'content-type': 'text/plain' },\n" +
                 "    body: 'ok-from-alb:' + (event.path || '')\n" +
                 "});\n"
-            ).getBytes());
+            ).getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
         }
         return Base64.getEncoder().encodeToString(baos.toByteArray());
@@ -178,30 +179,39 @@ class ElbV2LambdaTargetDataPlaneIntegrationTest {
                 .body(equalTo("ok-from-alb:/check"));
     }
 
+    /**
+     * Cleanup. Lives as the highest-ordered @Test rather than {@code @AfterAll} because
+     * Quarkus tears the test endpoint down before JUnit's @AfterAll runs, so HTTP-based
+     * cleanup must happen inside the test phase. JUnit 5 still runs subsequent @Test
+     * methods after a failed one, so this executes even when earlier steps fail; null
+     * guards keep it safe when a resource was never created.
+     */
     @Test
-    @Order(90)
+    @Order(Integer.MAX_VALUE)
     void cleanup() {
-        given()
-                .formParam("Action", "DeleteListener")
-                .formParam("ListenerArn", listenerArn)
-                .header("Authorization", AUTH)
-            .when()
-                .post("/")
-            .then()
-                .statusCode(anyOf(equalTo(200), equalTo(204)));
-
-        given()
-                .formParam("Action", "DeleteLoadBalancer")
-                .formParam("LoadBalancerArn", lbArn)
-                .header("Authorization", AUTH)
-            .when()
-                .post("/")
-            .then()
-                .statusCode(anyOf(equalTo(200), equalTo(204)));
-
+        if (listenerArn != null) {
+            given()
+                    .formParam("Action", "DeleteListener")
+                    .formParam("ListenerArn", listenerArn)
+                    .header("Authorization", AUTH)
+                .when()
+                    .post("/")
+                .then()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)));
+        }
+        if (lbArn != null) {
+            given()
+                    .formParam("Action", "DeleteLoadBalancer")
+                    .formParam("LoadBalancerArn", lbArn)
+                    .header("Authorization", AUTH)
+                .when()
+                    .post("/")
+                .then()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)));
+        }
         given()
             .delete("/2015-03-31/functions/" + FN)
         .then()
-            .statusCode(anyOf(equalTo(200), equalTo(204)));
+            .statusCode(anyOf(equalTo(200), equalTo(204), equalTo(404)));
     }
 }

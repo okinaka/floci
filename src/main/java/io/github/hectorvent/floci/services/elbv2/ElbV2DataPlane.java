@@ -202,10 +202,11 @@ public class ElbV2DataPlane {
             // boots and polls the Runtime API. The Runtime API itself runs on Vert.x event
             // loops, so blocking the listener's event loop here would deadlock the runtime
             // and the function would time out. Offload to a worker thread, same as WebSocket.
+            // ordered=false so independent ALB requests run in parallel on the worker pool.
             vertx.<InvokeResult>executeBlocking(() -> {
                 byte[] payload = objectMapper.writeValueAsBytes(event);
                 return lambdaService.invoke(region, functionArn, payload, InvocationType.RequestResponse);
-            }).onSuccess(result -> {
+            }, false).onSuccess(result -> {
                 try {
                     writeLambdaResponse(req, result);
                 } catch (Exception e) {
