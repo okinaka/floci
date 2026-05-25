@@ -53,15 +53,13 @@ class ElbV2LambdaTargetDataPlaneIntegrationTest {
     private static String functionArn;
 
     private static String makeZipBase64() throws Exception {
+        // Matches the reproduction script in the bug report (Python 3.11 / index.handler).
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            zos.putNextEntry(new ZipEntry("index.js"));
+            zos.putNextEntry(new ZipEntry("index.py"));
             zos.write((
-                "exports.handler = async (event) => ({\n" +
-                "    statusCode: 200,\n" +
-                "    headers: { 'content-type': 'text/plain' },\n" +
-                "    body: 'ok-from-alb:' + (event.path || '')\n" +
-                "});\n"
+                "def handler(event, context):\n" +
+                "    return {\"statusCode\": 200, \"body\": \"ok\"}\n"
             ).getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
         }
@@ -77,7 +75,7 @@ class ElbV2LambdaTargetDataPlaneIntegrationTest {
             .body("""
                 {
                     "FunctionName": "%s",
-                    "Runtime": "nodejs20.x",
+                    "Runtime": "python3.11",
                     "Role": "arn:aws:iam::000000000000:role/lambda-role",
                     "Handler": "index.handler",
                     "Timeout": 30,
@@ -175,8 +173,7 @@ class ElbV2LambdaTargetDataPlaneIntegrationTest {
                 .post("/check")
             .then()
                 .statusCode(200)
-                .header("content-type", equalTo("text/plain"))
-                .body(equalTo("ok-from-alb:/check"));
+                .body(equalTo("ok"));
     }
 
     /**
