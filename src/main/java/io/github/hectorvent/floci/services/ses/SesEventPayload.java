@@ -9,6 +9,7 @@ import io.github.hectorvent.floci.services.ses.model.MessageTag;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -35,6 +36,8 @@ final class SesEventPayload {
                             String sourceArn, String sendingAccountId, String subject,
                             List<String> toAddresses, List<String> ccAddresses,
                             List<String> bccAddresses, List<String> envelopeDestinations,
+                            List<String> suppressionBounceRecipients,
+                            List<String> suppressionComplaintRecipients,
                             String configurationSetName, List<MessageTag> emailTags,
                             List<MessageHeader> additionalHeaders, Instant timestamp) {
         ObjectNode root = mapper.createObjectNode();
@@ -43,7 +46,8 @@ final class SesEventPayload {
                 subject, toAddresses, ccAddresses, bccAddresses, envelopeDestinations,
                 configurationSetName, emailTags, additionalHeaders, timestamp));
         root.set(blockName(eventType),
-                buildEventBlock(mapper, eventType, messageId, envelopeDestinations, timestamp));
+                buildEventBlock(mapper, eventType, messageId, envelopeDestinations,
+                        suppressionBounceRecipients, suppressionComplaintRecipients, timestamp));
         return root;
     }
 
@@ -146,7 +150,10 @@ final class SesEventPayload {
     }
 
     private static ObjectNode buildEventBlock(ObjectMapper mapper, String eventType, String messageId,
-                                              List<String> destination, Instant timestamp) {
+                                              List<String> destination,
+                                              List<String> suppressionBounceRecipients,
+                                              List<String> suppressionComplaintRecipients,
+                                              Instant timestamp) {
         ObjectNode body = mapper.createObjectNode();
         switch (eventType) {
             case "DELIVERY" -> {
@@ -165,10 +172,21 @@ final class SesEventPayload {
                 body.put("bounceType", "Permanent");
                 body.put("bounceSubType", "General");
                 ArrayNode bounced = body.putArray("bouncedRecipients");
+                // Union of simulator-bounce addresses and account-level suppressed addresses
+                // whose reason is BOUNCE.
+                LinkedHashSet<String> emitted = new LinkedHashSet<>();
                 for (String d : destination) {
-                    if (SimulatorAddresses.isBounce(d)) {
+                    if (SimulatorAddresses.isBounce(d) && emitted.add(d.trim())) {
                         ObjectNode br = bounced.addObject();
                         br.put("emailAddress", d.trim());
+                    }
+                }
+                if (suppressionBounceRecipients != null) {
+                    for (String d : suppressionBounceRecipients) {
+                        if (d != null && emitted.add(d.trim())) {
+                            ObjectNode br = bounced.addObject();
+                            br.put("emailAddress", d.trim());
+                        }
                     }
                 }
                 body.put("timestamp", ISO_MILLIS.format(timestamp));
@@ -176,10 +194,19 @@ final class SesEventPayload {
             }
             case "COMPLAINT" -> {
                 ArrayNode complained = body.putArray("complainedRecipients");
+                LinkedHashSet<String> emitted = new LinkedHashSet<>();
                 for (String d : destination) {
-                    if (SimulatorAddresses.isComplaint(d)) {
+                    if (SimulatorAddresses.isComplaint(d) && emitted.add(d.trim())) {
                         ObjectNode cr = complained.addObject();
                         cr.put("emailAddress", d.trim());
+                    }
+                }
+                if (suppressionComplaintRecipients != null) {
+                    for (String d : suppressionComplaintRecipients) {
+                        if (d != null && emitted.add(d.trim())) {
+                            ObjectNode cr = complained.addObject();
+                            cr.put("emailAddress", d.trim());
+                        }
                     }
                 }
                 body.put("timestamp", ISO_MILLIS.format(timestamp));
