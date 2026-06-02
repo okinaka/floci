@@ -628,10 +628,10 @@ public class EventBridgeService {
             // inconsistent observable.
             Map<String, Object> entry = new HashMap<>(originalEntry);
             if (isBlank(entry.get("Region"))) {
-                entry.put("Region", region);
+                entry.put("Region", isBlank(region) ? regionResolver.getDefaultRegion() : region);
             }
             if (isBlank(entry.get("Account"))) {
-                entry.put("Account", accountId != null ? accountId : regionResolver.getAccountId());
+                entry.put("Account", isBlank(accountId) ? regionResolver.getAccountId() : accountId);
             }
 
             String eventBusNameRaw = (String) entry.get("EventBusName");
