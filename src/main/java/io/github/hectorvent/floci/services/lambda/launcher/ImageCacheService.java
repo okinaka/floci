@@ -69,11 +69,13 @@ public class ImageCacheService {
 
     /**
      * Runs the given pull attempt, retrying on transient registry failures with exponential
-     * backoff. A failure is considered transient when the docker daemon returns a 5xx response
+     * backoff. A failure is considered transient when the docker daemon returns HTTP 500
      * ({@link InternalServerErrorException}) — most notably ECR Public's
      * {@code "toomanyrequests: Rate exceeded"} 500. Permanent failures (auth, missing image,
      * malformed request) keep surfacing their original docker-java exception subclass on the
-     * first attempt and are not retried.
+     * first attempt and are not retried. (docker-java 3.7.x only maps 500 to a dedicated
+     * subclass; other 5xx responses surface as the generic {@code DockerException} and are
+     * also left to the caller without retry.)
      */
     static void runWithRetry(String imageUri, int maxAttempts, long initialBackoffMs,
                              PullAttempt attempt) throws InterruptedException {
