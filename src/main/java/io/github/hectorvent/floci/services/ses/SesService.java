@@ -17,6 +17,7 @@ import io.github.hectorvent.floci.services.ses.model.MessageHeader;
 import io.github.hectorvent.floci.services.ses.model.MessageTag;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
 import io.github.hectorvent.floci.services.ses.model.SuppressedDestination;
+import io.github.hectorvent.floci.services.ses.model.SuppressionOptions;
 import io.github.hectorvent.floci.services.ses.model.Tag;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -686,6 +687,53 @@ public class SesService {
                 eventDestinationName, configSetName, region);
     }
 
+    /**
+     * Stores per-configuration-set suppression overrides. Mirrors the AWS V2
+     * {@code PutConfigurationSetSuppressionOptions} contract: {@code reasons} may
+     * be {@code null} or empty (explicit "no filtering" for this set) or a subset
+     * of {@code [BOUNCE, COMPLAINT]}. Once set, the value is returned through
+     * {@link #getConfigurationSet}; downstream callers can resolve the effective
+     * reasons for a given send via {@link #getEffectiveSuppressedReasons}.
+     */
+    public void putConfigurationSetSuppressionOptions(String configSetName,
+                                                      List<String> reasons, String region) {
+        List<String> sanitized = new ArrayList<>();
+        if (reasons != null) {
+            for (String r : reasons) {
+                validateConfigSetSuppressionReason(r);
+                sanitized.add(r);
+            }
+        }
+        ConfigurationSet cs = getConfigurationSet(configSetName, region);
+        SuppressionOptions options = new SuppressionOptions();
+        options.setSuppressedReasons(sanitized);
+        cs.setSuppressionOptions(options);
+        configSetStore.put(configSetKey(region, configSetName), cs);
+        LOG.infov("Updated SuppressionOptions on configuration set {0} in region {1}: {2}",
+                configSetName, region, sanitized);
+    }
+
+    /**
+     * Returns the effective suppression reasons for a send that is using
+     * {@code configurationSetName}. Per the AWS V2 contract, a configuration
+     * set's {@code SuppressionOptions} (when present) overrides the
+     * account-level reasons — including an empty list, which explicitly
+     * disables suppression filtering for that set. Falls back to the
+     * account-level reasons when the configuration set has no override, or
+     * when {@code configurationSetName} is null/blank (i.e. the caller didn't
+     * specify a configuration set).
+     */
+    public List<String> getEffectiveSuppressedReasons(String configurationSetName, String region) {
+        if (configurationSetName != null && !configurationSetName.isBlank()) {
+            ConfigurationSet cs = getConfigurationSet(configurationSetName, region);
+            SuppressionOptions options = cs.getSuppressionOptions();
+            if (options != null) {
+                return List.copyOf(options.getSuppressedReasons());
+            }
+        }
+        return List.copyOf(getAccountSuppressionAttributes(region).getSuppressedReasons());
+    }
+
     private static int indexOfEventDestination(List<EventDestination> destinations, String name) {
         for (int i = 0; i < destinations.size(); i++) {
             if (name != null && name.equals(destinations.get(i).getName())) {
@@ -1108,6 +1156,17 @@ public class SesService {
         return emailAddress.trim();
     }
 
+    /**
+     * Validation message used by PutAccountSuppressionAttributes,
+     * PutSuppressedDestination, and ListSuppressedDestinations — all three
+     * return the AWS "1 validation error detected: Value at '<fieldName>'
+     * failed to satisfy constraint: ..." V1-style nested message verbatim.
+     * (Verified against real AWS V2 SES on 2026-06-03.) The {@code nested}
+     * flag controls whether the inner enum constraint is wrapped in
+     * {@code Member must satisfy constraint: [...]} — PutSuppressedDestination
+     * (single Reason field) returns the unwrapped form; the two list-bearing
+     * APIs return the wrapped form.
+     */
     private static void validateSuppressionReason(String reason, String fieldName, boolean nested) {
         if (reason == null || (!"BOUNCE".equals(reason) && !"COMPLAINT".equals(reason))) {
             String constraint = nested
@@ -1116,6 +1175,20 @@ public class SesService {
             throw new AwsException("BadRequestException",
                     "1 validation error detected: Value at '" + fieldName + "' failed to satisfy constraint: "
                             + constraint, 400);
+        }
+    }
+
+    /**
+     * Validation message used by PutConfigurationSetSuppressionOptions. AWS
+     * V2 SES uses a different, simpler natural-language sentence on this
+     * endpoint than on the three older suppression APIs above:
+     *   "Reason <X> is invalid, must be one of [BOUNCE, COMPLAINT]."
+     * (Verified against real AWS V2 SES on 2026-06-03.)
+     */
+    private static void validateConfigSetSuppressionReason(String reason) {
+        if (reason == null || (!"BOUNCE".equals(reason) && !"COMPLAINT".equals(reason))) {
+            throw new AwsException("BadRequestException",
+                    "Reason " + reason + " is invalid, must be one of [BOUNCE, COMPLAINT].", 400);
         }
     }
 
