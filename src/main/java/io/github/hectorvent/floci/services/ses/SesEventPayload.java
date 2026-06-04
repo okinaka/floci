@@ -219,7 +219,7 @@ final class SesEventPayload {
         }
     }
 
-    private static String eventTypeLabel(String eventType) {
+    static String eventTypeLabel(String eventType) {
         return switch (eventType) {
             case "SEND" -> "Send";
             case "REJECT" -> "Reject";
