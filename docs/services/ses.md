@@ -42,6 +42,9 @@ Floci exposes the classic Amazon SES Query API used by `aws ses ...` commands an
 | `DescribeConfigurationSet`          | Read a configuration set                                  |
 | `ListConfigurationSets`             | List configuration sets                                   |
 | `DeleteConfigurationSet`            | Delete a configuration set                                |
+| `CreateConfigurationSetEventDestination` | Attach an event destination to a configuration set        |
+| `UpdateConfigurationSetEventDestination` | Update an existing event destination on a configuration set |
+| `DeleteConfigurationSetEventDestination` | Remove an event destination from a configuration set      |
 
 ## Configuration
 
