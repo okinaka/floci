@@ -27,6 +27,9 @@ public class ConfigurationSet {
     @JsonProperty("SuppressionOptions")
     private SuppressionOptions suppressionOptions;
 
+    @JsonProperty("SendingEnabled")
+    private Boolean sendingEnabled;
+
     public ConfigurationSet() {}
 
     public ConfigurationSet(String name) {
@@ -52,4 +55,7 @@ public class ConfigurationSet {
     public void setSuppressionOptions(SuppressionOptions suppressionOptions) {
         this.suppressionOptions = suppressionOptions;
     }
+
+    public Boolean getSendingEnabled() { return sendingEnabled; }
+    public void setSendingEnabled(Boolean sendingEnabled) { this.sendingEnabled = sendingEnabled; }
 }
