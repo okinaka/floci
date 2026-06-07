@@ -859,7 +859,7 @@ class SesEventPublishingV2IntegrationTest {
 
         JsonNode envelope = envelopes.get(0);
         assertEquals("aws.ses", envelope.path("source").asText());
-        assertEquals("Email Send", envelope.path("detail-type").asText());
+        assertEquals("Email Sent", envelope.path("detail-type").asText());
         assertEquals("default", envelope.path("event-bus-name").asText());
         // AWS always emits a `resources` array on the envelope, and SesEventPublisher mirrors
         // that contract. SesService derives sourceArn from FromEmailAddress, so this case
@@ -887,9 +887,9 @@ class SesEventPublishingV2IntegrationTest {
         List<JsonNode> envelopes = receiveEbEvents(2);
         assertEquals(2, envelopes.size());
         assertTrue(envelopes.stream().anyMatch(
-                e -> "Email Send".equals(e.path("detail-type").asText())));
+                e -> "Email Sent".equals(e.path("detail-type").asText())));
         assertTrue(envelopes.stream().anyMatch(
-                e -> "Email Delivery".equals(e.path("detail-type").asText())));
+                e -> "Email Delivered".equals(e.path("detail-type").asText())));
     }
 
     @Test
@@ -1340,7 +1340,122 @@ class SesEventPublishingV2IntegrationTest {
                 "envelope.region must equal the PutEvents call region "
                 + "(regression: EventBridgeService.buildEventEnvelope per #1125)");
         assertEquals("aws.ses", envelope.path("source").asText());
-        assertEquals("Email Send", envelope.path("detail-type").asText());
+        assertEquals("Email Sent", envelope.path("detail-type").asText());
+    }
+
+    @Test
+    @Order(29)
+    void eventBridge_detailTypePattern_keyedOnAwsSentValue_matches() throws Exception {
+        // Structural pin against EventBridge detail-type drift. The rule pattern is keyed
+        // on the AWS-correct value "Email Sent" (past tense, per
+        // https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-ses.html). If the
+        // publisher regresses to the SNS-style "Email Send" — the wrong form for
+        // EventBridge — this rule will not match and no message reaches the SQS target,
+        // failing the test without relying on any hard-coded assertion string.
+        String queueName = "ses-events-eb-detail-q";
+        String ruleName = "ses-events-eb-detail-rule";
+        String csName = "ses-events-eb-detail-cs";
+
+        String detailQueueUrl = given()
+                .contentType(SQS_CONTENT_TYPE)
+                .header("Authorization", SQS_AUTH)
+                .header("X-Amz-Target", "AmazonSQS.CreateQueue")
+                .body("{\"QueueName\":\"" + queueName + "\"}")
+        .when()
+                .post("/")
+        .then()
+                .statusCode(200)
+                .extract().jsonPath().getString("QueueUrl");
+        assertNotNull(detailQueueUrl);
+
+        String detailQueueArn = given()
+                .contentType(SQS_CONTENT_TYPE)
+                .header("Authorization", SQS_AUTH)
+                .header("X-Amz-Target", "AmazonSQS.GetQueueAttributes")
+                .body("{\"QueueUrl\":\"" + detailQueueUrl + "\",\"AttributeNames\":[\"All\"]}")
+        .when()
+                .post("/")
+        .then()
+                .statusCode(200)
+                .extract().jsonPath().getString("Attributes.QueueArn");
+
+        given()
+                .contentType(EVENTS_CONTENT_TYPE)
+                .header("Authorization", EVENTS_AUTH)
+                .header("X-Amz-Target", "AWSEvents.PutRule")
+                .body("{\"Name\":\"" + ruleName
+                        + "\",\"EventPattern\":\"{\\\"source\\\":[\\\"aws.ses\\\"],"
+                        + "\\\"detail-type\\\":[\\\"Email Sent\\\"]}\"}")
+        .when()
+                .post("/")
+        .then()
+                .statusCode(200);
+
+        given()
+                .contentType(EVENTS_CONTENT_TYPE)
+                .header("Authorization", EVENTS_AUTH)
+                .header("X-Amz-Target", "AWSEvents.PutTargets")
+                .body("{\"Rule\":\"" + ruleName + "\",\"Targets\":[{\"Id\":\"1\",\"Arn\":\""
+                        + detailQueueArn + "\"}]}")
+        .when()
+                .post("/")
+        .then()
+                .statusCode(200);
+
+        given()
+                .contentType("application/json")
+                .header("Authorization", SES_AUTH)
+                .body("{\"ConfigurationSetName\":\"" + csName + "\"}")
+        .when()
+                .post("/v2/email/configuration-sets")
+        .then()
+                .statusCode(200);
+
+        given()
+                .contentType("application/json")
+                .header("Authorization", SES_AUTH)
+                .body("""
+                    {
+                      "EventDestinationName": "ed-eventbridge-detail",
+                      "EventDestination": {
+                        "Enabled": true,
+                        "MatchingEventTypes": ["SEND"],
+                        "EventBridgeDestination": {"EventBusArn": "%s"}
+                      }
+                    }
+                    """.formatted(EB_DEFAULT_BUS_ARN))
+        .when()
+                .post("/v2/email/configuration-sets/" + csName + "/event-destinations")
+        .then()
+                .statusCode(200);
+
+        sendEmailToConfigSet(csName, "recipient@example.com", "eb-detail-type-pin");
+
+        List<JsonNode> envelopes = new ArrayList<>();
+        for (int attempt = 0; attempt < 10 && envelopes.isEmpty(); attempt++) {
+            Response r = given()
+                    .contentType(SQS_CONTENT_TYPE)
+                    .header("Authorization", SQS_AUTH)
+                    .header("X-Amz-Target", "AmazonSQS.ReceiveMessage")
+                    .body("{\"QueueUrl\":\"" + detailQueueUrl
+                            + "\",\"MaxNumberOfMessages\":10,\"WaitTimeSeconds\":1}")
+            .when()
+                    .post("/")
+            .then()
+                    .statusCode(200)
+                    .extract().response();
+            List<String> bodies = r.jsonPath().getList("Messages.Body");
+            if (bodies != null) {
+                for (String b : bodies) {
+                    envelopes.add(MAPPER.readTree(b));
+                }
+            }
+        }
+        assertFalse(envelopes.isEmpty(),
+                "rule with detail-type=[\"Email Sent\"] must match a SEND emission "
+                + "(regression: SesEventPayload.eventBridgeDetailType returning the SNS-style "
+                + "'Email Send' for EventBridge would cause this rule to silently drop the event)");
+        assertEquals("Email Sent", envelopes.get(0).path("detail-type").asText());
     }
 
     private static boolean cloudWatch_hasDimensions(MetricIdentity metric, String configurationSet,

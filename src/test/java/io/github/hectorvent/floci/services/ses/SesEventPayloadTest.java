@@ -308,4 +308,26 @@ class SesEventPayloadTest {
         assertEquals("Reject", node.get("eventType").asText());
         assertNotNull(node.get("reject").get("reason"));
     }
+
+    /**
+     * EventBridge uses a separate past-tense vocabulary for {@code detail-type}, distinct
+     * from the SNS notification {@code eventType} value. Pin every mapping against
+     * https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-ses.html so a
+     * future cleanup of {@link SesEventPayload#eventTypeLabel} cannot accidentally
+     * regress the EventBridge value (which would silently break customer rules
+     * keyed on the AWS detail-type names).
+     */
+    @Test
+    void eventBridgeDetailType_matchesAwsPastTenseVocabulary() {
+        assertEquals("Email Sent",                SesEventPayload.eventBridgeDetailType("SEND"));
+        assertEquals("Email Rejected",            SesEventPayload.eventBridgeDetailType("REJECT"));
+        assertEquals("Email Bounced",             SesEventPayload.eventBridgeDetailType("BOUNCE"));
+        assertEquals("Email Complaint Received",  SesEventPayload.eventBridgeDetailType("COMPLAINT"));
+        assertEquals("Email Delivered",           SesEventPayload.eventBridgeDetailType("DELIVERY"));
+        assertEquals("Email Opened",              SesEventPayload.eventBridgeDetailType("OPEN"));
+        assertEquals("Email Clicked",             SesEventPayload.eventBridgeDetailType("CLICK"));
+        assertEquals("Email Rendering Failed",    SesEventPayload.eventBridgeDetailType("RENDERING_FAILURE"));
+        assertEquals("Email Delivery Delayed",    SesEventPayload.eventBridgeDetailType("DELIVERY_DELAY"));
+        assertEquals("Email Subscribed",          SesEventPayload.eventBridgeDetailType("SUBSCRIPTION"));
+    }
 }

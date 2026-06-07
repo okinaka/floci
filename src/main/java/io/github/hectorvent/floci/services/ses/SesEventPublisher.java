@@ -184,7 +184,7 @@ public class SesEventPublisher {
         try {
             Map<String, Object> entry = new HashMap<>();
             entry.put("Source", "aws.ses");
-            entry.put("DetailType", "Email " + SesEventPayload.eventTypeLabel(eventType));
+            entry.put("DetailType", SesEventPayload.eventBridgeDetailType(eventType));
             entry.put("Detail", payloadJson);
             entry.put("EventBusName", busName);
             entry.put("Region", region);

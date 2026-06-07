@@ -235,6 +235,29 @@ final class SesEventPayload {
         };
     }
 
+    /**
+     * Returns the EventBridge {@code detail-type} value for a SES event. AWS uses a
+     * separate past-tense vocabulary on EventBridge (e.g. {@code Email Sent}) that
+     * differs from the SNS notification {@code eventType} value (e.g. {@code Send})
+     * — a rule pattern keyed on the EventBridge value will not match the SNS value.
+     * Reference: https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-ses.html
+     */
+    static String eventBridgeDetailType(String eventType) {
+        return switch (eventType) {
+            case "SEND" -> "Email Sent";
+            case "REJECT" -> "Email Rejected";
+            case "BOUNCE" -> "Email Bounced";
+            case "COMPLAINT" -> "Email Complaint Received";
+            case "DELIVERY" -> "Email Delivered";
+            case "OPEN" -> "Email Opened";
+            case "CLICK" -> "Email Clicked";
+            case "RENDERING_FAILURE" -> "Email Rendering Failed";
+            case "DELIVERY_DELAY" -> "Email Delivery Delayed";
+            case "SUBSCRIPTION" -> "Email Subscribed";
+            default -> "Email " + eventType;
+        };
+    }
+
     private static String blockName(String eventType) {
         return switch (eventType) {
             case "SEND" -> "send";

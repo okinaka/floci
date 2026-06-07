@@ -543,7 +543,7 @@ class SesEventPublishingTest {
         assertThat(envelopes).hasSize(1);
         JsonNode env = envelopes.get(0);
         assertThat(env.path("source").asText()).isEqualTo("aws.ses");
-        assertThat(env.path("detail-type").asText()).isEqualTo("Email Send");
+        assertThat(env.path("detail-type").asText()).isEqualTo("Email Sent");
         JsonNode detail = env.path("detail");
         assertThat(detail.path("eventType").asText()).isEqualTo("Send");
         assertThat(detail.path("mail").path("source").asText()).isEqualTo(identity);
@@ -573,8 +573,8 @@ class SesEventPublishingTest {
 
         List<JsonNode> envelopes = receiveEbEvents(2);
         assertThat(envelopes).hasSize(2);
-        assertThat(envelopes).anyMatch(e -> "Email Send".equals(e.path("detail-type").asText()));
-        assertThat(envelopes).anyMatch(e -> "Email Delivery".equals(e.path("detail-type").asText()));
+        assertThat(envelopes).anyMatch(e -> "Email Sent".equals(e.path("detail-type").asText()));
+        assertThat(envelopes).anyMatch(e -> "Email Delivered".equals(e.path("detail-type").asText()));
     }
 
     @Test
