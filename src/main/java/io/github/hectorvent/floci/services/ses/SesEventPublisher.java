@@ -230,7 +230,7 @@ public class SesEventPublisher {
         }
         MetricDatum datum = new MetricDatum();
         datum.setNamespace(SES_METRIC_NAMESPACE);
-        datum.setMetricName(SesEventPayload.eventTypeLabel(eventType));
+        datum.setMetricName(SesEventPayload.cloudWatchMetricName(eventType));
         datum.setValue(1.0);
         datum.setUnit("Count");
         datum.setDimensions(dimensions);
