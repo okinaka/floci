@@ -11,6 +11,10 @@ import software.amazon.smithy.model.shapes.StructureShape;
 import software.amazon.smithy.model.traits.EnumTrait;
 import software.amazon.smithy.model.traits.JsonNameTrait;
 import software.amazon.smithy.model.traits.RequiredTrait;
+import software.amazon.smithy.model.traits.XmlNameTrait;
+
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -100,13 +104,38 @@ public final class SmithyResponseValidator {
 
     private void walkList(JsonNode actual, ListShape shape, String path,
                           List<ValidationError> errors) {
-        if (!actual.isArray()) {
+        // Pre-walk XML-wrapper unwrap. AWS REST XML services (S3 etc.) serialize
+        // non-flattened lists as <Buckets><Bucket>...</Bucket><Bucket>...</Bucket></Buckets>,
+        // and XmlMapper turns that into {"Buckets": {"Bucket": [...]}} on parse.
+        // When the actual node is an object with a single key matching the list
+        // member's wire name (xmlName trait, else member name), unwrap one level.
+        // Also coerce a single-element non-array value into a singleton array, which
+        // XmlMapper produces when there's exactly one repetition.
+        JsonNode resolved = actual;
+        if (!resolved.isArray() && resolved.isObject() && resolved.size() == 1) {
+            String onlyField = resolved.fieldNames().next();
+            String memberWireName = shape.getMember()
+                    .getTrait(XmlNameTrait.class)
+                    .map(XmlNameTrait::getValue)
+                    .orElse(shape.getMember().getMemberName());
+            if (onlyField.equals(memberWireName)) {
+                JsonNode inner = resolved.get(onlyField);
+                if (inner.isArray()) {
+                    resolved = inner;
+                } else {
+                    ArrayNode singleton = JsonNodeFactory.instance.arrayNode();
+                    singleton.add(inner);
+                    resolved = singleton;
+                }
+            }
+        }
+        if (!resolved.isArray()) {
             errors.add(new ValidationError(path, "expected array, got " + actual.getNodeType()));
             return;
         }
         Shape memberTarget = model.expectShape(shape.getMember().getTarget());
-        for (int i = 0; i < actual.size(); i++) {
-            walk(actual.get(i), memberTarget, path + "[" + i + "]", errors);
+        for (int i = 0; i < resolved.size(); i++) {
+            walk(resolved.get(i), memberTarget, path + "[" + i + "]", errors);
         }
     }
 
