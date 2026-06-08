@@ -10,6 +10,7 @@ import software.amazon.smithy.model.shapes.ServiceShape;
 import software.amazon.smithy.model.shapes.ShapeId;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,17 +103,19 @@ class SesV1CoverageTest {
                 .map(id -> model.expectShape(id, OperationShape.class))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 1 coverage probe");
+        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 2 coverage probe");
+        MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
 
         for (OperationShape op : ops) {
             String opName = op.getId().getName();
             try {
+                String body = encodeForm(opName, requestBuilder.buildQueryForm(op));
                 HttpResponse<String> response = http.send(
                         HttpRequest.newBuilder()
                                 .uri(URI.create(ENDPOINT + "/"))
                                 .header("Authorization", SES_AUTH)
                                 .header("Content-Type", "application/x-www-form-urlencoded")
-                                .POST(HttpRequest.BodyPublishers.ofString("Action=" + opName))
+                                .POST(HttpRequest.BodyPublishers.ofString(body))
                                 .build(),
                         HttpResponse.BodyHandlers.ofString());
                 report.record(classify(opName, op, response, model, validator, xml));
@@ -201,5 +205,17 @@ class SesV1CoverageTest {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static String encodeForm(String opName, Map<String, String> params) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Action=").append(URLEncoder.encode(opName, StandardCharsets.UTF_8));
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            sb.append('&')
+              .append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8))
+              .append('=')
+              .append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
     }
 }
