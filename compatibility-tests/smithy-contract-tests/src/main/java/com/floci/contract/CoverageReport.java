@@ -29,7 +29,11 @@ public final class CoverageReport {
         ERROR
     }
 
-    public record Entry(String op, Status status, int httpStatus, String note) {
+    public record Entry(String op, Status status, int httpStatus, String note,
+                        FieldCoverage.Result fieldCoverage) {
+        public Entry(String op, Status status, int httpStatus, String note) {
+            this(op, status, httpStatus, note, null);
+        }
         public boolean isImplemented() {
             return status != Status.NOT_IMPLEMENTED && status != Status.ERROR;
         }
@@ -78,6 +82,26 @@ public final class CoverageReport {
         }
         sb.append("\n");
 
+        // L4 field-coverage roll-up across IMPLEMENTED_OK ops.
+        int totalDeclared = 0;
+        int totalPresent = 0;
+        int countedOps = 0;
+        for (Entry e : entries) {
+            if (e.fieldCoverage != null) {
+                totalDeclared += e.fieldCoverage.declared();
+                totalPresent += e.fieldCoverage.present();
+                countedOps++;
+            }
+        }
+        if (countedOps > 0) {
+            sb.append("## Field coverage (L4)\n\n");
+            sb.append("Across ").append(countedOps)
+                    .append(" `IMPLEMENTED_OK` ops, Floci emits ")
+                    .append(totalPresent).append(" of ").append(totalDeclared)
+                    .append(" Smithy-declared top-level fields (")
+                    .append(percent(totalPresent, totalDeclared)).append("%).\n\n");
+        }
+
         for (Status s : Status.values()) {
             int c = counts.get(s);
             if (c == 0) {
@@ -89,7 +113,14 @@ public final class CoverageReport {
                     continue;
                 }
                 sb.append("- `").append(e.op).append("`");
-                if (e.note != null && !e.note.isBlank()) {
+                if (e.fieldCoverage != null) {
+                    sb.append(" — fields ").append(e.fieldCoverage.fraction());
+                    if (!e.fieldCoverage.missing().isEmpty()) {
+                        sb.append(" (missing: ")
+                                .append(String.join(", ", e.fieldCoverage.missing()))
+                                .append(")");
+                    }
+                } else if (e.note != null && !e.note.isBlank()) {
                     sb.append(" — ").append(e.note);
                 }
                 sb.append("\n");

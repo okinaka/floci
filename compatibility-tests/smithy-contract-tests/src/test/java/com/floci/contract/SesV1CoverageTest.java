@@ -171,8 +171,9 @@ class SesV1CoverageTest {
             }
             var errors = validator.validate(inner, outId);
             if (errors.isEmpty()) {
+                FieldCoverage.Result fc = FieldCoverage.measure(inner, outId, model, /* xmlMode= */ true);
                 return new CoverageReport.Entry(opName, CoverageReport.Status.IMPLEMENTED_OK,
-                        status, "200, shape ok");
+                        status, "200, shape ok", fc);
             }
             return new CoverageReport.Entry(opName, CoverageReport.Status.IMPLEMENTED_DRIFT,
                     status, errors.size() + " shape drift(s): " + errors.get(0));

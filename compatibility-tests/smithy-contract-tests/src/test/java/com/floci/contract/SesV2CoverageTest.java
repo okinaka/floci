@@ -121,7 +121,7 @@ class SesV2CoverageTest {
                 HttpRequest request = buildRequest(httpTrait.getMethod(), uri, body, json);
                 HttpResponse<String> response = http.send(
                         request, HttpResponse.BodyHandlers.ofString());
-                report.record(classify(opName, op, response, validator, json));
+                report.record(classify(opName, op, response, validator, json, model));
             } catch (Exception e) {
                 report.record(new CoverageReport.Entry(
                         opName, CoverageReport.Status.ERROR, -1,
@@ -183,7 +183,8 @@ class SesV2CoverageTest {
     private static CoverageReport.Entry classify(String opName, OperationShape op,
                                                   HttpResponse<String> response,
                                                   SmithyResponseValidator validator,
-                                                  ObjectMapper json) throws Exception {
+                                                  ObjectMapper json,
+                                                  Model model) throws Exception {
         int status = response.statusCode();
         String body = response.body();
 
@@ -195,8 +196,9 @@ class SesV2CoverageTest {
                     : json.readTree(body);
             var errors = validator.validate(actual, outId);
             if (errors.isEmpty()) {
+                FieldCoverage.Result fc = FieldCoverage.measure(actual, outId, model, /* xmlMode= */ false);
                 return new CoverageReport.Entry(opName, CoverageReport.Status.IMPLEMENTED_OK,
-                        status, "200, shape ok");
+                        status, "200, shape ok", fc);
             }
             return new CoverageReport.Entry(opName, CoverageReport.Status.IMPLEMENTED_DRIFT,
                     status, errors.size() + " shape drift(s): " + errors.get(0));
