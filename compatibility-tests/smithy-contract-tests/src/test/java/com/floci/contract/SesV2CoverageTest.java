@@ -95,7 +95,8 @@ class SesV2CoverageTest {
                 .map(id -> model.expectShape(id, OperationShape.class))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 1 coverage probe");
+        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 2 coverage probe");
+        MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
 
         for (OperationShape op : ops) {
             String opName = op.getId().getName();
@@ -106,7 +107,10 @@ class SesV2CoverageTest {
                 continue;
             }
             try {
-                HttpRequest request = buildRequest(httpTrait);
+                String uri = ENDPOINT + fillPathParams(
+                        httpTrait.getUri().toString(), requestBuilder.resolvePathParams(op));
+                JsonNode body = requestBuilder.buildJsonBody(op);
+                HttpRequest request = buildRequest(httpTrait.getMethod(), uri, body, json);
                 HttpResponse<String> response = http.send(
                         request, HttpResponse.BodyHandlers.ofString());
                 report.record(classify(opName, op, response, validator, json));
@@ -129,34 +133,40 @@ class SesV2CoverageTest {
                 .isGreaterThan(0);
     }
 
-    private static HttpRequest buildRequest(HttpTrait http) {
-        String uri = ENDPOINT + fillPathParams(http.getUri().toString());
+    private static HttpRequest buildRequest(String method, String uri, JsonNode body,
+                                             ObjectMapper json) {
         HttpRequest.Builder b = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .header("Authorization", SES_AUTH);
-        String method = http.getMethod();
+        String bodyJson = body == null ? "{}" : body.toString();
         switch (method) {
             case "GET" -> b.GET();
             case "DELETE" -> b.DELETE();
             case "POST" -> {
                 b.header("Content-Type", "application/json");
-                b.POST(HttpRequest.BodyPublishers.ofString("{}"));
+                b.POST(HttpRequest.BodyPublishers.ofString(bodyJson));
             }
             case "PUT" -> {
                 b.header("Content-Type", "application/json");
-                b.PUT(HttpRequest.BodyPublishers.ofString("{}"));
+                b.PUT(HttpRequest.BodyPublishers.ofString(bodyJson));
             }
             default -> b.method(method, HttpRequest.BodyPublishers.noBody());
         }
         return b.build();
     }
 
-    private static String fillPathParams(String template) {
+    private static String fillPathParams(String template, java.util.Map<String, String> values) {
         Matcher m = PATH_PARAM.matcher(template);
         StringBuilder sb = new StringBuilder();
         while (m.find()) {
+            String paramName = m.group(1);
+            // Member names in templates may have a leading "+" for greedy labels — strip.
+            if (paramName.startsWith("+")) {
+                paramName = paramName.substring(1);
+            }
+            String value = values.getOrDefault(paramName, SYNTHETIC);
             m.appendReplacement(sb,
-                    Matcher.quoteReplacement(URLEncoder.encode(SYNTHETIC, StandardCharsets.UTF_8)));
+                    Matcher.quoteReplacement(URLEncoder.encode(value, StandardCharsets.UTF_8)));
         }
         m.appendTail(sb);
         return sb.toString();
