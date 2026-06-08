@@ -54,7 +54,7 @@ class SesV1ContractTest {
     @BeforeAll
     static void setUp() {
         Model model = SmithyModelLoader.load("models/ses.json");
-        validator = new SmithyResponseValidator(model);
+        validator = new SmithyResponseValidator(model, true);
         http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();

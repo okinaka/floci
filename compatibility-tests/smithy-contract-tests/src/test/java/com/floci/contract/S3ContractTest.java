@@ -44,7 +44,7 @@ class S3ContractTest {
     @BeforeAll
     static void setUp() {
         Model model = SmithyModelLoader.load("models/s3.json");
-        validator = new SmithyResponseValidator(model);
+        validator = new SmithyResponseValidator(model, true);
         http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();

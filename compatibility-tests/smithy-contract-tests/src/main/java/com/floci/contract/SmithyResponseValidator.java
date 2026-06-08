@@ -40,9 +40,22 @@ import java.util.Set;
 public final class SmithyResponseValidator {
 
     private final Model model;
+    private final boolean xmlMode;
 
     public SmithyResponseValidator(Model model) {
+        this(model, false);
+    }
+
+    /**
+     * @param xmlMode when {@code true}, leaf-scalar checks accept string forms because
+     *                XML has no native typing — {@code <Enabled>true</Enabled>} parses
+     *                as a string. Also accepts an empty XML element ({@code <X/>} → {@code ""})
+     *                as an empty list / map / struct. Use this for any test parsing AWS
+     *                Query or REST XML responses through Jackson XmlMapper.
+     */
+    public SmithyResponseValidator(Model model, boolean xmlMode) {
         this.model = model;
+        this.xmlMode = xmlMode;
     }
 
     public List<ValidationError> validate(JsonNode actual, ShapeId structureId) {
@@ -73,6 +86,12 @@ public final class SmithyResponseValidator {
 
     private void walkStructure(JsonNode actual, StructureShape shape, String path,
                                List<ValidationError> errors) {
+        if (xmlMode && actual.isTextual() && actual.asText().isEmpty()) {
+            // Empty XML element (<Foo/>) deserialises as "" — treat as an empty
+            // structure (no children). Required-member checks will still fire below
+            // because we walk member shapes from the structure, finding none present.
+            actual = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        }
         if (!actual.isObject()) {
             errors.add(new ValidationError(path,
                     "expected object (Smithy structure " + shape.getId() + "), got " + actual.getNodeType()));
@@ -104,14 +123,19 @@ public final class SmithyResponseValidator {
 
     private void walkList(JsonNode actual, ListShape shape, String path,
                           List<ValidationError> errors) {
-        // Pre-walk XML-wrapper unwrap. AWS REST XML services (S3 etc.) serialize
+        // Pre-walk XML-wrapper unwrap. AWS REST XML / Query services serialize
         // non-flattened lists as <Buckets><Bucket>...</Bucket><Bucket>...</Bucket></Buckets>,
         // and XmlMapper turns that into {"Buckets": {"Bucket": [...]}} on parse.
         // When the actual node is an object with a single key matching the list
         // member's wire name (xmlName trait, else member name), unwrap one level.
         // Also coerce a single-element non-array value into a singleton array, which
-        // XmlMapper produces when there's exactly one repetition.
+        // XmlMapper produces when there's exactly one repetition. An empty XML
+        // element (<Identities/>) deserialises as "" and means "empty list" — coerce
+        // that too (xmlMode only).
         JsonNode resolved = actual;
+        if (xmlMode && resolved.isTextual() && resolved.asText().isEmpty()) {
+            resolved = JsonNodeFactory.instance.arrayNode();
+        }
         if (!resolved.isArray() && resolved.isObject() && resolved.size() == 1) {
             String onlyField = resolved.fieldNames().next();
             String memberWireName = shape.getMember()
@@ -141,6 +165,9 @@ public final class SmithyResponseValidator {
 
     private void walkMap(JsonNode actual, MapShape shape, String path,
                          List<ValidationError> errors) {
+        if (xmlMode && actual.isTextual() && actual.asText().isEmpty()) {
+            return;  // empty XML element <Map/> → empty map
+        }
         if (!actual.isObject()) {
             errors.add(new ValidationError(path, "expected object (Smithy map), got " + actual.getNodeType()));
             return;
@@ -168,10 +195,17 @@ public final class SmithyResponseValidator {
         }
     }
 
-    private static void requireBoolean(JsonNode actual, String path, List<ValidationError> errors) {
-        if (!actual.isBoolean()) {
-            errors.add(new ValidationError(path, "expected boolean, got " + actual.getNodeType()));
+    private void requireBoolean(JsonNode actual, String path, List<ValidationError> errors) {
+        if (actual.isBoolean()) {
+            return;
         }
+        if (xmlMode && actual.isTextual()) {
+            String s = actual.asText();
+            if ("true".equals(s) || "false".equals(s)) {
+                return;
+            }
+        }
+        errors.add(new ValidationError(path, "expected boolean, got " + actual.getNodeType()));
     }
 
     private static void requireString(JsonNode actual, Shape shape, String path,
@@ -182,10 +216,19 @@ public final class SmithyResponseValidator {
         }
     }
 
-    private static void requireNumber(JsonNode actual, String path, List<ValidationError> errors) {
-        if (!actual.isNumber()) {
-            errors.add(new ValidationError(path, "expected number, got " + actual.getNodeType()));
+    private void requireNumber(JsonNode actual, String path, List<ValidationError> errors) {
+        if (actual.isNumber()) {
+            return;
         }
+        if (xmlMode && actual.isTextual()) {
+            try {
+                Double.parseDouble(actual.asText());
+                return;
+            } catch (NumberFormatException ignored) {
+                // fall through
+            }
+        }
+        errors.add(new ValidationError(path, "expected number, got " + actual.getNodeType()));
     }
 
     private static void requireTimestamp(JsonNode actual, String path, List<ValidationError> errors) {
