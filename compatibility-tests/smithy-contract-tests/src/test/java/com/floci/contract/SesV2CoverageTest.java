@@ -90,13 +90,21 @@ class SesV2CoverageTest {
         ObjectMapper json = new ObjectMapper();
 
         ServiceShape service = model.expectShape(SERVICE_ID, ServiceShape.class);
+        // Phase 3 ordering: run Delete* last so Get / List / Put / etc. on the
+        // synthetic resource still see it. Inside each bucket, alphabetical so
+        // CreateX runs before the op that depends on X existing.
         List<OperationShape> ops = service.getAllOperations().stream()
                 .sorted()
                 .map(id -> model.expectShape(id, OperationShape.class))
+                .sorted(java.util.Comparator.comparing(
+                        (OperationShape o) -> o.getId().getName().startsWith("Delete"))
+                        .thenComparing(o -> o.getId().getName()))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 2 coverage probe");
+        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 3 coverage probe");
         MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
+
+        seedV2(http);
 
         for (OperationShape op : ops) {
             String opName = op.getId().getName();
@@ -227,6 +235,39 @@ class SesV2CoverageTest {
         return new CoverageReport.Entry(opName, CoverageReport.Status.ERROR, status,
                 "unclassified: type=" + type + ", status=" + status
                         + (body.isBlank() ? "" : ", body[0..80]=" + body.substring(0, Math.min(80, body.length()))));
+    }
+
+    /**
+     * Phase 3 pre-seed for the v2 REST surface. Mirrors {@code seedV1}:
+     *   - blind-delete any leftover {@code cov-probe-x} resource so the iteration's
+     *     Create / Put op returns 200 instead of {@code AlreadyExistsException};
+     *   - re-enable account-level sending so {@code SendEmail} can land in OK.
+     */
+    private static void seedV2(HttpClient http) throws Exception {
+        String s = MinimalRequestBuilder.SYNTHETIC;
+        // Best-effort cleanup
+        String[] deletePaths = {
+                "/v2/email/configuration-sets/" + s,
+                "/v2/email/identities/" + s,
+                "/v2/email/templates/" + s,
+                "/v2/email/suppression/addresses/" + s,
+        };
+        for (String path : deletePaths) {
+            http.send(HttpRequest.newBuilder()
+                            .uri(URI.create(ENDPOINT + path))
+                            .header("Authorization", SES_AUTH)
+                            .DELETE()
+                            .build(),
+                    HttpResponse.BodyHandlers.discarding());
+        }
+        // Re-enable account sending
+        http.send(HttpRequest.newBuilder()
+                        .uri(URI.create(ENDPOINT + "/v2/email/account/sending"))
+                        .header("Authorization", SES_AUTH)
+                        .header("Content-Type", "application/json")
+                        .PUT(HttpRequest.BodyPublishers.ofString("{\"SendingEnabled\":true}"))
+                        .build(),
+                HttpResponse.BodyHandlers.discarding());
     }
 
     private static String extractType(String body, ObjectMapper json) {

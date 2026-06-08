@@ -98,13 +98,23 @@ class SesV1CoverageTest {
         XmlMapper xml = new XmlMapper();
 
         ServiceShape service = model.expectShape(SERVICE_ID, ServiceShape.class);
+        // Phase 3 ordering: run Delete* last so dependent Get / Describe / Update see
+        // the seeded resource. Otherwise the alphabetical iteration would visit
+        // DeleteX before DescribeX / GetX and tear state down too early. Inside each
+        // bucket, alphabetical (so CreateX runs before DescribeX / GetX, which both
+        // depend on it).
         List<OperationShape> ops = service.getAllOperations().stream()
                 .sorted()
                 .map(id -> model.expectShape(id, OperationShape.class))
+                .sorted(java.util.Comparator.comparing(
+                        (OperationShape o) -> o.getId().getName().startsWith("Delete"))
+                        .thenComparing(o -> o.getId().getName()))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 2 coverage probe");
+        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 3 coverage probe");
         MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
+
+        seedV1(http);
 
         for (OperationShape op : ops) {
             String opName = op.getId().getName();
@@ -204,6 +214,41 @@ class SesV1CoverageTest {
             return code.isTextual() ? code.asText() : null;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * Phase 3 pre-seed. Anything done here doesn't appear in the coverage report —
+     * it only adjusts Floci state so the later iteration finds the world the
+     * Get / Describe / Update ops expect.
+     *
+     * <ol>
+     *   <li>Best-effort delete any leftover {@code cov-probe-x} resource from a prior
+     *       run, so the iteration's {@code Create*} call returns 200 (not
+     *       {@code AlreadyExists}).</li>
+     *   <li>Re-enable account-level sending. Otherwise {@code Send*} runs early in the
+     *       alphabetical iteration with {@code Enabled=false} state from a prior probe
+     *       and lands in {@code IMPLEMENTED_STATE} via
+     *       {@code AccountSendingPausedException}.</li>
+     * </ol>
+     */
+    private static void seedV1(HttpClient http) throws Exception {
+        String[] preDelete = {
+                "Action=DeleteConfigurationSet&ConfigurationSetName=" + MinimalRequestBuilder.SYNTHETIC,
+                "Action=DeleteTemplate&TemplateName=" + MinimalRequestBuilder.SYNTHETIC,
+                "Action=DeleteIdentity&Identity=" + MinimalRequestBuilder.SYNTHETIC,
+                "Action=DeleteVerifiedEmailAddress&EmailAddress=" + MinimalRequestBuilder.SYNTHETIC,
+                // Re-enable account-level sending
+                "Action=UpdateAccountSendingEnabled&Enabled=true"
+        };
+        for (String body : preDelete) {
+            http.send(HttpRequest.newBuilder()
+                            .uri(URI.create(ENDPOINT + "/"))
+                            .header("Authorization", SES_AUTH)
+                            .header("Content-Type", "application/x-www-form-urlencoded")
+                            .POST(HttpRequest.BodyPublishers.ofString(body))
+                            .build(),
+                    HttpResponse.BodyHandlers.discarding());
         }
     }
 
