@@ -250,14 +250,29 @@ public final class ConformanceRunner {
 
     private VariantResult classify(Variant variant, InvocationResponse resp) {
         if (resp.is5xx()) {
+            String rawType = extractErrorType(resp);
+            // HTTP 501 with an AWS-shaped error body is the canonical "Not
+            // Implemented" semantic — LocalStack uses 501+InternalFailure and
+            // fakecloud uses 501+InvalidAction for ops it hasn't built yet.
+            if (resp.httpStatus() == 501 && rawType != null) {
+                return new VariantResult(variant, Verdict.NOT_IMPLEMENTED, resp.httpStatus(),
+                        rawType, "501 not implemented (" + ErrorClassifier.normalize(rawType) + ")");
+            }
             return new VariantResult(variant, Verdict.FAIL_5XX, resp.httpStatus(),
-                    extractErrorType(resp), truncate(resp.body()));
+                    rawType, truncate(resp.body()));
         }
         if (resp.is4xx()) {
             String rawType = extractErrorType(resp);
             if (rawType == null) {
                 return new VariantResult(variant, Verdict.FAIL_4XX_UNROUTED, resp.httpStatus(),
                         null, truncate(resp.body()));
+            }
+            // HTTP 405 (Method Not Allowed) carries the same "this method is
+            // not implemented for this resource" semantic — ministack uses
+            // 405+MethodNotAllowed where Floci would say UnsupportedOperation.
+            if (resp.httpStatus() == 405) {
+                return new VariantResult(variant, Verdict.NOT_IMPLEMENTED, resp.httpStatus(),
+                        rawType, "405 method not allowed (" + ErrorClassifier.normalize(rawType) + ")");
             }
             String normalized = ErrorClassifier.normalize(rawType);
             Category category = errorClassifier.classify(variant.operation(), rawType);
