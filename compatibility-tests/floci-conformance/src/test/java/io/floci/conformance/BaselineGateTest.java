@@ -102,7 +102,8 @@ class BaselineGateTest {
     private static void runGate(String stem, String serviceShapeId, String modelVersion,
                                 Model model, Invoker invoker, RequestEncoder encoder) throws IOException {
         ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, ALL_GENERATORS);
-        List<VariantResult> results = runner.run(serviceShapeId);
+        List<VariantResult> results = new java.util.ArrayList<>(runner.run(serviceShapeId));
+        results.addAll(runner.runRoundTrip(serviceShapeId));
         ReportMeta meta = new ReportMeta(serviceShapeId, modelVersion, Instant.now().toString());
         Baseline current = Baseline.from(meta, results);
 

@@ -29,6 +29,12 @@ public enum Verdict {
 
     /** Floci responded 200 but the body fails {@code @required} / type / enum checks. */
     FAIL_SHAPE,
+    /**
+     * Round-trip echo failed: a setup op accepted input X, the verify op
+     * returned 200, but X did not round-trip to the response — Floci lost or
+     * mutated the field somewhere in storage.
+     */
+    FAIL_ECHO,
     /** Floci returned 200 when the variant expected a 4xx (silent-pass bug). */
     FAIL_SILENT_PASS,
     /** Floci returned 4xx but with no AWS-shaped error body — routing or wire bug. */
