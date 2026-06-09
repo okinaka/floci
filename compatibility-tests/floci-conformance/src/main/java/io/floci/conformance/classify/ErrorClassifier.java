@@ -30,7 +30,17 @@ public final class ErrorClassifier {
 
     public enum Category {
         NOT_IMPLEMENTED,
+        /**
+         * State collision: the resource already exists / is in use / quota
+         * exceeded / etc. Prior tests typically caused this.
+         */
         STATE,
+        /**
+         * Resource not found / does not exist. The synthetic identifier didn't
+         * match any seeded data — distinct from STATE because the remedy is
+         * "seed before reading", not "reset state".
+         */
+        MISSING,
         VALIDATION,
         DECLARED_BY_OP,
         OTHER
@@ -55,12 +65,16 @@ public final class ErrorClassifier {
             Pattern.compile(".*LimitExceeded(Exception)?$"),
             Pattern.compile(".*Conflict(Exception)?$"),
             Pattern.compile("ResourceInUse.*"),
-            Pattern.compile(".*ResourceNotFound.*"),
-            Pattern.compile(".*NotFound(Exception)?$"),
-            Pattern.compile(".*DoesNotExist(Exception)?$"),
             Pattern.compile(".*AccountSuspended.*"),
             Pattern.compile(".*Throttling(Exception)?$"),
             Pattern.compile(".*TooManyRequests(Exception)?$")
+    );
+
+    private static final List<Pattern> MISSING_PATTERNS = List.of(
+            Pattern.compile(".*ResourceNotFound.*"),
+            Pattern.compile(".*NotFound(Exception)?$"),
+            Pattern.compile(".*DoesNotExist(Exception)?$"),
+            Pattern.compile(".*NoSuch.*")
     );
 
     private static final List<Pattern> VALIDATION_PATTERNS = List.of(
@@ -84,6 +98,9 @@ public final class ErrorClassifier {
 
         if (NOT_IMPLEMENTED_TYPES.contains(name)) {
             return Category.NOT_IMPLEMENTED;
+        }
+        if (matchesAny(name, MISSING_PATTERNS)) {
+            return Category.MISSING;
         }
         if (matchesAny(name, STATE_PATTERNS)) {
             return Category.STATE;

@@ -24,8 +24,19 @@ public enum Verdict {
     NOT_IMPLEMENTED,
     /** Floci returned a valid validation error — harness input wasn't acceptable. */
     INCONCLUSIVE_VALIDATION,
-    /** Floci returned a valid state-collision error (e.g. {@code *AlreadyExists}). */
+    /**
+     * Floci returned a state-collision error (e.g. {@code *AlreadyExists},
+     * {@code *InUse}, {@code *LimitExceeded}). State from a prior test
+     * pollutes the measurement.
+     */
     INCONCLUSIVE_STATE,
+    /**
+     * Floci returned a not-found error (e.g. {@code *NotFound},
+     * {@code *DoesNotExist}). The synthetic identifier the harness used
+     * references something that doesn't exist — needs seeding via a Create
+     * scenario before the Get/Describe/Delete can succeed.
+     */
+    INCONCLUSIVE_MISSING,
 
     /** Floci responded 200 but the body fails {@code @required} / type / enum checks. */
     FAIL_SHAPE,
