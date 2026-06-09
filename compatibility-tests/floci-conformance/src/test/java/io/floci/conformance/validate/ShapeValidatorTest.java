@@ -83,6 +83,74 @@ class ShapeValidatorTest {
     }
 
     @Test
+    void v1_xml_map_with_entry_key_value_wrapper_validates() throws Exception {
+        // AWS Query map XML — single entry case.
+        String xml = """
+                <GetIdentityDkimAttributesResponse>
+                  <GetIdentityDkimAttributesResult>
+                    <DkimAttributes>
+                      <entry>
+                        <key>example.com</key>
+                        <value>
+                          <DkimEnabled>false</DkimEnabled>
+                          <DkimVerificationStatus>NotStarted</DkimVerificationStatus>
+                          <DkimTokens></DkimTokens>
+                        </value>
+                      </entry>
+                    </DkimAttributes>
+                  </GetIdentityDkimAttributesResult>
+                </GetIdentityDkimAttributesResponse>""";
+        var root = XML.readTree(xml.getBytes());
+        var unwrapped = ShapeValidator.unwrapXmlResult(root, "GetIdentityDkimAttributes");
+        StructureShape out = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#GetIdentityDkimAttributesResponse"),
+                StructureShape.class);
+        ShapeValidator.Result result = new ShapeValidator(V1, true).validate(unwrapped, out);
+        // After the fix, this should report no shape issues for the entry encoding.
+        // (The map value's own @required members must still be present, which
+        // they are in this sample.)
+        assertThat(result.ok())
+                .as("expected ok but got: %s", result.issues())
+                .isTrue();
+    }
+
+    @Test
+    void v1_xml_map_with_multiple_entries_validates() throws Exception {
+        String xml = """
+                <GetIdentityDkimAttributesResponse>
+                  <GetIdentityDkimAttributesResult>
+                    <DkimAttributes>
+                      <entry>
+                        <key>a.example.com</key>
+                        <value>
+                          <DkimEnabled>true</DkimEnabled>
+                          <DkimVerificationStatus>Success</DkimVerificationStatus>
+                          <DkimTokens><member>t1</member></DkimTokens>
+                        </value>
+                      </entry>
+                      <entry>
+                        <key>b.example.com</key>
+                        <value>
+                          <DkimEnabled>false</DkimEnabled>
+                          <DkimVerificationStatus>NotStarted</DkimVerificationStatus>
+                          <DkimTokens></DkimTokens>
+                        </value>
+                      </entry>
+                    </DkimAttributes>
+                  </GetIdentityDkimAttributesResult>
+                </GetIdentityDkimAttributesResponse>""";
+        var root = XML.readTree(xml.getBytes());
+        var unwrapped = ShapeValidator.unwrapXmlResult(root, "GetIdentityDkimAttributes");
+        StructureShape out = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#GetIdentityDkimAttributesResponse"),
+                StructureShape.class);
+        ShapeValidator.Result result = new ShapeValidator(V1, true).validate(unwrapped, out);
+        assertThat(result.ok())
+                .as("expected ok but got: %s", result.issues())
+                .isTrue();
+    }
+
+    @Test
     void unwrap_returns_root_when_no_response_wrapper() throws Exception {
         var root = JSON.readTree("{\"foo\": \"bar\"}");
         assertThat(ShapeValidator.unwrapXmlResult(root, "AnyOp")).isEqualTo(root);

@@ -198,8 +198,40 @@ public final class ShapeValidator {
             return;
         }
         Shape valueShape = model.expectShape(map.getValue().getTarget());
+
+        // AWS Query / EC2 Query XML maps serialize as
+        // <MapName><entry><key>...</key><value>...</value></entry>...</MapName>.
+        // XmlMapper hands that to us as {"entry": <single object or array>} —
+        // walk into each entry's <value> instead of treating "entry" as a key.
+        if (xmlMode && value.size() == 1 && value.has("entry")) {
+            JsonNode entries = value.get("entry");
+            if (entries.isArray()) {
+                for (JsonNode entry : entries) {
+                    walkXmlMapEntry(entry, valueShape, path, out);
+                }
+            } else {
+                walkXmlMapEntry(entries, valueShape, path, out);
+            }
+            return;
+        }
+
+        // Standard JSON map: {key1: value1, ...}.
         value.fields().forEachRemaining(e ->
                 walkValue(e.getValue(), valueShape, path + "{" + e.getKey() + "}", out));
+    }
+
+    private void walkXmlMapEntry(JsonNode entry, Shape valueShape, String path, List<Issue> out) {
+        if (!entry.isObject()) {
+            out.add(new Issue(path, "expected map entry object, got " + nodeTypeOf(entry)));
+            return;
+        }
+        String key = entry.path("key").asText("?");
+        JsonNode val = entry.get("value");
+        if (val == null) {
+            out.add(new Issue(path + "{" + key + "}", "missing entry value"));
+            return;
+        }
+        walkValue(val, valueShape, path + "{" + key + "}", out);
     }
 
     private void walkEnum(JsonNode value, EnumShape enumShape, String path, List<Issue> out) {
