@@ -2,11 +2,14 @@ package io.floci.conformance;
 
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
+import io.floci.conformance.generator.BoundaryGenerator;
 import io.floci.conformance.generator.EmptyInputGenerator;
 import io.floci.conformance.generator.EnumExhaustGenerator;
 import io.floci.conformance.generator.Generator;
+import io.floci.conformance.generator.ModelExamplesGenerator;
 import io.floci.conformance.generator.NegativeGenerator;
 import io.floci.conformance.generator.OptionalsGenerator;
+import io.floci.conformance.generator.PropertyBasedGenerator;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.model.VariantResult;
@@ -54,7 +57,10 @@ class ReportingRunTest {
             new EmptyInputGenerator(),
             new OptionalsGenerator(),
             new EnumExhaustGenerator(),
-            new NegativeGenerator());
+            new NegativeGenerator(),
+            new BoundaryGenerator(),
+            new PropertyBasedGenerator(),
+            new ModelExamplesGenerator());
 
     @Test
     void sesV1_reports() throws Exception {
