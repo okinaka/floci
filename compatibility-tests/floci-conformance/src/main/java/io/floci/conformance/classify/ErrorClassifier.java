@@ -42,7 +42,11 @@ public final class ErrorClassifier {
             "NotImplemented",
             "NotImplementedException",
             "OperationNotPermitted",
-            "OperationNotPermittedException"
+            "OperationNotPermittedException",
+            // "InvalidAction" is the awsQuery-specific code for "the service
+            // does not know this Action" — emitted by ministack at HTTP 400 and
+            // by fakecloud at HTTP 501. Either way, the op isn't dispatched.
+            "InvalidAction"
     );
 
     private static final List<Pattern> STATE_PATTERNS = List.of(
