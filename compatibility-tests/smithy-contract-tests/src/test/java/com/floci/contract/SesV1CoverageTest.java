@@ -111,7 +111,7 @@ class SesV1CoverageTest {
                         .thenComparing(o -> o.getId().getName()))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 3 coverage probe");
+        CoverageReport report = new CoverageReport("SES v1 (Query/XML) — Phase 4 coverage probe");
         MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
 
         seedV1(http);

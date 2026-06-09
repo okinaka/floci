@@ -101,7 +101,7 @@ class SesV2CoverageTest {
                         .thenComparing(o -> o.getId().getName()))
                 .toList();
 
-        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 3 coverage probe");
+        CoverageReport report = new CoverageReport("SES v2 (REST JSON) — Phase 4 coverage probe");
         MinimalRequestBuilder requestBuilder = new MinimalRequestBuilder(model);
 
         seedV2(http);
