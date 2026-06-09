@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-09T07:15:27.129248Z"
+    "capturedAt" : "2026-06-09T07:34:27.211915Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -87,7 +87,8 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "round-trip-echo.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED"
     },
     "CreateReceiptFilter" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",

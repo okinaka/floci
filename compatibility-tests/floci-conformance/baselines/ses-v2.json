@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-09T07:15:27.727242Z"
+    "capturedAt" : "2026-06-09T07:34:27.807674Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -85,7 +85,8 @@
       "property-based.seed-1" : "FAIL_4XX_UNROUTED",
       "property-based.seed-2" : "FAIL_4XX_UNROUTED",
       "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "round-trip-echo.Contact" : "FAIL_4XX_UNROUTED"
     },
     "CreateContactList" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -100,7 +101,8 @@
       "property-based.seed-1" : "FAIL_4XX_UNROUTED",
       "property-based.seed-2" : "FAIL_4XX_UNROUTED",
       "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "round-trip-echo.ContactList" : "FAIL_4XX_UNROUTED"
     },
     "CreateCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -122,7 +124,8 @@
       "property-based.seed-1" : "FAIL_4XX_UNROUTED",
       "property-based.seed-2" : "FAIL_4XX_UNROUTED",
       "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "round-trip-echo.CustomVerificationEmailTemplate" : "FAIL_4XX_UNROUTED"
     },
     "CreateDedicatedIpPool" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -266,7 +269,8 @@
       "property-based.seed-1" : "FAIL_4XX_UNROUTED",
       "property-based.seed-2" : "FAIL_4XX_UNROUTED",
       "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "round-trip-echo.MultiRegionEndpoint" : "FAIL_4XX_UNROUTED"
     },
     "CreateTenant" : {
       "boundary.length.min.TenantName" : "FAIL_4XX_UNROUTED",
@@ -563,7 +567,8 @@
       "property-based.seed-1" : "INCONCLUSIVE_STATE",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
-      "property-based.seed-4" : "INCONCLUSIVE_STATE"
+      "property-based.seed-4" : "INCONCLUSIVE_STATE",
+      "round-trip-echo.ConfigurationSet" : "FAIL_ECHO"
     },
     "GetConfigurationSetEventDestinations" : {
       "empty.passthrough" : "INCONCLUSIVE_STATE",
@@ -739,7 +744,8 @@
       "property-based.seed-1" : "INCONCLUSIVE_STATE",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
-      "property-based.seed-4" : "INCONCLUSIVE_STATE"
+      "property-based.seed-4" : "INCONCLUSIVE_STATE",
+      "round-trip-echo.EmailIdentity" : "FAIL_ECHO"
     },
     "GetEmailIdentityPolicies" : {
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
@@ -771,7 +777,8 @@
       "property-based.seed-1" : "INCONCLUSIVE_STATE",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
-      "property-based.seed-4" : "INCONCLUSIVE_STATE"
+      "property-based.seed-4" : "INCONCLUSIVE_STATE",
+      "round-trip-echo.EmailTemplate" : "PASS"
     },
     "GetExportJob" : {
       "boundary.length.min.JobId" : "FAIL_4XX_UNROUTED",
