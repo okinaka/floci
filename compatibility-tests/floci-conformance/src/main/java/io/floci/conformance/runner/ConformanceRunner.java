@@ -294,6 +294,9 @@ public final class ConformanceRunner {
                     case STATE -> new VariantResult(
                             variant, Verdict.INCONCLUSIVE_STATE, resp.httpStatus(), rawType,
                             "state collision masked negative test (" + normalized + ")");
+                    case MISSING -> new VariantResult(
+                            variant, Verdict.INCONCLUSIVE_MISSING, resp.httpStatus(), rawType,
+                            "synthetic identifier not seeded (" + normalized + ")");
                     default -> new VariantResult(
                             variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(), rawType,
                             "expected validation error, got " + normalized);
@@ -308,6 +311,9 @@ public final class ConformanceRunner {
                 case STATE -> new VariantResult(
                         variant, Verdict.INCONCLUSIVE_STATE, resp.httpStatus(), rawType,
                         "state collision (" + normalized + ")");
+                case MISSING -> new VariantResult(
+                        variant, Verdict.INCONCLUSIVE_MISSING, resp.httpStatus(), rawType,
+                        "synthetic identifier not seeded (" + normalized + ")");
                 default -> new VariantResult(
                         variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(), rawType,
                         "expected 2xx, got " + normalized);
