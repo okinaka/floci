@@ -3,6 +3,8 @@ package io.floci.conformance.runner;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.floci.conformance.classify.ErrorClassifier;
+import io.floci.conformance.classify.ErrorClassifier.Category;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
@@ -41,6 +43,7 @@ public final class ConformanceRunner {
     private final Invoker invoker;
     private final RequestEncoder encoder;
     private final List<Generator> generators;
+    private final ErrorClassifier errorClassifier;
 
     public ConformanceRunner(Model model, Invoker invoker, RequestEncoder encoder,
                              List<Generator> generators) {
@@ -48,6 +51,7 @@ public final class ConformanceRunner {
         this.invoker = invoker;
         this.encoder = encoder;
         this.generators = List.copyOf(generators);
+        this.errorClassifier = new ErrorClassifier();
     }
 
     public List<VariantResult> run(String serviceShapeId) {
@@ -115,20 +119,49 @@ public final class ConformanceRunner {
                     extractErrorType(resp), truncate(resp.body()));
         }
         if (resp.is4xx()) {
-            String errorType = extractErrorType(resp);
-            if (errorType == null) {
+            String rawType = extractErrorType(resp);
+            if (rawType == null) {
                 return new VariantResult(variant, Verdict.FAIL_4XX_UNROUTED, resp.httpStatus(),
                         null, truncate(resp.body()));
             }
-            if (variant.expectedOutcome() == ExpectedOutcome.CLIENT_ERROR) {
-                if (matchesExpectedError(variant, errorType)) {
-                    return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), errorType, null);
-                }
-                return new VariantResult(variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(),
-                        errorType, "expected " + variant.expectedError() + ", got " + errorType);
+            String normalized = ErrorClassifier.normalize(rawType);
+            Category category = errorClassifier.classify(variant.operation(), rawType);
+            boolean negative = variant.expectedOutcome() == ExpectedOutcome.CLIENT_ERROR;
+
+            if (category == Category.NOT_IMPLEMENTED) {
+                return new VariantResult(variant, Verdict.NOT_IMPLEMENTED, resp.httpStatus(),
+                        rawType, "operation not implemented (" + normalized + ")");
             }
-            return new VariantResult(variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(),
-                    errorType, "expected 2xx, got " + errorType);
+
+            if (negative) {
+                if (variant.expectedError() != null
+                        && variant.expectedError().equals(normalized)) {
+                    return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), rawType, null);
+                }
+                return switch (category) {
+                    case VALIDATION, DECLARED_BY_OP -> new VariantResult(
+                            variant, Verdict.PASS, resp.httpStatus(), rawType, null);
+                    case STATE -> new VariantResult(
+                            variant, Verdict.INCONCLUSIVE_STATE, resp.httpStatus(), rawType,
+                            "state collision masked negative test (" + normalized + ")");
+                    default -> new VariantResult(
+                            variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(), rawType,
+                            "expected validation error, got " + normalized);
+                };
+            }
+
+            // SUCCESS expected but got 4xx.
+            return switch (category) {
+                case VALIDATION, DECLARED_BY_OP -> new VariantResult(
+                        variant, Verdict.INCONCLUSIVE_VALIDATION, resp.httpStatus(), rawType,
+                        "harness input rejected (" + normalized + ")");
+                case STATE -> new VariantResult(
+                        variant, Verdict.INCONCLUSIVE_STATE, resp.httpStatus(), rawType,
+                        "state collision (" + normalized + ")");
+                default -> new VariantResult(
+                        variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(), rawType,
+                        "expected 2xx, got " + normalized);
+            };
         }
         if (resp.is2xx()) {
             if (variant.expectedOutcome() == ExpectedOutcome.CLIENT_ERROR) {
@@ -139,22 +172,6 @@ public final class ConformanceRunner {
         }
         return new VariantResult(variant, Verdict.HARNESS_ERROR, resp.httpStatus(),
                 null, "unexpected status " + resp.httpStatus());
-    }
-
-    private static boolean matchesExpectedError(Variant variant, String errorType) {
-        if (variant.expectedError() == null) {
-            return true;
-        }
-        String tail = errorType;
-        int hash = tail.lastIndexOf('#');
-        if (hash >= 0) {
-            tail = tail.substring(hash + 1);
-        }
-        int dot = tail.lastIndexOf('.');
-        if (dot >= 0) {
-            tail = tail.substring(dot + 1);
-        }
-        return tail.equals(variant.expectedError());
     }
 
     private static String extractErrorType(InvocationResponse resp) {

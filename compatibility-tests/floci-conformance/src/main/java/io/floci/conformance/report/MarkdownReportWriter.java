@@ -30,19 +30,42 @@ public final class MarkdownReportWriter implements ReportWriter {
         writeSummary(sb, results);
         writeOperationTable(sb, results);
         writeFailures(sb, results);
+        writeInconclusive(sb, results);
 
         out.write(sb.toString());
+    }
+
+    /** True for verdicts that point to a real Floci bug, not "test couldn't fire". */
+    private static boolean isRealFailure(Verdict v) {
+        return switch (v) {
+            case FAIL_SHAPE, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
+                    FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isInconclusive(Verdict v) {
+        return switch (v) {
+            case NOT_IMPLEMENTED, INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE -> true;
+            default -> false;
+        };
     }
 
     private void writeSummary(StringBuilder sb, List<VariantResult> results) {
         Map<Verdict, Long> byVerdict = countByVerdict(results);
         long total = results.size();
         long passed = byVerdict.getOrDefault(Verdict.PASS, 0L);
+        long failed = results.stream().filter(r -> isRealFailure(r.verdict())).count();
+        long inconclusive = results.stream().filter(r -> isInconclusive(r.verdict())).count();
 
         sb.append("## Summary\n\n");
         sb.append("- **Total cases**: ").append(total).append('\n');
         sb.append("- **Passed**: ").append(passed)
-                .append(" (").append(formatPercent(passed, total)).append(")\n\n");
+                .append(" (").append(formatPercent(passed, total)).append(")\n");
+        sb.append("- **Real failures**: ").append(failed)
+                .append(" (").append(formatPercent(failed, total)).append(")\n");
+        sb.append("- **Inconclusive**: ").append(inconclusive)
+                .append(" (").append(formatPercent(inconclusive, total)).append(")\n\n");
         sb.append("| Verdict | Count |\n");
         sb.append("|---------|------:|\n");
         for (Verdict v : Verdict.values()) {
@@ -60,16 +83,18 @@ public final class MarkdownReportWriter implements ReportWriter {
                 results.stream().collect(Collectors.groupingBy(r -> r.variant().operationName())));
 
         sb.append("## Per-operation rollup\n\n");
-        sb.append("| Operation | Cases | Passed | Top failure verdict |\n");
-        sb.append("|-----------|------:|-------:|---------------------|\n");
+        sb.append("| Operation | Cases | Passed | Failures | Top real failure |\n");
+        sb.append("|-----------|------:|-------:|---------:|------------------|\n");
         for (var entry : byOp.entrySet()) {
             List<VariantResult> opResults = entry.getValue();
             long total = opResults.size();
             long passed = opResults.stream().filter(VariantResult::passed).count();
-            String top = topFailureVerdict(opResults);
+            long fail = opResults.stream().filter(r -> isRealFailure(r.verdict())).count();
+            String top = topRealFailureVerdict(opResults);
             sb.append("| `").append(entry.getKey()).append("` | ")
                     .append(total).append(" | ")
                     .append(passed).append(" | ")
+                    .append(fail).append(" | ")
                     .append(top).append(" |\n");
         }
         sb.append('\n');
@@ -77,15 +102,17 @@ public final class MarkdownReportWriter implements ReportWriter {
 
     private void writeFailures(StringBuilder sb, List<VariantResult> results) {
         List<VariantResult> failures = results.stream()
-                .filter(r -> !r.passed())
+                .filter(r -> isRealFailure(r.verdict()))
                 .sorted(Comparator
                         .comparing((VariantResult r) -> r.variant().operationName())
                         .thenComparing(r -> r.variant().generator()))
                 .toList();
 
         sb.append("## Failures\n\n");
+        sb.append("_Real failures — Floci returned a wrong shape, silent-passed a negative test, " +
+                "or otherwise misbehaved._\n\n");
         if (failures.isEmpty()) {
-            sb.append("_None._\n");
+            sb.append("_None._\n\n");
             return;
         }
         for (VariantResult r : failures) {
@@ -103,6 +130,33 @@ public final class MarkdownReportWriter implements ReportWriter {
         }
     }
 
+    private void writeInconclusive(StringBuilder sb, List<VariantResult> results) {
+        var grouped = results.stream()
+                .filter(r -> isInconclusive(r.verdict()))
+                .collect(Collectors.groupingBy(
+                        r -> r.verdict(),
+                        () -> new java.util.EnumMap<>(Verdict.class),
+                        Collectors.mapping(r -> r.variant().operationName() + " (" + r.variant().generator() + ")",
+                                Collectors.toCollection(java.util.TreeSet::new))));
+
+        sb.append("## Inconclusive\n\n");
+        sb.append("_Tests that didn't fail Floci but couldn't reach a verdict — operations " +
+                "not implemented, state collisions from prior cases, or harness input that " +
+                "didn't satisfy the op's validation._\n\n");
+        if (grouped.isEmpty()) {
+            sb.append("_None._\n");
+            return;
+        }
+        for (var entry : grouped.entrySet()) {
+            sb.append("### `").append(entry.getKey().name()).append("` (")
+                    .append(entry.getValue().size()).append(")\n");
+            for (String case_ : entry.getValue()) {
+                sb.append("- ").append(case_).append('\n');
+            }
+            sb.append('\n');
+        }
+    }
+
     private static Map<Verdict, Long> countByVerdict(List<VariantResult> results) {
         Map<Verdict, Long> counts = new EnumMap<>(Verdict.class);
         for (VariantResult r : results) {
@@ -111,9 +165,9 @@ public final class MarkdownReportWriter implements ReportWriter {
         return counts;
     }
 
-    private static String topFailureVerdict(List<VariantResult> opResults) {
+    private static String topRealFailureVerdict(List<VariantResult> opResults) {
         return opResults.stream()
-                .filter(r -> !r.passed())
+                .filter(r -> isRealFailure(r.verdict()))
                 .collect(Collectors.groupingBy(VariantResult::verdict, Collectors.counting()))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
