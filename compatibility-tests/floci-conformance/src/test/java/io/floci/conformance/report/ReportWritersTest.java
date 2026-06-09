@@ -96,4 +96,34 @@ class ReportWritersTest {
         new JsonReportWriter().write(META, RESULTS, w2);
         assertThat(w1.toString()).isEqualTo(w2.toString());
     }
+
+    @Test
+    void inconclusive_section_separates_NOT_IMPLEMENTED_and_INCONCLUSIVE_verdicts() throws Exception {
+        List<VariantResult> mixed = List.of(
+                new VariantResult(variant("Op1", "empty.passthrough"),
+                        Verdict.NOT_IMPLEMENTED, 400, "UnsupportedOperation",
+                        "operation not implemented"),
+                new VariantResult(variant("Op2", "optionals.all-members"),
+                        Verdict.INCONCLUSIVE_STATE, 400, "ConfigurationSetAlreadyExists",
+                        "state collision"),
+                new VariantResult(variant("Op3", "empty.passthrough"),
+                        Verdict.FAIL_SILENT_PASS, 200, null, "expected error but got 2xx"));
+
+        StringWriter w = new StringWriter();
+        new MarkdownReportWriter().write(META, mixed, w);
+        String md = w.toString();
+
+        assertThat(md).contains("## Inconclusive");
+        assertThat(md).contains("`NOT_IMPLEMENTED`");
+        assertThat(md).contains("`INCONCLUSIVE_STATE`");
+        // Real failures section still lists the silent-pass
+        int failuresHeader = md.indexOf("## Failures");
+        int inconclusiveHeader = md.indexOf("## Inconclusive");
+        assertThat(failuresHeader).isLessThan(inconclusiveHeader);
+        // Inconclusive items shouldn't appear under Failures
+        String failuresSection = md.substring(failuresHeader, inconclusiveHeader);
+        assertThat(failuresSection).doesNotContain("UnsupportedOperation");
+        assertThat(failuresSection).doesNotContain("ConfigurationSetAlreadyExists");
+        assertThat(failuresSection).contains("FAIL_SILENT_PASS");
+    }
 }
