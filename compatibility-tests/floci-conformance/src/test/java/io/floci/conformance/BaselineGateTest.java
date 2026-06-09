@@ -84,7 +84,7 @@ class BaselineGateTest {
         runGate("ses-v1",
                 "com.amazonaws.ses#SimpleEmailService", "2010-12-01",
                 model,
-                new QueryInvoker(BASE_URL + "/", "2010-12-01"),
+                new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
                 new QueryFormEncoder(model));
     }
 
@@ -95,7 +95,7 @@ class BaselineGateTest {
         runGate("ses-v2",
                 "com.amazonaws.sesv2#SimpleEmailService_v2", "2019-09-27",
                 model,
-                new RestJsonInvoker(BASE_URL),
+                new RestJsonInvoker(BASE_URL, "ses"),
                 new RestJsonEncoder(model));
     }
 
