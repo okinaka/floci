@@ -36,6 +36,18 @@ class ErrorClassifierTest {
     }
 
     @Test
+    void not_found_patterns_resolve_to_MISSING() {
+        assertThat(classifier.classify(SEND_EMAIL, "ResourceNotFoundException"))
+                .isEqualTo(Category.MISSING);
+        assertThat(classifier.classify(SEND_EMAIL, "TemplateDoesNotExistException"))
+                .isEqualTo(Category.MISSING);
+        assertThat(classifier.classify(SEND_EMAIL, "NotFoundException"))
+                .isEqualTo(Category.MISSING);
+        assertThat(classifier.classify(SEND_EMAIL, "NoSuchEntity"))
+                .isEqualTo(Category.MISSING);
+    }
+
+    @Test
     void validation_patterns_resolve_to_VALIDATION() {
         assertThat(classifier.classify(SEND_EMAIL, "InvalidParameterValue"))
                 .isEqualTo(Category.VALIDATION);

@@ -46,7 +46,8 @@ public final class MarkdownReportWriter implements ReportWriter {
 
     private static boolean isInconclusive(Verdict v) {
         return switch (v) {
-            case NOT_IMPLEMENTED, INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE -> true;
+            case NOT_IMPLEMENTED, INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE,
+                    INCONCLUSIVE_MISSING -> true;
             default -> false;
         };
     }
