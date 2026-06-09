@@ -38,7 +38,7 @@ public final class MarkdownReportWriter implements ReportWriter {
     /** True for verdicts that point to a real Floci bug, not "test couldn't fire". */
     private static boolean isRealFailure(Verdict v) {
         return switch (v) {
-            case FAIL_SHAPE, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
+            case FAIL_SHAPE, FAIL_ECHO, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
                     FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> true;
             default -> false;
         };
