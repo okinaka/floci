@@ -7,17 +7,11 @@ import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.runner.ConformanceRunner;
+import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import software.amazon.smithy.model.Model;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
@@ -80,18 +74,6 @@ class SmokeTest {
     }
 
     private static void assumeFloci() {
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(1))
-                .build();
-        HttpRequest req = HttpRequest.newBuilder(URI.create(BASE_URL + "/_floci/health"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-        try {
-            HttpResponse<Void> resp = client.send(req, HttpResponse.BodyHandlers.discarding());
-            Assumptions.assumeTrue(resp.statusCode() < 500, "Floci not healthy at " + BASE_URL);
-        } catch (IOException | InterruptedException e) {
-            Assumptions.abort("Floci not reachable at " + BASE_URL + ": " + e.getMessage());
-        }
+        HealthProbe.assumeReachable(BASE_URL);
     }
 }
