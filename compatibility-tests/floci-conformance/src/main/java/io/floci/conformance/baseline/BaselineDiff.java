@@ -130,7 +130,8 @@ public record BaselineDiff(
     private static int band(Verdict v) {
         return switch (v) {
             case PASS -> BAND_PASS;
-            case INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE -> BAND_INCONCLUSIVE;
+            case INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE, INCONCLUSIVE_MISSING
+                    -> BAND_INCONCLUSIVE;
             case NOT_IMPLEMENTED, FAIL_SHAPE, FAIL_ECHO, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
                     FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> BAND_BROKEN;
         };
