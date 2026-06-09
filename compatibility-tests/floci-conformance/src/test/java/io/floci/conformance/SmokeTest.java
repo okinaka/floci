@@ -1,5 +1,7 @@
 package io.floci.conformance;
 
+import io.floci.conformance.encode.QueryFormEncoder;
+import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.generator.EmptyInputGenerator;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
@@ -42,6 +44,7 @@ class SmokeTest {
         ConformanceRunner runner = new ConformanceRunner(
                 model,
                 new QueryInvoker(BASE_URL + "/", "2010-12-01"),
+                new QueryFormEncoder(model),
                 List.of(new EmptyInputGenerator()));
 
         List<VariantResult> results = runner.runOperations(
@@ -63,6 +66,7 @@ class SmokeTest {
         ConformanceRunner runner = new ConformanceRunner(
                 model,
                 new RestJsonInvoker(BASE_URL),
+                new RestJsonEncoder(model),
                 List.of(new EmptyInputGenerator()));
 
         List<VariantResult> results = runner.runOperations(
