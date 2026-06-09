@@ -3,25 +3,41 @@ package io.floci.conformance.model;
 /**
  * Outcome of running a single {@link Variant} against the emulator.
  *
- * <p>Distinct from any specific protocol or generator. The pass / fail boundary
- * for a given verdict depends on which generator produced the variant — e.g.
- * a {@code Negative}-strategy variant <i>expecting</i> a 4xx is {@link #PASS}
- * if it gets one, but a {@code Boundary}-strategy variant expecting a 200 is
- * {@link #FAIL_4XX_UNROUTED} if Floci returns a generic 404.
+ * <p>Three tiers:
+ * <ul>
+ *   <li>{@link #PASS} — the variant met its generator's expectation.
+ *   <li>{@code INCONCLUSIVE_*} / {@link #NOT_IMPLEMENTED} — the variant didn't
+ *       reach a useful verdict (Floci hasn't implemented the op, the harness
+ *       sent invalid input, or state leftover from a prior case got in the
+ *       way). Not a Floci bug, not a real test pass — just inconclusive.
+ *   <li>{@code FAIL_*} — Floci behaved demonstrably wrong (silent-pass on a
+ *       negative test, returned an undeclared error, returned 5xx, etc.).
+ *   <li>{@link #HARNESS_ERROR} — harness-side problem (network, encoder bug);
+ *       not Floci's fault.
+ * </ul>
  */
 public enum Verdict {
     /** Variant succeeded according to its generator's expectation. */
     PASS,
+
+    /** Floci explicitly signalled "operation not implemented" (e.g. {@code UnsupportedOperation}). */
+    NOT_IMPLEMENTED,
+    /** Floci returned a valid validation error — harness input wasn't acceptable. */
+    INCONCLUSIVE_VALIDATION,
+    /** Floci returned a valid state-collision error (e.g. {@code *AlreadyExists}). */
+    INCONCLUSIVE_STATE,
+
     /** Floci responded 200 but the body fails {@code @required} / type / enum checks. */
     FAIL_SHAPE,
     /** Floci returned 200 when the variant expected a 4xx (silent-pass bug). */
     FAIL_SILENT_PASS,
     /** Floci returned 4xx but with no AWS-shaped error body — routing or wire bug. */
     FAIL_4XX_UNROUTED,
-    /** Floci returned 4xx with a {@code __type} the operation's Smithy {@code error_shapes} doesn't declare. */
+    /** Floci returned 4xx with a {@code __type} the operation's Smithy {@code errors} doesn't declare. */
     FAIL_WRONG_ERROR_TYPE,
     /** Floci returned 5xx (almost always a Floci-side bug). */
     FAIL_5XX,
+
     /** Variant could not be exercised at all (network, build, classifier failure). */
     HARNESS_ERROR
 }
