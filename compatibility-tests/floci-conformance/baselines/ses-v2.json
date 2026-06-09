@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-09T05:57:34.964255Z"
+    "capturedAt" : "2026-06-09T06:10:33.748445Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -23,11 +23,11 @@
       "optionals.required-only" : "PASS"
     },
     "CreateConfigurationSetEventDestination" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "negative.missing-required.EventDestination" : "FAIL_4XX_UNROUTED",
-      "negative.missing-required.EventDestinationName" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.EventDestination" : "PASS",
+      "negative.missing-required.EventDestinationName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateContact" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -127,9 +127,9 @@
       "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "DeleteConfigurationSetEventDestination" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "DeleteContact" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -206,9 +206,9 @@
       "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "GetConfigurationSetEventDestinations" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "GetContact" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -486,17 +486,17 @@
       "optionals.required-only" : "FAIL_4XX_UNROUTED"
     },
     "PutConfigurationSetSendingOptions" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "PutConfigurationSetSuppressionOptions" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "enum-exhaust.SuppressionScope.ACCOUNT" : "FAIL_4XX_UNROUTED",
-      "enum-exhaust.SuppressionScope.TENANT" : "FAIL_4XX_UNROUTED",
-      "negative.invalid-enum.SuppressionScope" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "enum-exhaust.SuppressionScope.ACCOUNT" : "INCONCLUSIVE_STATE",
+      "enum-exhaust.SuppressionScope.TENANT" : "INCONCLUSIVE_STATE",
+      "negative.invalid-enum.SuppressionScope" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "PutConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -658,10 +658,10 @@
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateConfigurationSetEventDestination" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "negative.missing-required.EventDestination" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.EventDestination" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateContact" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",

@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-09T05:57:34.655646Z"
+    "capturedAt" : "2026-06-09T06:10:33.431850Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -19,11 +19,11 @@
       "optionals.required-only" : "PASS"
     },
     "CreateConfigurationSetEventDestination" : {
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "negative.missing-required.EventDestination" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "negative.missing-required.EventDestination" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -75,11 +75,11 @@
       "optionals.required-only" : "PASS"
     },
     "DeleteConfigurationSetEventDestination" : {
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "negative.missing-required.EventDestinationName" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "negative.missing-required.EventDestinationName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "DeleteConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -311,16 +311,16 @@
     "SendEmail" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.Destination" : "PASS",
-      "negative.missing-required.Message" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Message" : "INCONCLUSIVE_STATE",
       "negative.missing-required.Source" : "PASS",
-      "optionals.all-members" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "SendRawEmail" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.RawMessage" : "PASS",
-      "optionals.all-members" : "PASS",
-      "optionals.required-only" : "PASS"
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "SendTemplatedEmail" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -402,11 +402,11 @@
       "optionals.required-only" : "NOT_IMPLEMENTED"
     },
     "UpdateConfigurationSetEventDestination" : {
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "negative.missing-required.EventDestination" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "negative.missing-required.EventDestination" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateConfigurationSetReputationMetricsEnabled" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -416,11 +416,11 @@
       "optionals.required-only" : "NOT_IMPLEMENTED"
     },
     "UpdateConfigurationSetSendingEnabled" : {
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "negative.missing-required.Enabled" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "negative.missing-required.Enabled" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
     },
     "UpdateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
