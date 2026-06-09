@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-09T07:34:27.807674Z"
+    "capturedAt" : "2026-06-09T08:15:04.575095Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -745,7 +745,7 @@
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE",
-      "round-trip-echo.EmailIdentity" : "FAIL_ECHO"
+      "round-trip-echo.EmailIdentity" : "FAIL_SHAPE"
     },
     "GetEmailIdentityPolicies" : {
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
