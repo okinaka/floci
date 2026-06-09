@@ -28,14 +28,24 @@ public final class RestJsonInvoker implements Invoker {
     private static final String PROTOCOL = "aws.protocols#restJson1";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    private static final String DEFAULT_REGION = "us-east-1";
+
     private final HttpClient http;
     private final String baseUrl;
+    private final String sigV4Service;
+    private final String region;
 
-    public RestJsonInvoker(String baseUrl) {
+    public RestJsonInvoker(String baseUrl, String sigV4Service, String region) {
         this.baseUrl = stripTrailingSlash(baseUrl);
+        this.sigV4Service = sigV4Service;
+        this.region = region;
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
+    }
+
+    public RestJsonInvoker(String baseUrl, String sigV4Service) {
+        this(baseUrl, sigV4Service, DEFAULT_REGION);
     }
 
     @Override
@@ -56,7 +66,9 @@ public final class RestJsonInvoker implements Invoker {
         HttpRequest.Builder b = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(10))
-                .header("Accept", "application/json");
+                .header("Accept", "application/json")
+                .header("Authorization", SigV4Stub.authorization(sigV4Service, region))
+                .header("x-amz-date", SigV4Stub.AMZ_DATE);
         for (Map.Entry<String, String> e : variant.headers().entrySet()) {
             b.header(e.getKey(), e.getValue());
         }

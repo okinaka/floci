@@ -22,16 +22,27 @@ public final class QueryInvoker implements Invoker {
 
     private static final String PROTOCOL = "aws.protocols#awsQuery";
 
+    private static final String DEFAULT_REGION = "us-east-1";
+
     private final HttpClient http;
     private final String baseUrl;
     private final String actionApiVersion;
+    private final String sigV4Service;
+    private final String region;
 
-    public QueryInvoker(String baseUrl, String actionApiVersion) {
+    public QueryInvoker(String baseUrl, String actionApiVersion,
+                        String sigV4Service, String region) {
         this.baseUrl = baseUrl;
         this.actionApiVersion = actionApiVersion;
+        this.sigV4Service = sigV4Service;
+        this.region = region;
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
+    }
+
+    public QueryInvoker(String baseUrl, String actionApiVersion, String sigV4Service) {
+        this(baseUrl, actionApiVersion, sigV4Service, DEFAULT_REGION);
     }
 
     @Override
@@ -52,6 +63,8 @@ public final class QueryInvoker implements Invoker {
                 .uri(URI.create(baseUrl))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .header("Accept", "application/xml")
+                .header("Authorization", SigV4Stub.authorization(sigV4Service, region))
+                .header("x-amz-date", SigV4Stub.AMZ_DATE)
                 .timeout(Duration.ofSeconds(10))
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
                 .build();
