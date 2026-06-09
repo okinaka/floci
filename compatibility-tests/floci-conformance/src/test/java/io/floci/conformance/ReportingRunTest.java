@@ -70,7 +70,7 @@ class ReportingRunTest {
         Model model = SmithyModelLoader.loadSesV1();
         ConformanceRunner runner = new ConformanceRunner(
                 model,
-                new QueryInvoker(BASE_URL + "/", "2010-12-01"),
+                new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
                 new QueryFormEncoder(model),
                 ALL_GENERATORS);
 
@@ -89,7 +89,7 @@ class ReportingRunTest {
         Model model = SmithyModelLoader.loadSesV2();
         ConformanceRunner runner = new ConformanceRunner(
                 model,
-                new RestJsonInvoker(BASE_URL),
+                new RestJsonInvoker(BASE_URL, "ses"),
                 new RestJsonEncoder(model),
                 ALL_GENERATORS);
 
