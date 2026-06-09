@@ -8,7 +8,10 @@ import io.floci.conformance.classify.ErrorClassifier.Category;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
+import io.floci.conformance.scenario.RoundTripEchoGenerator;
+import io.floci.conformance.scenario.RoundTripScenario;
 import io.floci.conformance.validate.ShapeValidator;
+import software.amazon.smithy.model.shapes.ServiceShape;
 import software.amazon.smithy.model.shapes.StructureShape;
 import io.floci.conformance.invoke.InvocationResponse;
 import io.floci.conformance.invoke.Invoker;
@@ -73,6 +76,21 @@ public final class ConformanceRunner {
         return results;
     }
 
+    /**
+     * Execute {@link RoundTripScenario}s discovered on the service: for each
+     * Create-Get pair, write synthetic data then read it back and assert
+     * field-level echo. Returns one {@link VariantResult} per scenario.
+     */
+    public List<VariantResult> runRoundTrip(String serviceShapeId) {
+        ServiceShape svc = model.expectShape(ShapeId.from(serviceShapeId), ServiceShape.class);
+        List<RoundTripScenario> scenarios = new RoundTripEchoGenerator().generate(svc, model);
+        List<VariantResult> results = new ArrayList<>();
+        for (RoundTripScenario s : scenarios) {
+            results.add(executeScenario(s));
+        }
+        return results;
+    }
+
     public List<VariantResult> runOperations(String serviceShapeId, Set<String> operationNames) {
         Set<OperationShape> all = new HashSet<>(operationsOf(serviceShapeId));
         List<VariantResult> results = new ArrayList<>();
@@ -113,6 +131,98 @@ public final class ConformanceRunner {
                     "I/O error: " + e.getMessage());
         }
         return classify(variant, resp);
+    }
+
+    private VariantResult executeScenario(RoundTripScenario s) {
+        // Step 1 — setup. Failure here means we can't tell if the verify step
+        // would have round-tripped; report whatever the setup yielded so the
+        // user knows it never reached the assertion.
+        GeneratedCase setupCase = new GeneratedCase(
+                s.setupOp(), s.generatorName(), s.setupInput(), ExpectedOutcome.SUCCESS, null);
+        Variant setupVariant;
+        try {
+            setupVariant = encoder.encode(setupCase);
+        } catch (RuntimeException e) {
+            return new VariantResult(placeholderVariant(setupCase), Verdict.HARNESS_ERROR, -1,
+                    null, "setup encode error: " + e.getMessage());
+        }
+        InvocationResponse setupResp;
+        try {
+            setupResp = invoker.send(setupVariant);
+        } catch (IOException e) {
+            return new VariantResult(setupVariant, Verdict.HARNESS_ERROR, -1, null,
+                    "setup I/O error: " + e.getMessage());
+        }
+        if (!setupResp.is2xx()) {
+            return classify(setupVariant, setupResp);
+        }
+
+        // Step 2 — verify.
+        GeneratedCase verifyCase = new GeneratedCase(
+                s.verifyOp(), s.generatorName(), s.verifyInput(), ExpectedOutcome.SUCCESS, null);
+        Variant verifyVariant;
+        try {
+            verifyVariant = encoder.encode(verifyCase);
+        } catch (RuntimeException e) {
+            return new VariantResult(placeholderVariant(verifyCase), Verdict.HARNESS_ERROR, -1,
+                    null, "verify encode error: " + e.getMessage());
+        }
+        InvocationResponse verifyResp;
+        try {
+            verifyResp = invoker.send(verifyVariant);
+        } catch (IOException e) {
+            return new VariantResult(verifyVariant, Verdict.HARNESS_ERROR, -1, null,
+                    "verify I/O error: " + e.getMessage());
+        }
+        if (!verifyResp.is2xx()) {
+            return classify(verifyVariant, verifyResp);
+        }
+
+        // Step 3 — echo check.
+        JsonNode body;
+        try {
+            body = xmlMode
+                    ? XML.readTree(verifyResp.body().getBytes())
+                    : JSON.readTree(verifyResp.body());
+        } catch (IOException e) {
+            return new VariantResult(verifyVariant, Verdict.FAIL_SHAPE, verifyResp.httpStatus(),
+                    null, "verify body did not parse: " + e.getMessage());
+        }
+        if (xmlMode) {
+            body = ShapeValidator.unwrapXmlResult(body, s.verifyOp().getId().getName());
+        }
+        List<String> mismatches = new ArrayList<>();
+        for (String path : s.echoedPaths()) {
+            JsonNode expected = s.setupInput().get(path);
+            JsonNode actual = body == null ? null : body.get(path);
+            if (expected == null) {
+                continue;
+            }
+            if (actual == null || !echoEquals(expected, actual)) {
+                mismatches.add(path + " (set " + valueToString(expected)
+                        + ", got " + valueToString(actual) + ")");
+            }
+        }
+        if (mismatches.isEmpty()) {
+            return new VariantResult(verifyVariant, Verdict.PASS, verifyResp.httpStatus(), null, null);
+        }
+        return new VariantResult(verifyVariant, Verdict.FAIL_ECHO, verifyResp.httpStatus(),
+                null, String.join("; ", mismatches));
+    }
+
+    private static boolean echoEquals(JsonNode expected, JsonNode actual) {
+        if (expected.isTextual() && actual.isTextual()) {
+            return expected.asText().equals(actual.asText());
+        }
+        return expected.equals(actual);
+    }
+
+    private static String valueToString(JsonNode n) {
+        if (n == null) {
+            return "<missing>";
+        }
+        String text = n.toString();
+        return text.length() > 60 ? text.substring(0, 60) + "..." : text;
     }
 
     private static Variant placeholderVariant(GeneratedCase g) {

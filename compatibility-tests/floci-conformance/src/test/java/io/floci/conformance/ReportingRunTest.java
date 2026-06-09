@@ -74,7 +74,9 @@ class ReportingRunTest {
                 new QueryFormEncoder(model),
                 ALL_GENERATORS);
 
-        List<VariantResult> results = runner.run("com.amazonaws.ses#SimpleEmailService");
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.ses#SimpleEmailService"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.ses#SimpleEmailService"));
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.ses#SimpleEmailService", "2010-12-01", Instant.now().toString());
 
@@ -91,7 +93,9 @@ class ReportingRunTest {
                 new RestJsonEncoder(model),
                 ALL_GENERATORS);
 
-        List<VariantResult> results = runner.run("com.amazonaws.sesv2#SimpleEmailService_v2");
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.sesv2#SimpleEmailService_v2"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.sesv2#SimpleEmailService_v2"));
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.sesv2#SimpleEmailService_v2", "2019-09-27", Instant.now().toString());
 
