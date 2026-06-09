@@ -65,7 +65,7 @@ public final class InputSynthesizer {
         return (ObjectNode) buildStruct(input, 0, new HashSet<>());
     }
 
-    private JsonNode buildShape(Shape shape, int depth, Set<ShapeId> visiting) {
+    private JsonNode buildShape(Shape shape, int depth, Set<ShapeId> visiting, MemberShape owner) {
         if (depth > MAX_DEPTH) {
             return NODES.nullNode();
         }
@@ -74,7 +74,7 @@ public final class InputSynthesizer {
             case LIST, SET -> buildList((ListShape) shape, depth, visiting);
             case MAP -> buildMap((MapShape) shape, depth, visiting);
             case ENUM -> NODES.textNode(firstEnumValue((EnumShape) shape));
-            case STRING -> NODES.textNode("cov-probe-x");
+            case STRING -> NODES.textNode(FormatHints.stringFor(owner));
             case BLOB -> NODES.textNode("Y292LXByb2JlLXg=");
             case INTEGER, SHORT, BYTE -> NODES.numberNode(1);
             case LONG -> NODES.numberNode(1L);
@@ -105,7 +105,7 @@ public final class InputSynthesizer {
                 if (override != null) {
                     node.set(e.getKey(), override);
                 } else {
-                    node.set(e.getKey(), buildShape(target, depth + 1, visiting));
+                    node.set(e.getKey(), buildShape(target, depth + 1, visiting, member));
                 }
             }
         } finally {
@@ -117,14 +117,14 @@ public final class InputSynthesizer {
     private JsonNode buildList(ListShape list, int depth, Set<ShapeId> visiting) {
         ArrayNode arr = NODES.arrayNode();
         Shape element = model.expectShape(list.getMember().getTarget());
-        arr.add(buildShape(element, depth + 1, visiting));
+        arr.add(buildShape(element, depth + 1, visiting, list.getMember()));
         return arr;
     }
 
     private JsonNode buildMap(MapShape map, int depth, Set<ShapeId> visiting) {
         ObjectNode m = NODES.objectNode();
         Shape value = model.expectShape(map.getValue().getTarget());
-        m.set("cov-probe-key", buildShape(value, depth + 1, visiting));
+        m.set("cov-probe-key", buildShape(value, depth + 1, visiting, map.getValue()));
         return m;
     }
 
@@ -132,7 +132,7 @@ public final class InputSynthesizer {
         ObjectNode node = NODES.objectNode();
         union.getAllMembers().values().stream().findFirst().ifPresent(m -> {
             Shape target = model.expectShape(m.getTarget());
-            node.set(m.getMemberName(), buildShape(target, depth + 1, visiting));
+            node.set(m.getMemberName(), buildShape(target, depth + 1, visiting, m));
         });
         return node;
     }
