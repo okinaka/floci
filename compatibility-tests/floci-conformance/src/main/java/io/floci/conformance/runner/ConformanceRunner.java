@@ -3,6 +3,8 @@ package io.floci.conformance.runner;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.floci.conformance.encode.RequestEncoder;
+import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
 import io.floci.conformance.invoke.InvocationResponse;
 import io.floci.conformance.invoke.Invoker;
@@ -24,11 +26,11 @@ import java.util.Set;
 
 /**
  * Orchestrates: pick operations from the model → fan generators across them →
- * invoke each variant → classify each response into a {@link VariantResult}.
+ * encode each case via the protocol-specific {@link RequestEncoder} → invoke
+ * → classify each response into a {@link VariantResult}.
  *
- * <p>Phase A keeps classification deliberately coarse: protocol-level outcomes
- * only (2xx vs 4xx vs 5xx, error-type membership). Field-level shape
- * conformance lives in a later validator phase.
+ * <p>Phase A/B keep classification at the protocol layer (2xx vs 4xx vs 5xx,
+ * error-type membership). Body-shape conformance lives in a later validator.
  */
 public final class ConformanceRunner {
 
@@ -37,35 +39,28 @@ public final class ConformanceRunner {
 
     private final Model model;
     private final Invoker invoker;
+    private final RequestEncoder encoder;
     private final List<Generator> generators;
 
-    public ConformanceRunner(Model model, Invoker invoker, List<Generator> generators) {
+    public ConformanceRunner(Model model, Invoker invoker, RequestEncoder encoder,
+                             List<Generator> generators) {
         this.model = model;
         this.invoker = invoker;
+        this.encoder = encoder;
         this.generators = List.copyOf(generators);
     }
 
-    /**
-     * Run every generator across the operations of the given service.
-     *
-     * @param serviceShapeId Smithy ID of the service shape (e.g.
-     *                       {@code com.amazonaws.email#SimpleEmailService}).
-     */
     public List<VariantResult> run(String serviceShapeId) {
         Collection<OperationShape> ops = operationsOf(serviceShapeId);
         List<VariantResult> results = new ArrayList<>();
         for (OperationShape op : ops) {
             for (Generator gen : generators) {
-                gen.generate(op, model).forEach(v -> results.add(execute(v)));
+                gen.generate(op, model).forEach(c -> results.add(execute(c)));
             }
         }
         return results;
     }
 
-    /**
-     * Run every generator across an explicit set of operation names. Useful for
-     * scoping to a known-supported subset during early phases.
-     */
     public List<VariantResult> runOperations(String serviceShapeId, Set<String> operationNames) {
         Set<OperationShape> all = new HashSet<>(operationsOf(serviceShapeId));
         List<VariantResult> results = new ArrayList<>();
@@ -74,7 +69,7 @@ public final class ConformanceRunner {
                 continue;
             }
             for (Generator gen : generators) {
-                gen.generate(op, model).forEach(v -> results.add(execute(v)));
+                gen.generate(op, model).forEach(c -> results.add(execute(c)));
             }
         }
         return results;
@@ -89,7 +84,15 @@ public final class ConformanceRunner {
         return ops;
     }
 
-    private VariantResult execute(Variant variant) {
+    private VariantResult execute(GeneratedCase generated) {
+        Variant variant;
+        try {
+            variant = encoder.encode(generated);
+        } catch (RuntimeException e) {
+            Variant ph = placeholderVariant(generated);
+            return new VariantResult(ph, Verdict.HARNESS_ERROR, -1, null,
+                    "encoder error: " + e.getMessage());
+        }
         InvocationResponse resp;
         try {
             resp = invoker.send(variant);
@@ -98,6 +101,12 @@ public final class ConformanceRunner {
                     "I/O error: " + e.getMessage());
         }
         return classify(variant, resp);
+    }
+
+    private static Variant placeholderVariant(GeneratedCase g) {
+        return new Variant(g.operation(), g.generator(),
+                java.util.Map.of(), java.util.Map.of(), java.util.Map.of(),
+                null, g.expectedOutcome(), g.expectedError());
     }
 
     private VariantResult classify(Variant variant, InvocationResponse resp) {
@@ -118,7 +127,6 @@ public final class ConformanceRunner {
                 return new VariantResult(variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(),
                         errorType, "expected " + variant.expectedError() + ", got " + errorType);
             }
-            // SUCCESS-expecting variant got a 4xx; treat as wrong-error if AWS-shaped.
             return new VariantResult(variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(),
                     errorType, "expected 2xx, got " + errorType);
         }
@@ -137,7 +145,6 @@ public final class ConformanceRunner {
         if (variant.expectedError() == null) {
             return true;
         }
-        // Tolerant compare: errorType may be "Foo", "com.amazonaws.email#Foo", "Sender.Foo", etc.
         String tail = errorType;
         int hash = tail.lastIndexOf('#');
         if (hash >= 0) {

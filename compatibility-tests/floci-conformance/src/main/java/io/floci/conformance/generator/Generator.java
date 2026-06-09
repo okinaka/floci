@@ -1,17 +1,16 @@
 package io.floci.conformance.generator;
 
-import io.floci.conformance.model.Variant;
 import software.amazon.smithy.model.Model;
 import software.amazon.smithy.model.shapes.OperationShape;
 
 import java.util.stream.Stream;
 
 /**
- * One strategy for producing {@link Variant}s from a Smithy operation.
+ * One strategy for producing {@link GeneratedCase}s from a Smithy operation.
  *
  * <p>fakecloud-style: each generator captures one orthogonal axis of input
  * variation (boundaries, enum exhaustion, optionals, negatives, etc.).
- * Generators are stateless and reusable across operations.
+ * Generators are stateless, protocol-agnostic, and reusable across services.
  */
 public interface Generator {
 
@@ -23,9 +22,9 @@ public interface Generator {
     String name();
 
     /**
-     * Produce zero or more variants for the given operation. May return an
-     * empty stream when the strategy doesn't apply (e.g. enum-exhaustion on an
+     * Produce zero or more cases for the given operation. May return an empty
+     * stream when the strategy doesn't apply (e.g. enum exhaustion on an
      * operation with no enum members).
      */
-    Stream<Variant> generate(OperationShape op, Model model);
+    Stream<GeneratedCase> generate(OperationShape op, Model model);
 }
