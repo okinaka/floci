@@ -8,6 +8,8 @@ import io.floci.conformance.classify.ErrorClassifier.Category;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
+import io.floci.conformance.validate.ShapeValidator;
+import software.amazon.smithy.model.shapes.StructureShape;
 import io.floci.conformance.invoke.InvocationResponse;
 import io.floci.conformance.invoke.Invoker;
 import io.floci.conformance.model.ExpectedOutcome;
@@ -39,11 +41,15 @@ public final class ConformanceRunner {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final XmlMapper XML = new XmlMapper();
 
+    private static final String QUERY_PROTOCOL = "aws.protocols#awsQuery";
+
     private final Model model;
     private final Invoker invoker;
     private final RequestEncoder encoder;
     private final List<Generator> generators;
     private final ErrorClassifier errorClassifier;
+    private final ShapeValidator shapeValidator;
+    private final boolean xmlMode;
 
     public ConformanceRunner(Model model, Invoker invoker, RequestEncoder encoder,
                              List<Generator> generators) {
@@ -52,6 +58,8 @@ public final class ConformanceRunner {
         this.encoder = encoder;
         this.generators = List.copyOf(generators);
         this.errorClassifier = new ErrorClassifier();
+        this.xmlMode = QUERY_PROTOCOL.equals(encoder.protocol());
+        this.shapeValidator = new ShapeValidator(model, xmlMode);
     }
 
     public List<VariantResult> run(String serviceShapeId) {
@@ -168,10 +176,66 @@ public final class ConformanceRunner {
                 return new VariantResult(variant, Verdict.FAIL_SILENT_PASS, resp.httpStatus(),
                         null, "expected error but got 2xx");
             }
-            return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), null, null);
+            return validateShape(variant, resp);
         }
         return new VariantResult(variant, Verdict.HARNESS_ERROR, resp.httpStatus(),
                 null, "unexpected status " + resp.httpStatus());
+    }
+
+    private VariantResult validateShape(Variant variant, InvocationResponse resp) {
+        var outputShapeId = variant.operation().getOutputShape();
+        if (outputShapeId.toString().equals("smithy.api#Unit")) {
+            return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), null, null);
+        }
+        var rawShape = model.expectShape(outputShapeId);
+        if (!(rawShape instanceof StructureShape outputShape)) {
+            return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), null, null);
+        }
+        if (resp.body() == null || resp.body().isEmpty()) {
+            ShapeValidator.Result emptyResult = shapeValidator.validate(JSON.nullNode(), outputShape);
+            if (emptyResult.ok()) {
+                return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), null, null);
+            }
+            return new VariantResult(variant, Verdict.FAIL_SHAPE, resp.httpStatus(), null,
+                    "2xx with empty body but @required members declared: "
+                            + summarizeIssues(emptyResult.issues()));
+        }
+        JsonNode root;
+        try {
+            root = xmlMode ? XML.readTree(resp.body().getBytes()) : JSON.readTree(resp.body());
+        } catch (IOException e) {
+            return new VariantResult(variant, Verdict.FAIL_SHAPE, resp.httpStatus(), null,
+                    "2xx body did not parse as "
+                            + (xmlMode ? "XML" : "JSON") + ": " + e.getMessage());
+        }
+        if (xmlMode) {
+            root = ShapeValidator.unwrapXmlResult(root, variant.operationName());
+        }
+        ShapeValidator.Result result = shapeValidator.validate(root, outputShape);
+        if (result.ok()) {
+            return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), null, null);
+        }
+        return new VariantResult(variant, Verdict.FAIL_SHAPE, resp.httpStatus(), null,
+                summarizeIssues(result.issues()));
+    }
+
+    private static String summarizeIssues(java.util.List<ShapeValidator.Issue> issues) {
+        if (issues.isEmpty()) {
+            return "no issues";
+        }
+        int show = Math.min(3, issues.size());
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < show; i++) {
+            if (i > 0) {
+                sb.append("; ");
+            }
+            ShapeValidator.Issue is = issues.get(i);
+            sb.append(is.path()).append(" ").append(is.message());
+        }
+        if (issues.size() > show) {
+            sb.append(" (+").append(issues.size() - show).append(" more)");
+        }
+        return sb.toString();
     }
 
     private static String extractErrorType(InvocationResponse resp) {
