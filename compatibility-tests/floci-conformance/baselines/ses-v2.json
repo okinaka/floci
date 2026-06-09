@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-09T08:15:04.575095Z"
+    "capturedAt" : "2026-06-09T14:10:19.565356Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
