@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-09T08:15:03.972730Z"
+    "capturedAt" : "2026-06-09T14:10:18.960656Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -423,27 +423,27 @@
     },
     "GetIdentityDkimAttributes" : {
       "empty.passthrough" : "PASS",
-      "model-examples.1.GetIdentityDkimAttributes" : "FAIL_SHAPE",
+      "model-examples.1.GetIdentityDkimAttributes" : "PASS",
       "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
-      "optionals.all-members" : "FAIL_SHAPE",
-      "optionals.required-only" : "FAIL_SHAPE",
-      "property-based.seed-0" : "FAIL_SHAPE",
-      "property-based.seed-1" : "FAIL_SHAPE",
-      "property-based.seed-2" : "FAIL_SHAPE",
-      "property-based.seed-3" : "FAIL_SHAPE",
-      "property-based.seed-4" : "FAIL_SHAPE"
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "GetIdentityMailFromDomainAttributes" : {
       "empty.passthrough" : "PASS",
-      "model-examples.1.GetIdentityMailFromDomainAttributes" : "FAIL_SHAPE",
+      "model-examples.1.GetIdentityMailFromDomainAttributes" : "PASS",
       "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
-      "optionals.all-members" : "FAIL_SHAPE",
-      "optionals.required-only" : "FAIL_SHAPE",
-      "property-based.seed-0" : "FAIL_SHAPE",
-      "property-based.seed-1" : "FAIL_SHAPE",
-      "property-based.seed-2" : "FAIL_SHAPE",
-      "property-based.seed-3" : "FAIL_SHAPE",
-      "property-based.seed-4" : "FAIL_SHAPE"
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "GetIdentityNotificationAttributes" : {
       "empty.passthrough" : "PASS",
@@ -476,15 +476,15 @@
     },
     "GetIdentityVerificationAttributes" : {
       "empty.passthrough" : "PASS",
-      "model-examples.1.GetIdentityVerificationAttributes" : "FAIL_SHAPE",
+      "model-examples.1.GetIdentityVerificationAttributes" : "PASS",
       "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
-      "optionals.all-members" : "FAIL_SHAPE",
-      "optionals.required-only" : "FAIL_SHAPE",
-      "property-based.seed-0" : "FAIL_SHAPE",
-      "property-based.seed-1" : "FAIL_SHAPE",
-      "property-based.seed-2" : "FAIL_SHAPE",
-      "property-based.seed-3" : "FAIL_SHAPE",
-      "property-based.seed-4" : "FAIL_SHAPE"
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "GetSendQuota" : {
       "empty.passthrough" : "PASS",
