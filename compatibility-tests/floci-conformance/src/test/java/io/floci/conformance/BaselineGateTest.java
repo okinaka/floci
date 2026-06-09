@@ -11,6 +11,7 @@ import io.floci.conformance.generator.BoundaryGenerator;
 import io.floci.conformance.generator.EmptyInputGenerator;
 import io.floci.conformance.generator.EnumExhaustGenerator;
 import io.floci.conformance.generator.Generator;
+import io.floci.conformance.generator.IdentifierFanoutGenerator;
 import io.floci.conformance.generator.ModelExamplesGenerator;
 import io.floci.conformance.generator.NegativeGenerator;
 import io.floci.conformance.generator.OptionalsGenerator;
@@ -73,7 +74,8 @@ class BaselineGateTest {
             new NegativeGenerator(),
             new BoundaryGenerator(),
             new PropertyBasedGenerator(),
-            new ModelExamplesGenerator());
+            new ModelExamplesGenerator(),
+            new IdentifierFanoutGenerator());
 
     @Test
     void gate_sesV1() throws Exception {
