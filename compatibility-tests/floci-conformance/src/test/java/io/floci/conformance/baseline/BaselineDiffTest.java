@@ -115,6 +115,40 @@ class BaselineDiffTest {
     }
 
     @Test
+    void not_implemented_to_pass_is_improvement() {
+        Baseline base = build("Op", "g1", Verdict.NOT_IMPLEMENTED);
+        Baseline cur = build("Op", "g1", Verdict.PASS);
+        BaselineDiff diff = BaselineDiff.compute(base, cur);
+        assertThat(diff.improvements()).hasSize(1);
+        assertThat(diff.drifts()).isEmpty();
+    }
+
+    @Test
+    void not_implemented_to_inconclusive_is_improvement() {
+        Baseline base = build("Op", "g1", Verdict.NOT_IMPLEMENTED);
+        Baseline cur = build("Op", "g1", Verdict.INCONCLUSIVE_VALIDATION);
+        BaselineDiff diff = BaselineDiff.compute(base, cur);
+        assertThat(diff.improvements()).hasSize(1);
+    }
+
+    @Test
+    void fail_to_inconclusive_is_improvement() {
+        Baseline base = build("Op", "g1", Verdict.FAIL_4XX_UNROUTED);
+        Baseline cur = build("Op", "g1", Verdict.INCONCLUSIVE_VALIDATION);
+        BaselineDiff diff = BaselineDiff.compute(base, cur);
+        assertThat(diff.improvements()).hasSize(1);
+    }
+
+    @Test
+    void broken_to_broken_different_is_drift() {
+        Baseline base = build("Op", "g1", Verdict.NOT_IMPLEMENTED);
+        Baseline cur = build("Op", "g1", Verdict.FAIL_4XX_UNROUTED);
+        BaselineDiff diff = BaselineDiff.compute(base, cur);
+        assertThat(diff.drifts()).hasSize(1);
+        assertThat(diff.regressions()).isEmpty();
+    }
+
+    @Test
     void markdown_lists_each_section() {
         Baseline base = build(
                 "OpA", "g1", Verdict.PASS,

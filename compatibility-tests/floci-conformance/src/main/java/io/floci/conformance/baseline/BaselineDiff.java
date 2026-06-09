@@ -13,13 +13,14 @@ import java.util.TreeSet;
  * differences by direction so callers can act on each independently:
  *
  * <ul>
- *   <li>{@link #regressions()} — previously PASS/INCONCLUSIVE, now a real
- *       {@code FAIL_*}. These block the gate.
- *   <li>{@link #improvements()} — previously {@code FAIL_*}, now PASS.
- *   <li>{@link #drifts()} — verdict changed in a way that's neither
- *       improvement nor regression (e.g. PASS → INCONCLUSIVE_STATE,
- *       INCONCLUSIVE_VALIDATION → INCONCLUSIVE_STATE). Informational; often
- *       reflects test-ordering flakiness, not Floci behavior.
+ *   <li>{@link #regressions()} — severity band went up (e.g. PASS → FAIL,
+ *       INCONCLUSIVE → FAIL). These block the gate.
+ *   <li>{@link #improvements()} — severity band went down (e.g. FAIL → PASS,
+ *       NOT_IMPLEMENTED → INCONCLUSIVE_VALIDATION, FAIL_4XX_UNROUTED → PASS).
+ *   <li>{@link #drifts()} — same-band transition (e.g. PASS → PASS impossible,
+ *       INCONCLUSIVE_VALIDATION → INCONCLUSIVE_STATE, NOT_IMPLEMENTED →
+ *       FAIL_4XX_UNROUTED). Informational; often state-ordering flakiness or
+ *       the way Floci-not-implemented surfaces.
  *   <li>{@link #newCases()} — case exists in current but not baseline (model
  *       grew or a generator started producing it).
  *   <li>{@link #missingCases()} — case in baseline but not current (model
@@ -79,12 +80,19 @@ public record BaselineDiff(
                     missingCases.add(change);
                 } else if (bV == cV) {
                     // unchanged, skip
-                } else if (isRealFailure(cV) && !isRealFailure(bV)) {
-                    regressions.add(change);
-                } else if (cV == Verdict.PASS && isRealFailure(bV)) {
-                    improvements.add(change);
                 } else {
-                    drifts.add(change);
+                    int bBand = band(bV);
+                    int cBand = band(cV);
+                    // Regression only when current is in the "broken" band (2) and
+                    // baseline was less severe. PASS → INCONCLUSIVE is drift (often
+                    // Floci adding validation that the harness happens to trip).
+                    if (cBand == BAND_BROKEN && bBand < BAND_BROKEN) {
+                        regressions.add(change);
+                    } else if (cBand < bBand) {
+                        improvements.add(change);
+                    } else {
+                        drifts.add(change);
+                    }
                 }
             }
         }
@@ -104,11 +112,27 @@ public record BaselineDiff(
                 List.copyOf(missingCases));
     }
 
-    private static boolean isRealFailure(Verdict v) {
+    private static final int BAND_PASS = 0;
+    private static final int BAND_INCONCLUSIVE = 1;
+    private static final int BAND_BROKEN = 2;
+
+    /**
+     * Severity band — lower = better.
+     *
+     * <ul>
+     *   <li>0 ({@code PASS}) — operation works.
+     *   <li>1 ({@code INCONCLUSIVE_*}) — operation responds; harness couldn't
+     *       judge pass/fail (Floci validated synthetic input or hit state).
+     *   <li>2 ({@code NOT_IMPLEMENTED} / {@code FAIL_*} / {@code HARNESS_ERROR}) —
+     *       operation isn't usable from the harness's perspective.
+     * </ul>
+     */
+    private static int band(Verdict v) {
         return switch (v) {
-            case FAIL_SHAPE, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
-                    FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> true;
-            default -> false;
+            case PASS -> BAND_PASS;
+            case INCONCLUSIVE_VALIDATION, INCONCLUSIVE_STATE -> BAND_INCONCLUSIVE;
+            case NOT_IMPLEMENTED, FAIL_SHAPE, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
+                    FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> BAND_BROKEN;
         };
     }
 
