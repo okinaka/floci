@@ -178,18 +178,35 @@ public final class ConformanceRunner {
             return classify(verifyVariant, verifyResp);
         }
 
-        // Step 3 — echo check.
+        // Step 3 — parse, validate shape, then check echo.
         JsonNode body;
         try {
-            body = xmlMode
-                    ? XML.readTree(verifyResp.body().getBytes())
-                    : JSON.readTree(verifyResp.body());
+            body = verifyResp.body() == null || verifyResp.body().isEmpty()
+                    ? JSON.nullNode()
+                    : (xmlMode
+                            ? XML.readTree(verifyResp.body().getBytes())
+                            : JSON.readTree(verifyResp.body()));
         } catch (IOException e) {
             return new VariantResult(verifyVariant, Verdict.FAIL_SHAPE, verifyResp.httpStatus(),
                     null, "verify body did not parse: " + e.getMessage());
         }
         if (xmlMode) {
             body = ShapeValidator.unwrapXmlResult(body, s.verifyOp().getId().getName());
+        }
+        // Shape drift takes precedence over echo: if the body itself violates
+        // the Smithy contract (e.g. an enum value that isn't declared), the
+        // round-trip's premise is invalid regardless of field values.
+        var outShapeId = s.verifyOp().getOutputShape();
+        if (!outShapeId.toString().equals("smithy.api#Unit")) {
+            var outShape = model.expectShape(outShapeId);
+            if (outShape instanceof StructureShape outStruct) {
+                ShapeValidator.Result shapeResult = shapeValidator.validate(body, outStruct);
+                if (!shapeResult.ok()) {
+                    return new VariantResult(verifyVariant, Verdict.FAIL_SHAPE,
+                            verifyResp.httpStatus(), null,
+                            summarizeIssues(shapeResult.issues()));
+                }
+            }
         }
         List<String> mismatches = new ArrayList<>();
         for (String path : s.echoedPaths()) {
