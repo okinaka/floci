@@ -1,0 +1,476 @@
+{
+  "meta" : {
+    "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
+    "modelVersion" : "2010-12-01",
+    "capturedAt" : "2026-06-09T05:57:34.655646Z"
+  },
+  "cases" : {
+    "CloneReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.OriginalRuleSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateConfigurationSet" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSet" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "PASS"
+    },
+    "CreateConfigurationSetEventDestination" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.EventDestination" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateConfigurationSetTrackingOptions" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TrackingOptions" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.FailureRedirectionURL" : "NOT_IMPLEMENTED",
+      "negative.missing-required.FromEmailAddress" : "NOT_IMPLEMENTED",
+      "negative.missing-required.SuccessRedirectionURL" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateContent" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateSubject" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateReceiptFilter" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Filter" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateReceiptRule" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Rule" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "CreateTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Template" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "DeleteConfigurationSet" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "PASS"
+    },
+    "DeleteConfigurationSetEventDestination" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.EventDestinationName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteConfigurationSetTrackingOptions" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteIdentity" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.Identity" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "DeleteIdentityPolicy" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Identity" : "NOT_IMPLEMENTED",
+      "negative.missing-required.PolicyName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteReceiptFilter" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.FilterName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteReceiptRule" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DeleteTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.TemplateName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "PASS"
+    },
+    "DeleteVerifiedEmailAddress" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.EmailAddress" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "DescribeActiveReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DescribeConfigurationSet" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "DescribeReceiptRule" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "DescribeReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "GetAccountSendingEnabled" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "GetIdentityDkimAttributes" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetIdentityMailFromDomainAttributes" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetIdentityNotificationAttributes" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetIdentityPolicies" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Identity" : "NOT_IMPLEMENTED",
+      "negative.missing-required.PolicyNames" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "GetIdentityVerificationAttributes" : {
+      "empty.passthrough" : "PASS",
+      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetSendQuota" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetSendStatistics" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.TemplateName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "ListConfigurationSets" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListCustomVerificationEmailTemplates" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "ListIdentities" : {
+      "empty.passthrough" : "PASS",
+      "enum-exhaust.IdentityType.Domain" : "PASS",
+      "enum-exhaust.IdentityType.EmailAddress" : "PASS",
+      "negative.invalid-enum.IdentityType" : "FAIL_SILENT_PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListIdentityPolicies" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Identity" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "ListReceiptFilters" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "ListReceiptRuleSets" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "ListTemplates" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListVerifiedEmailAddresses" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "PutConfigurationSetDeliveryOptions" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "PutIdentityPolicy" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Identity" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Policy" : "NOT_IMPLEMENTED",
+      "negative.missing-required.PolicyName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "ReorderReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleNames" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "SendBounce" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.BounceSender" : "NOT_IMPLEMENTED",
+      "negative.missing-required.BouncedRecipientInfoList" : "NOT_IMPLEMENTED",
+      "negative.missing-required.OriginalMessageId" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "SendBulkTemplatedEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.DefaultTemplateData" : "INCONCLUSIVE_STATE",
+      "negative.missing-required.Destinations" : "INCONCLUSIVE_STATE",
+      "negative.missing-required.Source" : "INCONCLUSIVE_STATE",
+      "negative.missing-required.Template" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "SendCustomVerificationEmail" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.EmailAddress" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "SendEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Destination" : "PASS",
+      "negative.missing-required.Message" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Source" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SendRawEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.RawMessage" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "SendTemplatedEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Destination" : "PASS",
+      "negative.missing-required.Source" : "PASS",
+      "negative.missing-required.Template" : "PASS",
+      "negative.missing-required.TemplateData" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SetActiveReceiptRuleSet" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "SetIdentityDkimEnabled" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.DkimEnabled" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Identity" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "SetIdentityFeedbackForwardingEnabled" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ForwardingEnabled" : "PASS",
+      "negative.missing-required.Identity" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SetIdentityHeadersInNotificationsEnabled" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Bounce" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Complaint" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Delivery" : "INCONCLUSIVE_VALIDATION",
+      "negative.invalid-enum.NotificationType" : "PASS",
+      "negative.missing-required.Enabled" : "PASS",
+      "negative.missing-required.Identity" : "PASS",
+      "negative.missing-required.NotificationType" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SetIdentityMailFromDomain" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.BehaviorOnMXFailure.RejectMessage" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.BehaviorOnMXFailure.UseDefaultValue" : "INCONCLUSIVE_VALIDATION",
+      "negative.invalid-enum.BehaviorOnMXFailure" : "PASS",
+      "negative.missing-required.Identity" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SetIdentityNotificationTopic" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Bounce" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Complaint" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.NotificationType.Delivery" : "INCONCLUSIVE_VALIDATION",
+      "negative.invalid-enum.NotificationType" : "PASS",
+      "negative.missing-required.Identity" : "PASS",
+      "negative.missing-required.NotificationType" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SetReceiptRulePosition" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "TestRenderTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.TemplateData" : "INCONCLUSIVE_STATE",
+      "negative.missing-required.TemplateName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "UpdateAccountSendingEnabled" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateConfigurationSetEventDestination" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.EventDestination" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateConfigurationSetReputationMetricsEnabled" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Enabled" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateConfigurationSetSendingEnabled" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Enabled" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateConfigurationSetTrackingOptions" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TrackingOptions" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TemplateName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateReceiptRule" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Rule" : "NOT_IMPLEMENTED",
+      "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "UpdateTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Template" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "VerifyDomainDkim" : {
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "negative.missing-required.Domain" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED"
+    },
+    "VerifyDomainIdentity" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Domain" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "VerifyEmailAddress" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.EmailAddress" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "VerifyEmailIdentity" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.EmailAddress" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    }
+  }
+}

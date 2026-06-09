@@ -1,0 +1,719 @@
+{
+  "meta" : {
+    "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
+    "modelVersion" : "2019-09-27",
+    "capturedAt" : "2026-06-09T05:57:34.964255Z"
+  },
+  "cases" : {
+    "BatchGetMetricData" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Queries" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CancelExportJob" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateConfigurationSet" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "PASS"
+    },
+    "CreateConfigurationSetEventDestination" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EventDestination" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EventDestinationName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateContact" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailAddress" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateContactList" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ContactListName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.FailureRedirectionURL" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.FromEmailAddress" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.SuccessRedirectionURL" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateContent" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateName" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateSubject" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateDedicatedIpPool" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ScalingMode.MANAGED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ScalingMode.STANDARD" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ScalingMode" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.PoolName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateDeliverabilityTestReport" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Content" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.FromEmailAddress" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateEmailIdentity" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.EmailIdentity" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "CreateEmailIdentityPolicy" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Policy" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateEmailTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.TemplateContent" : "PASS",
+      "negative.missing-required.TemplateName" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "CreateExportJob" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ExportDataSource" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ExportDestination" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateImportJob" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ImportDataSource" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ImportDestination" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateMultiRegionEndpoint" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Details" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EndpointName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateTenant" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "CreateTenantResourceAssociation" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ResourceArn" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteConfigurationSet" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "DeleteConfigurationSetEventDestination" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteContact" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteContactList" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteDedicatedIpPool" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteEmailIdentity" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "DeleteEmailIdentityPolicy" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteEmailTemplate" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "DeleteMultiRegionEndpoint" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteSuppressedDestination" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "DeleteTenant" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "DeleteTenantResourceAssociation" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ResourceArn" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetAccount" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "GetBlacklistReports" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.BlacklistItemNames" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetConfigurationSet" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "GetConfigurationSetEventDestinations" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetContact" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetContactList" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDedicatedIp" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDedicatedIpPool" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDedicatedIps" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDeliverabilityDashboardOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDeliverabilityTestReport" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDomainDeliverabilityCampaign" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetDomainStatisticsReport" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EndDate" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.StartDate" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetEmailAddressInsights" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailAddress" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetEmailIdentity" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "GetEmailIdentityPolicies" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetEmailTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "GetExportJob" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetImportJob" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetMessageInsights" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetMultiRegionEndpoint" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetReputationEntity" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ReputationEntityType" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "GetSuppressedDestination" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "GetTenant" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListConfigurationSets" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListContactLists" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListContacts" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListCustomVerificationEmailTemplates" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListDedicatedIpPools" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListDeliverabilityTestReports" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListDomainDeliverabilityCampaigns" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EndDate" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.StartDate" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListEmailIdentities" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListEmailTemplates" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListExportJobs" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ExportSourceType.MESSAGE_INSIGHTS" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ExportSourceType.METRICS_DATA" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.JobStatus.CANCELLED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.JobStatus.COMPLETED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.JobStatus.CREATED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.JobStatus.FAILED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.JobStatus.PROCESSING" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ExportSourceType" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.JobStatus" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListImportJobs" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ImportDestinationType.CONTACT_LIST" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ImportDestinationType.SUPPRESSION_LIST" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ImportDestinationType" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListMultiRegionEndpoints" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListRecommendations" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListReputationEntities" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListResourceTenants" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ResourceArn" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListSuppressedDestinations" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "ListTagsForResource" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ResourceArn" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "ListTenantResources" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "ListTenants" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutAccountDedicatedIpWarmupAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutAccountDetails" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ContactLanguage.EN" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ContactLanguage.JA" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.MailType.MARKETING" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.MailType.TRANSACTIONAL" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ContactLanguage" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.MailType" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.MailType" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.WebsiteURL" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutAccountSendingAttributes" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "PutAccountSuppressionAttributes" : {
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "PutAccountVdmAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.VdmAttributes" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetArchivingOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetDeliveryOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.TlsPolicy.OPTIONAL" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.TlsPolicy.REQUIRE" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.TlsPolicy" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetReputationOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetSendingOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetSuppressionOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SuppressionScope.ACCOUNT" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SuppressionScope.TENANT" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.SuppressionScope" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetTrackingOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.HttpsPolicy.OPTIONAL" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.HttpsPolicy.REQUIRE" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.HttpsPolicy.REQUIRE_OPEN_ONLY" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.HttpsPolicy" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutConfigurationSetVdmOptions" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutDedicatedIpInPool" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.DestinationPoolName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutDedicatedIpPoolScalingAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ScalingMode.MANAGED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ScalingMode.STANDARD" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ScalingMode" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ScalingMode" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutDedicatedIpWarmupAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.WarmupPercentage" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutDeliverabilityDashboardOption" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.DashboardEnabled" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutEmailIdentityConfigurationSetAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutEmailIdentityDkimAttributes" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "PutEmailIdentityDkimSigningAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AF_SOUTH_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_NORTHEAST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_NORTHEAST_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_NORTHEAST_3" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTHEAST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTHEAST_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTHEAST_3" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTHEAST_5" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTH_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_AP_SOUTH_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_CA_CENTRAL_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_CA_WEST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_CENTRAL_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_CENTRAL_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_NORTH_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_SOUTH_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_WEST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_WEST_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_EU_WEST_3" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_IL_CENTRAL_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_ME_CENTRAL_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_ME_SOUTH_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_SA_EAST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_EAST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_EAST_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_WEST_1" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_WEST_2" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SigningAttributesOrigin.EXTERNAL" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.SigningAttributesOrigin" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.SigningAttributesOrigin" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "PutEmailIdentityFeedbackAttributes" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "PutEmailIdentityMailFromAttributes" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.BehaviorOnMxFailure.REJECT_MESSAGE" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.BehaviorOnMxFailure.USE_DEFAULT_VALUE" : "INCONCLUSIVE_VALIDATION",
+      "negative.invalid-enum.BehaviorOnMxFailure" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "PutSuppressedDestination" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.Reason.BOUNCE" : "PASS",
+      "enum-exhaust.Reason.COMPLAINT" : "PASS",
+      "negative.invalid-enum.Reason" : "PASS",
+      "negative.missing-required.EmailAddress" : "PASS",
+      "negative.missing-required.Reason" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS"
+    },
+    "PutTenantSuppressionAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SuppressionScope.ACCOUNT" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SuppressionScope.TENANT" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.SuppressionScope" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TenantName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "SendBulkEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.BulkEmailEntries" : "PASS",
+      "negative.missing-required.DefaultContent" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "SendCustomVerificationEmail" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailAddress" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "SendEmail" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.Content" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "TagResource" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ResourceArn" : "PASS",
+      "negative.missing-required.Tags" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "TestRenderEmailTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_STATE",
+      "negative.missing-required.TemplateData" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_STATE"
+    },
+    "UntagResource" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ResourceArn" : "PASS",
+      "negative.missing-required.TagKeys" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "UpdateConfigurationSetEventDestination" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EventDestination" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateContact" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateContactList" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateCustomVerificationEmailTemplate" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.FailureRedirectionURL" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.FromEmailAddress" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.SuccessRedirectionURL" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateContent" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.TemplateSubject" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateEmailIdentityPolicy" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Policy" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateEmailTemplate" : {
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.TemplateContent" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION"
+    },
+    "UpdateReputationEntityCustomerManagedStatus" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SendingStatus.DISABLED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SendingStatus.ENABLED" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.SendingStatus.REINSTATED" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ReputationEntityType" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.SendingStatus" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.SendingStatus" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    },
+    "UpdateReputationEntityPolicy" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.ReputationEntityType" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ReputationEntityPolicy" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED"
+    }
+  }
+}
