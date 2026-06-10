@@ -38,13 +38,17 @@ public final class EnumExhaustGenerator implements Generator {
             return Stream.empty();
         }
         List<GeneratedCase> cases = new ArrayList<>();
+        // One full-tree synthesis per op; each case clones and overrides one member.
+        ObjectNode baseline = new InputSynthesizer(
+                model, InputSynthesizer.allMembers(), null).synthesizeInput(struct);
         for (MemberShape member : struct.getAllMembers().values()) {
             Shape target = model.expectShape(member.getTarget());
             if (!(target instanceof EnumShape enumShape)) {
                 continue;
             }
             for (String value : enumShape.getEnumValues().values()) {
-                ObjectNode input = baselineInputWithOverride(struct, model, member.getMemberName(), value);
+                ObjectNode input = baseline.deepCopy();
+                input.set(member.getMemberName(), JsonNodeFactory.instance.textNode(value));
                 cases.add(new GeneratedCase(
                         op,
                         "enum-exhaust." + member.getMemberName() + "." + sanitize(value),
@@ -54,14 +58,6 @@ public final class EnumExhaustGenerator implements Generator {
             }
         }
         return cases.stream();
-    }
-
-    private static ObjectNode baselineInputWithOverride(StructureShape struct, Model model,
-                                                       String memberName, String enumValue) {
-        InputSynthesizer base = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
-        ObjectNode input = base.synthesizeInput(struct);
-        input.set(memberName, JsonNodeFactory.instance.textNode(enumValue));
-        return input;
     }
 
     private static String sanitize(String value) {

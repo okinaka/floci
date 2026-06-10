@@ -89,10 +89,21 @@ public final class ErrorClassifier {
             Pattern.compile(".*RequestExpired.*")
     );
 
-    /** Classify a 4xx error type. {@code rawType} may be {@code null}. */
-    public Category classify(OperationShape op, String rawType) {
+    /**
+     * Classify an error response by HTTP status and extracted error type.
+     * {@code rawType} may be {@code null}.
+     *
+     * <p>Status carries "not implemented" semantics on its own for some
+     * emulators: HTTP 501 (fakecloud's InvalidAction, LocalStack's
+     * InternalFailure) and HTTP 405 (ministack's MethodNotAllowed) both mean
+     * the operation isn't dispatched, regardless of the error-type name.
+     */
+    public Category classify(OperationShape op, int httpStatus, String rawType) {
         if (rawType == null || rawType.isBlank()) {
             return Category.OTHER;
+        }
+        if (httpStatus == 501 || httpStatus == 405) {
+            return Category.NOT_IMPLEMENTED;
         }
         String name = normalize(rawType);
 
