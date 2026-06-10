@@ -75,7 +75,12 @@ public final class InputSynthesizer {
             case MAP -> buildMap((MapShape) shape, depth, visiting);
             case ENUM -> NODES.textNode(firstEnumValue((EnumShape) shape));
             case STRING -> NODES.textNode(FormatHints.stringFor(owner));
-            case BLOB -> NODES.textNode("Y292LXByb2JlLXg=");
+            // Blobs get a minimal valid MIME message (base64). Plausible bytes
+            // for any blob, and it unlocks AWS-valid success paths for
+            // email-payload members (e.g. SendRawEmail's RawMessage.Data, where
+            // the MIME From:/To: headers stand in for omitted optional params).
+            case BLOB -> NODES.textNode(
+                    "RnJvbTogY292LXByb2JlQGV4YW1wbGUuY29tDQpUbzogY292LXByb2JlQGV4YW1wbGUuY29tDQpTdWJqZWN0OiBjb3YtcHJvYmUNCg0KY292LXByb2JlLXgNCg==");
             case INTEGER, SHORT, BYTE -> NODES.numberNode(1);
             case LONG -> NODES.numberNode(1L);
             case FLOAT -> NODES.numberNode(1.0f);
