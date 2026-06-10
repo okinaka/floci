@@ -7,13 +7,13 @@ import io.floci.conformance.baseline.BaselineStore;
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.encode.RestXmlEncoder;
-import io.floci.conformance.encode.AwsJson11Encoder;
+import io.floci.conformance.encode.AwsJsonEncoder;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.invoke.Invoker;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.invoke.RestXmlInvoker;
-import io.floci.conformance.invoke.AwsJson11Invoker;
+import io.floci.conformance.invoke.AwsJsonInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
@@ -102,8 +102,20 @@ class BaselineGateTest {
         runGate("ssm",
                 "com.amazonaws.ssm#AmazonSSM", "2014-11-06",
                 model,
-                new AwsJson11Invoker(BASE_URL + "/", "AmazonSSM", "ssm"),
-                new AwsJson11Encoder());
+                new AwsJsonInvoker(BASE_URL + "/", "AmazonSSM", "ssm", AwsJsonInvoker.Flavor.AWS_JSON_1_1),
+                AwsJsonEncoder.json11());
+    }
+
+    @Test
+    void gate_dynamodb() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadDynamoDb();
+        runGate("dynamodb",
+                "com.amazonaws.dynamodb#DynamoDB_20120810", "2012-08-10",
+                model,
+                new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
+                        AwsJsonInvoker.Flavor.AWS_JSON_1_0),
+                AwsJsonEncoder.json10());
     }
 
     private static void runGate(String stem, String serviceShapeId, String modelVersion,

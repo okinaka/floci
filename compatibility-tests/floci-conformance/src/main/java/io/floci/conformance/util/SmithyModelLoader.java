@@ -38,6 +38,11 @@ public final class SmithyModelLoader {
         return loadFromClasspath("models/ssm.json");
     }
 
+    /** DynamoDB (AWS JSON 1.0 protocol). */
+    public static Model loadDynamoDb() {
+        return loadFromClasspath("models/dynamodb.json");
+    }
+
     public static Model loadFromClasspath(String resourcePath) {
         URL url = Thread.currentThread().getContextClassLoader().getResource(resourcePath);
         if (url == null) {
