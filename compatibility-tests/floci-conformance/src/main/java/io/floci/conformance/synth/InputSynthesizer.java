@@ -89,7 +89,7 @@ public final class InputSynthesizer {
             case BOOLEAN -> NODES.booleanNode(false);
             case TIMESTAMP -> NODES.numberNode(1577836800L); // 2020-01-01T00:00:00Z epoch
             case DOCUMENT -> NODES.objectNode();
-            case UNION -> buildFirstUnionBranch((StructureShape) shape, depth, visiting);
+            case UNION -> buildFirstUnionBranch((software.amazon.smithy.model.shapes.UnionShape) shape, depth, visiting);
             default -> NODES.nullNode();
         };
     }
@@ -133,7 +133,8 @@ public final class InputSynthesizer {
         return m;
     }
 
-    private JsonNode buildFirstUnionBranch(StructureShape union, int depth, Set<ShapeId> visiting) {
+    private JsonNode buildFirstUnionBranch(software.amazon.smithy.model.shapes.UnionShape union,
+                                           int depth, Set<ShapeId> visiting) {
         ObjectNode node = NODES.objectNode();
         union.getAllMembers().values().stream().findFirst().ifPresent(m -> {
             Shape target = model.expectShape(m.getTarget());

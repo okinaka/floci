@@ -66,6 +66,10 @@ public final class ErrorClassifier {
             Pattern.compile(".*Conflict(Exception)?$"),
             Pattern.compile("ResourceInUse.*"),
             Pattern.compile(".*AccountSuspended.*"),
+            // S3 vocabulary
+            Pattern.compile(".*NotEmpty$"),
+            Pattern.compile(".*AlreadyOwnedByYou$"),
+            Pattern.compile("PreconditionFailed"),
             Pattern.compile(".*Throttling(Exception)?$"),
             Pattern.compile(".*TooManyRequests(Exception)?$")
     );
@@ -86,7 +90,10 @@ public final class ErrorClassifier {
             Pattern.compile(".*ParameterValue.*"),
             Pattern.compile(".*BadRequest.*"),
             Pattern.compile(".*IncompleteSignature.*"),
-            Pattern.compile(".*RequestExpired.*")
+            Pattern.compile(".*RequestExpired.*"),
+            // S3: content digest of the synthesized body never matches a
+            // synthesized Content-MD5 header — input-quality, not a drift.
+            Pattern.compile("BadDigest")
     );
 
     /**
