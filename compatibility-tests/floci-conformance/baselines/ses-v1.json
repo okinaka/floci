@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-09T23:39:02.050890Z"
+    "capturedAt" : "2026-06-10T01:12:47.260332Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -51,7 +51,8 @@
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "seed-and-read.CreateConfigurationSetEventDestination_to_DescribeConfigurationSet" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -67,7 +68,8 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateConfigurationSetTrackingOptions_to_DescribeConfigurationSet" : "NOT_IMPLEMENTED"
     },
     "CreateCustomVerificationEmailTemplate" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -88,7 +90,8 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
-      "round-trip-echo.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED"
+      "round-trip-echo.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateCustomVerificationEmailTemplate_to_GetTemplate" : "NOT_IMPLEMENTED"
     },
     "CreateReceiptFilter" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -117,7 +120,9 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRule" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRuleSet" : "NOT_IMPLEMENTED"
     },
     "CreateReceiptRuleSet" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -133,7 +138,9 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateReceiptRuleSet_to_DescribeReceiptRule" : "NOT_IMPLEMENTED",
+      "seed-and-read.CreateReceiptRuleSet_to_DescribeReceiptRuleSet" : "NOT_IMPLEMENTED"
     },
     "CreateTemplate" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -633,7 +640,8 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "seed-and-read.PutConfigurationSetDeliveryOptions_to_DescribeConfigurationSet" : "NOT_IMPLEMENTED"
     },
     "PutIdentityPolicy" : {
       "boundary.length.max.PolicyName" : "NOT_IMPLEMENTED",
@@ -661,7 +669,9 @@
       "property-based.seed-1" : "NOT_IMPLEMENTED",
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "seed-and-read.PutIdentityPolicy_to_GetIdentityPolicies" : "NOT_IMPLEMENTED",
+      "seed-and-read.PutIdentityPolicy_to_ListIdentityPolicies" : "NOT_IMPLEMENTED"
     },
     "ReorderReceiptRuleSet" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
