@@ -80,13 +80,17 @@ public final class NegativeGenerator implements Generator {
 
     private List<GeneratedCase> invalidEnumCases(OperationShape op, StructureShape struct, Model model) {
         List<GeneratedCase> cases = new ArrayList<>();
+        ObjectNode baseline = null;
         for (MemberShape member : struct.getAllMembers().values()) {
             Shape target = model.expectShape(member.getTarget());
             if (!(target instanceof EnumShape)) {
                 continue;
             }
-            InputSynthesizer base = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
-            ObjectNode input = base.synthesizeInput(struct);
+            if (baseline == null) {
+                baseline = new InputSynthesizer(
+                        model, InputSynthesizer.allMembers(), null).synthesizeInput(struct);
+            }
+            ObjectNode input = baseline.deepCopy();
             input.set(member.getMemberName(), JsonNodeFactory.instance.textNode(INVALID_ENUM_LITERAL));
             cases.add(new GeneratedCase(
                     op,

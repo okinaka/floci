@@ -2,15 +2,6 @@ package io.floci.conformance;
 
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
-import io.floci.conformance.generator.BoundaryGenerator;
-import io.floci.conformance.generator.EmptyInputGenerator;
-import io.floci.conformance.generator.EnumExhaustGenerator;
-import io.floci.conformance.generator.Generator;
-import io.floci.conformance.generator.IdentifierFanoutGenerator;
-import io.floci.conformance.generator.ModelExamplesGenerator;
-import io.floci.conformance.generator.NegativeGenerator;
-import io.floci.conformance.generator.OptionalsGenerator;
-import io.floci.conformance.generator.PropertyBasedGenerator;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.model.VariantResult;
@@ -18,6 +9,7 @@ import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
+import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
 import org.junit.jupiter.api.Test;
@@ -49,15 +41,6 @@ class ReportingRunTest {
             System.getenv().getOrDefault("FLOCI_BASE_URL", "http://localhost:4566");
     private static final Path OUT_DIR = Path.of("target");
 
-    private static final List<Generator> ALL_GENERATORS = List.of(
-            new EmptyInputGenerator(),
-            new OptionalsGenerator(),
-            new EnumExhaustGenerator(),
-            new NegativeGenerator(),
-            new BoundaryGenerator(),
-            new PropertyBasedGenerator(),
-            new ModelExamplesGenerator(),
-            new IdentifierFanoutGenerator());
 
     @Test
     void sesV1_reports() throws Exception {
@@ -67,7 +50,7 @@ class ReportingRunTest {
                 model,
                 new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
                 new QueryFormEncoder(model),
-                ALL_GENERATORS);
+                AllGenerators.ALL);
 
         List<VariantResult> results = new java.util.ArrayList<>(
                 runner.run("com.amazonaws.ses#SimpleEmailService"));
@@ -86,7 +69,7 @@ class ReportingRunTest {
                 model,
                 new RestJsonInvoker(BASE_URL, "ses"),
                 new RestJsonEncoder(model),
-                ALL_GENERATORS);
+                AllGenerators.ALL);
 
         List<VariantResult> results = new java.util.ArrayList<>(
                 runner.run("com.amazonaws.sesv2#SimpleEmailService_v2"));
