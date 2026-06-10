@@ -9,6 +9,12 @@ import software.amazon.smithy.model.shapes.ShapeId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link ErrorClassifier}: the not-implemented
+ * allowlist and status rules (501 / 405), state-collision vs not-found vs
+ * validation pattern buckets, Smithy declared-error lookup, and error-code
+ * normalization ({@code Sender.X} / namespaced forms).
+ */
 class ErrorClassifierTest {
 
     private static final Model SES_V1 = SmithyModelLoader.loadSesV1();

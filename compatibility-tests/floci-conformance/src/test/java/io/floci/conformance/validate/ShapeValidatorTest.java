@@ -10,6 +10,12 @@ import software.amazon.smithy.model.shapes.StructureShape;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link ShapeValidator}: JSON body validation against
+ * Smithy output structures (happy path and type mismatch), awsQuery XML
+ * handling (response-wrapper unwrap, empty elements, {@code <entry>}-encoded
+ * maps with single and multiple entries).
+ */
 class ShapeValidatorTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();

@@ -9,6 +9,12 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link BaselineDiff} and {@link BaselineGate}:
+ * every diff bucket (regression / improvement / drift / new / missing), the
+ * severity-band transition rules, and the gate's block-on-regression policy,
+ * driven by hand-built baseline pairs.
+ */
 class BaselineDiffTest {
 
     private static final ReportMeta META = new ReportMeta("svc", "ver", "2026-06-09T00:00:00Z");
