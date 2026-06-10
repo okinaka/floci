@@ -80,7 +80,7 @@ public final class PropertyBasedGenerator implements Generator {
         }
         return switch (shape.getType()) {
             case STRUCTURE -> buildStruct((StructureShape) shape, model, rng, depth, visiting);
-            case UNION -> buildFirstUnion((StructureShape) shape, model, rng, depth, visiting);
+            case UNION -> buildFirstUnion((software.amazon.smithy.model.shapes.UnionShape) shape, model, rng, depth, visiting);
             case LIST, SET -> buildList((ListShape) shape, model, rng, depth, visiting, owner);
             case MAP -> buildMap((MapShape) shape, model, rng, depth, visiting, owner);
             case ENUM -> pickEnumValue((EnumShape) shape, rng);
@@ -120,7 +120,7 @@ public final class PropertyBasedGenerator implements Generator {
         return node;
     }
 
-    private JsonNode buildFirstUnion(StructureShape union, Model model, Random rng,
+    private JsonNode buildFirstUnion(software.amazon.smithy.model.shapes.UnionShape union, Model model, Random rng,
                                      int depth, Set<ShapeId> visiting) {
         ObjectNode node = NODES.objectNode();
         var members = new ArrayList<>(union.getAllMembers().values());

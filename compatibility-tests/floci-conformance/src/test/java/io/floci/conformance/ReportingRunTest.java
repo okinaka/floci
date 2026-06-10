@@ -2,8 +2,10 @@ package io.floci.conformance;
 
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
+import io.floci.conformance.encode.RestXmlEncoder;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
+import io.floci.conformance.invoke.RestXmlInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
@@ -86,6 +88,25 @@ class ReportingRunTest {
                 "com.amazonaws.sesv2#SimpleEmailService_v2", "2019-09-27", Instant.now().toString());
 
         writeReports("conformance-sesv2", meta, results);
+    }
+
+    @Test
+    void s3_reports() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadS3();
+        ConformanceRunner runner = new ConformanceRunner(
+                model,
+                new RestXmlInvoker(BASE_URL, "s3"),
+                new RestXmlEncoder(model),
+                AllGenerators.ALL);
+
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.s3#AmazonS3"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.s3#AmazonS3"));
+        ReportMeta meta = new ReportMeta(
+                "com.amazonaws.s3#AmazonS3", "2006-03-01", Instant.now().toString());
+
+        writeReports("conformance-s3", meta, results);
     }
 
     private static void writeReports(String stem, ReportMeta meta, List<VariantResult> results)

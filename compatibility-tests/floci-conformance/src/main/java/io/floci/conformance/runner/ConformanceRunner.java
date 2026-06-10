@@ -45,7 +45,9 @@ public final class ConformanceRunner {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final XmlMapper XML = new XmlMapper();
 
-    private static final String QUERY_PROTOCOL = "aws.protocols#awsQuery";
+    /** Protocols whose response bodies are XML and need XML-aware shape walking. */
+    private static final Set<String> XML_PROTOCOLS = Set.of(
+            "aws.protocols#awsQuery", "aws.protocols#restXml");
 
     private final Model model;
     private final Invoker invoker;
@@ -62,7 +64,7 @@ public final class ConformanceRunner {
         this.encoder = encoder;
         this.generators = List.copyOf(generators);
         this.errorClassifier = new ErrorClassifier();
-        this.xmlMode = QUERY_PROTOCOL.equals(encoder.protocol());
+        this.xmlMode = XML_PROTOCOLS.contains(encoder.protocol());
         this.shapeValidator = new ShapeValidator(model, xmlMode);
     }
 
