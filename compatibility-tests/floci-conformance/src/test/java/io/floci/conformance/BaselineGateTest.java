@@ -7,21 +7,13 @@ import io.floci.conformance.baseline.BaselineStore;
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.encode.RequestEncoder;
-import io.floci.conformance.generator.BoundaryGenerator;
-import io.floci.conformance.generator.EmptyInputGenerator;
-import io.floci.conformance.generator.EnumExhaustGenerator;
-import io.floci.conformance.generator.Generator;
-import io.floci.conformance.generator.IdentifierFanoutGenerator;
-import io.floci.conformance.generator.ModelExamplesGenerator;
-import io.floci.conformance.generator.NegativeGenerator;
-import io.floci.conformance.generator.OptionalsGenerator;
-import io.floci.conformance.generator.PropertyBasedGenerator;
 import io.floci.conformance.invoke.Invoker;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
+import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
 import org.junit.jupiter.api.Assumptions;
@@ -63,15 +55,6 @@ class BaselineGateTest {
     private static final Path BASELINE_DIR = Path.of("baselines");
     private static final Path TARGET_DIR = Path.of("target");
 
-    private static final List<Generator> ALL_GENERATORS = List.of(
-            new EmptyInputGenerator(),
-            new OptionalsGenerator(),
-            new EnumExhaustGenerator(),
-            new NegativeGenerator(),
-            new BoundaryGenerator(),
-            new PropertyBasedGenerator(),
-            new ModelExamplesGenerator(),
-            new IdentifierFanoutGenerator());
 
     @Test
     void gate_sesV1() throws Exception {
@@ -97,7 +80,7 @@ class BaselineGateTest {
 
     private static void runGate(String stem, String serviceShapeId, String modelVersion,
                                 Model model, Invoker invoker, RequestEncoder encoder) throws IOException {
-        ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, ALL_GENERATORS);
+        ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, AllGenerators.ALL);
         List<VariantResult> results = new java.util.ArrayList<>(runner.run(serviceShapeId));
         results.addAll(runner.runRoundTrip(serviceShapeId));
         ReportMeta meta = new ReportMeta(serviceShapeId, modelVersion, Instant.now().toString());
