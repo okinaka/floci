@@ -11,6 +11,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link BaselineStore}: JSON round-trip fidelity,
+ * byte-for-byte deterministic serialization, and alphabetical key ordering —
+ * the properties the committed {@code baselines/*.json} diffs rely on.
+ */
 class BaselineStoreTest {
 
     private static Baseline sampleBaseline() {

@@ -14,7 +14,12 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Offline tests against synthetic results. */
+/**
+ * Offline unit tests for {@link MarkdownReportWriter} and
+ * {@link JsonReportWriter} using hand-built results: section layout
+ * (summary / per-op rollup / failures / inconclusive), verdict
+ * categorization, sorted output, and byte-for-byte JSON determinism.
+ */
 class ReportWritersTest {
 
     private static final ReportMeta META = new ReportMeta(

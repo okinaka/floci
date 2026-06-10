@@ -12,8 +12,14 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Offline checks for the Phase E generators. */
-class PhaseEGeneratorsTest {
+/**
+ * Offline unit tests for the constraint- and example-driven generators —
+ * {@link BoundaryGenerator} ({@code @length} / {@code @range} edges),
+ * {@link PropertyBasedGenerator} (seeded random-but-valid inputs), and
+ * {@link ModelExamplesGenerator} (replay of Smithy {@code @examples}) —
+ * exercised against the real SES Smithy models without an emulator.
+ */
+class ConstraintGeneratorsTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();
 

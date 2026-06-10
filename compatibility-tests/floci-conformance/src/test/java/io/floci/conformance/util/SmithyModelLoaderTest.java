@@ -7,7 +7,10 @@ import software.amazon.smithy.model.shapes.ShapeId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Smoke check for the Smithy loader; runs offline. */
+/**
+ * Offline check that the vendored SES v1 / v2 Smithy models load through the
+ * lenient {@link SmithyModelLoader} and expose their service operations.
+ */
 class SmithyModelLoaderTest {
 
     @Test
