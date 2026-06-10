@@ -10,6 +10,7 @@ import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
 import io.floci.conformance.scenario.RoundTripEchoGenerator;
 import io.floci.conformance.scenario.RoundTripScenario;
+import io.floci.conformance.scenario.SeedAndReadGenerator;
 import io.floci.conformance.validate.ShapeValidator;
 import software.amazon.smithy.model.shapes.ServiceShape;
 import software.amazon.smithy.model.shapes.StructureShape;
@@ -83,7 +84,9 @@ public final class ConformanceRunner {
      */
     public List<VariantResult> runRoundTrip(String serviceShapeId) {
         ServiceShape svc = model.expectShape(ShapeId.from(serviceShapeId), ServiceShape.class);
-        List<RoundTripScenario> scenarios = new RoundTripEchoGenerator().generate(svc, model);
+        List<RoundTripScenario> scenarios = new ArrayList<>();
+        scenarios.addAll(new RoundTripEchoGenerator().generate(svc, model));
+        scenarios.addAll(new SeedAndReadGenerator().generate(svc, model));
         List<VariantResult> results = new ArrayList<>();
         for (RoundTripScenario s : scenarios) {
             results.add(executeScenario(s));
