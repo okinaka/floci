@@ -28,6 +28,11 @@ public final class SmithyModelLoader {
         return loadFromClasspath("models/sesv2.json");
     }
 
+    /** S3 (REST XML protocol). */
+    public static Model loadS3() {
+        return loadFromClasspath("models/s3.json");
+    }
+
     public static Model loadFromClasspath(String resourcePath) {
         URL url = Thread.currentThread().getContextClassLoader().getResource(resourcePath);
         if (url == null) {

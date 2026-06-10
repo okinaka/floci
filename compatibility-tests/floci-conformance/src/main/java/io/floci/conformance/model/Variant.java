@@ -24,6 +24,10 @@ import java.util.Map;
  *                        {@code @httpQuery} bindings. Order is preserved.
  * @param headers         Custom HTTP headers (mostly REST-JSON {@code @httpHeader}).
  * @param jsonBody        REST-JSON request body, or {@code null} if no body.
+ * @param rawBody         Pre-serialized request body for protocols whose wire
+ *                        format isn't JSON (REST XML payloads, raw blobs).
+ *                        {@code null} when {@code jsonBody} drives the body.
+ * @param rawContentType  {@code Content-Type} accompanying {@code rawBody}.
  * @param expectedOutcome What this variant predicts Floci will return.
  * @param expectedError   For {@link ExpectedOutcome#CLIENT_ERROR} variants, the
  *                        Smithy error shape name (short, no namespace) the
@@ -36,6 +40,8 @@ public record Variant(
         Map<String, String> queryParams,
         Map<String, String> headers,
         JsonNode jsonBody,
+        String rawBody,
+        String rawContentType,
         ExpectedOutcome expectedOutcome,
         String expectedError) {
 
@@ -43,6 +49,15 @@ public record Variant(
         pathParams = pathParams == null ? Map.of() : Collections.unmodifiableMap(pathParams);
         queryParams = queryParams == null ? Map.of() : Collections.unmodifiableMap(queryParams);
         headers = headers == null ? Map.of() : Collections.unmodifiableMap(headers);
+    }
+
+    /** Convenience for protocols without a raw body (Query, REST JSON). */
+    public Variant(OperationShape operation, String generator,
+                   Map<String, String> pathParams, Map<String, String> queryParams,
+                   Map<String, String> headers, JsonNode jsonBody,
+                   ExpectedOutcome expectedOutcome, String expectedError) {
+        this(operation, generator, pathParams, queryParams, headers, jsonBody,
+                null, null, expectedOutcome, expectedError);
     }
 
     public String operationName() {
