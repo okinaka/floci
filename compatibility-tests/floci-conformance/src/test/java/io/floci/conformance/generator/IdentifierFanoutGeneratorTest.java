@@ -11,6 +11,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link IdentifierFanoutGenerator}: four variants
+ * (short name / ARN / wrong-region / wrong-account) per identifier-shaped
+ * member, the member-name heuristic, and skipping of ops with no identifier.
+ */
 class IdentifierFanoutGeneratorTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();

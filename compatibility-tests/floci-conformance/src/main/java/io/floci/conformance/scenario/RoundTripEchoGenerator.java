@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * <p>Cases where the identifier lives inside a nested struct (e.g.
  * {@code CreateConfigurationSet} taking {@code ConfigurationSet.Name}) are
- * skipped — Phase G handles flat-name pairs only.
+ * skipped — this generator handles flat-name pairs only.
  */
 public final class RoundTripEchoGenerator {
 
