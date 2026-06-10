@@ -3,9 +3,11 @@ package io.floci.conformance;
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.encode.RestXmlEncoder;
+import io.floci.conformance.encode.AwsJson11Encoder;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.invoke.RestXmlInvoker;
+import io.floci.conformance.invoke.AwsJson11Invoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
@@ -107,6 +109,25 @@ class ReportingRunTest {
                 "com.amazonaws.s3#AmazonS3", "2006-03-01", Instant.now().toString());
 
         writeReports("conformance-s3", meta, results);
+    }
+
+    @Test
+    void ssm_reports() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadSsm();
+        ConformanceRunner runner = new ConformanceRunner(
+                model,
+                new AwsJson11Invoker(BASE_URL + "/", "AmazonSSM", "ssm"),
+                new AwsJson11Encoder(),
+                AllGenerators.ALL);
+
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.ssm#AmazonSSM"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.ssm#AmazonSSM"));
+        ReportMeta meta = new ReportMeta(
+                "com.amazonaws.ssm#AmazonSSM", "2014-11-06", Instant.now().toString());
+
+        writeReports("conformance-ssm", meta, results);
     }
 
     private static void writeReports(String stem, ReportMeta meta, List<VariantResult> results)
