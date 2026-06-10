@@ -28,4 +28,12 @@ class SmithyModelLoaderTest {
                 ShapeId.from("com.amazonaws.sesv2#SimpleEmailService_v2"), ServiceShape.class);
         assertThat(svc.getAllOperations()).isNotEmpty();
     }
+
+    @Test
+    void loadsS3() {
+        Model m = SmithyModelLoader.loadS3();
+        ServiceShape svc = m.expectShape(
+                ShapeId.from("com.amazonaws.s3#AmazonS3"), ServiceShape.class);
+        assertThat(svc.getAllOperations()).isNotEmpty();
+    }
 }
