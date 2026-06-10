@@ -12,6 +12,12 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link SeedAndReadGenerator}: pairing of write ops
+ * with read ops by shared identifier member (beyond exact name-suffix
+ * matches), seed-value consistency across both step inputs, and label
+ * uniqueness — against the real SES v1 model.
+ */
 class SeedAndReadGeneratorTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();

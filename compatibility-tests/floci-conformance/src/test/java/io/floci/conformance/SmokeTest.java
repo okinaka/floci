@@ -18,12 +18,14 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * End-to-end smoke for Phase A: empty-input generator round-trips through
- * QueryInvoker (SES v1) and RestJsonInvoker (SES v2) against a running Floci.
+ * Minimal connectivity smoke: sends one safe operation per protocol
+ * ({@code ListIdentities} over Query/XML, {@code ListEmailIdentities} over
+ * REST JSON) through the full generator → encoder → invoker → classifier
+ * pipeline and asserts the runner produces a verdict without crashing.
  *
- * <p>The tests {@code Assumptions.assumeTrue(...)} away if Floci isn't reachable
- * on {@code FLOCI_BASE_URL} (default {@code http://localhost:4566}), so this
- * file is safe in CI without spinning up the emulator.
+ * <p>Use this to verify wiring after harness changes before paying for a full
+ * {@link ReportingRunTest} run. Skips when no emulator is reachable on
+ * {@code FLOCI_BASE_URL} (default {@code http://localhost:4566}).
  */
 class SmokeTest {
 

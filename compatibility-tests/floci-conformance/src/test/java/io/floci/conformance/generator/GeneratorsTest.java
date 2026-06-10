@@ -11,7 +11,13 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Offline checks for the Phase B generators against SES v1 and v2 models. */
+/**
+ * Offline unit tests for the structural input generators —
+ * {@link OptionalsGenerator} (required-only vs all-members),
+ * {@link EnumExhaustGenerator} (one case per declared enum value), and
+ * {@link NegativeGenerator} (missing-required / invalid-enum, expecting 4xx) —
+ * verified for case counts and predicted outcomes against the SES models.
+ */
 class GeneratorsTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();

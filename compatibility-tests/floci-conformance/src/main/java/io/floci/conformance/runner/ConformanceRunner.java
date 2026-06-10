@@ -36,8 +36,9 @@ import java.util.Set;
  * encode each case via the protocol-specific {@link RequestEncoder} → invoke
  * → classify each response into a {@link VariantResult}.
  *
- * <p>Phase A/B keep classification at the protocol layer (2xx vs 4xx vs 5xx,
- * error-type membership). Body-shape conformance lives in a later validator.
+ * <p>Per-variant classification covers the protocol layer (2xx vs 4xx vs 5xx,
+ * error-type membership) plus body-shape validation of 2xx responses; the
+ * two-step scenarios additionally assert write-read echo consistency.
  */
 public final class ConformanceRunner {
 

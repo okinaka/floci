@@ -12,6 +12,11 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link RoundTripEchoGenerator}: Create&lt;X&gt;/Get&lt;X&gt;
+ * pair discovery by resource-name suffix, identifier propagation into both
+ * step inputs, and prefix recognition — against the real SES v2 model.
+ */
 class RoundTripEchoGeneratorTest {
 
     private static final Model V2 = SmithyModelLoader.loadSesV2();

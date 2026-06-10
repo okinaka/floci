@@ -31,9 +31,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Phase C gate: runs the full conformance suite against Floci, diffs the
- * result against committed baselines under {@code baselines/}, fails the
- * test on regression.
+ * Regression gate: runs the full conformance suite against the emulator,
+ * diffs the per-case verdicts against the committed snapshots under
+ * {@code baselines/}, and fails the test when a previously passing (or
+ * inconclusive) case turns into a real failure. A Markdown diff is always
+ * written to {@code target/baseline-diff-*.md} for review.
  *
  * <p>Two modes, switched by the {@code conformance.capture} system property:
  * <ul>
