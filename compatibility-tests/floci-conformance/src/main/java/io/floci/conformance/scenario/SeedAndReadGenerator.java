@@ -59,6 +59,13 @@ public final class SeedAndReadGenerator {
             ops.put(op.getId().getName(), op);
         }
 
+        // The pair loop is O(setup_ops × verify_ops); synthesize each op's
+        // input once and deep-copy per pair instead of re-walking the shape
+        // graph hundreds of times.
+        InputSynthesizer synth = new InputSynthesizer(
+                model, InputSynthesizer.allMembers(), null);
+        Map<String, ObjectNode> synthCache = new LinkedHashMap<>();
+
         List<RoundTripScenario> out = new ArrayList<>();
         for (OperationShape setup : ops.values()) {
             String setupPrefix = findPrefix(setup.getId().getName(), SETUP_PREFIXES);
@@ -66,7 +73,7 @@ public final class SeedAndReadGenerator {
                 continue;
             }
             String setupResource = setup.getId().getName().substring(setupPrefix.length());
-            StructureShape setupInputShape = inputStruct(setup, model);
+            StructureShape setupInputShape = ScenarioSupport.inputStruct(setup, model);
             if (setupInputShape == null) {
                 continue;
             }
@@ -80,7 +87,7 @@ public final class SeedAndReadGenerator {
                     continue;
                 }
                 String verifyResource = verify.getId().getName().substring(verifyPrefix.length());
-                StructureShape verifyInputShape = inputStruct(verify, model);
+                StructureShape verifyInputShape = ScenarioSupport.inputStruct(verify, model);
                 if (verifyInputShape == null) {
                     continue;
                 }
@@ -91,7 +98,7 @@ public final class SeedAndReadGenerator {
                     continue;
                 }
 
-                Set<String> shared = sharedTopLevelMembers(setupInputShape, verifyInputShape);
+                Set<String> shared = ScenarioSupport.sharedTopLevelMembers(setupInputShape, verifyInputShape);
                 if (shared.isEmpty()) {
                     continue;
                 }
@@ -99,16 +106,18 @@ public final class SeedAndReadGenerator {
                 // setup-input member appears on the verify output, a successful
                 // 2xx with a valid response shape still demonstrates that the
                 // verify op can read the just-seeded resource.
-                List<String> echoedPaths = echoedFields(setupInputShape, verify, model);
+                List<String> echoedPaths = ScenarioSupport.echoedFields(setupInputShape, verify, model);
 
-                // Synthesize both inputs in full so REST path templates get all
-                // their @httpLabel substitutions, then override the shared
-                // identifiers to a common seed value so verify references the
-                // resource setup just created.
-                InputSynthesizer synth = new InputSynthesizer(
-                        model, InputSynthesizer.allMembers(), null);
-                ObjectNode setupInput = synth.synthesizeInput(setupInputShape);
-                ObjectNode verifyInput = synth.synthesizeInput(verifyInputShape);
+                // Both inputs are fully synthesized so REST path templates get
+                // all their @httpLabel substitutions; then the shared
+                // identifiers are overridden to a common seed value so verify
+                // references the resource setup just created.
+                ObjectNode setupInput = synthCache.computeIfAbsent(
+                        setup.getId().getName(), k -> synth.synthesizeInput(setupInputShape))
+                        .deepCopy();
+                ObjectNode verifyInput = synthCache.computeIfAbsent(
+                        verify.getId().getName(), k -> synth.synthesizeInput(verifyInputShape))
+                        .deepCopy();
 
                 for (String memberName : shared) {
                     MemberShape verifyMember = verifyInputShape.getAllMembers().get(memberName);
@@ -135,38 +144,7 @@ public final class SeedAndReadGenerator {
         return null;
     }
 
-    private static StructureShape inputStruct(OperationShape op, Model model) {
-        if (op.getInputShape().toString().equals("smithy.api#Unit")) {
-            return null;
-        }
-        Shape s = model.expectShape(op.getInputShape());
-        return (s instanceof StructureShape st) ? st : null;
-    }
 
-    private static Set<String> sharedTopLevelMembers(StructureShape a, StructureShape b) {
-        Set<String> common = new LinkedHashSet<>(a.getAllMembers().keySet());
-        common.retainAll(b.getAllMembers().keySet());
-        return common;
-    }
-
-    private static List<String> echoedFields(StructureShape setupInput,
-                                             OperationShape verifyOp, Model model) {
-        if (verifyOp.getOutputShape().toString().equals("smithy.api#Unit")) {
-            return List.of();
-        }
-        Shape outShape = model.expectShape(verifyOp.getOutputShape());
-        if (!(outShape instanceof StructureShape outStruct)) {
-            return List.of();
-        }
-        Set<String> outMembers = outStruct.getAllMembers().keySet();
-        List<String> echoed = new ArrayList<>();
-        for (MemberShape m : setupInput.getAllMembers().values()) {
-            if (outMembers.contains(m.getMemberName())) {
-                echoed.add(m.getMemberName());
-            }
-        }
-        return echoed;
-    }
 
     private static void injectIdentifier(ObjectNode target, StructureShape struct,
                                          String memberName, String seedValue, Model model) {

@@ -52,16 +52,27 @@ public final class BoundaryGenerator implements Generator {
         if (!(inputShape instanceof StructureShape struct)) {
             return Stream.empty();
         }
+        // Constrained members are rare; synthesize the baseline lazily and only
+        // once per op, then deep-copy per boundary case.
+        ObjectNode[] baseline = new ObjectNode[1];
+        java.util.function.Supplier<ObjectNode> baselineSupplier = () -> {
+            if (baseline[0] == null) {
+                baseline[0] = new InputSynthesizer(
+                        model, InputSynthesizer.allMembers(), null).synthesizeInput(struct);
+            }
+            return baseline[0];
+        };
         List<GeneratedCase> cases = new ArrayList<>();
         for (MemberShape member : struct.getAllMembers().values()) {
             Shape target = model.expectShape(member.getTarget());
-            collectLengthCases(op, struct, model, member, target, cases);
-            collectRangeCases(op, struct, model, member, target, cases);
+            collectLengthCases(op, baselineSupplier, member, target, cases);
+            collectRangeCases(op, baselineSupplier, member, target, cases);
         }
         return cases.stream();
     }
 
-    private void collectLengthCases(OperationShape op, StructureShape struct, Model model,
+    private void collectLengthCases(OperationShape op,
+                                    java.util.function.Supplier<ObjectNode> baseline,
                                     MemberShape member, Shape target, List<GeneratedCase> out) {
         LengthTrait length = member.getTrait(LengthTrait.class)
                 .orElse(target.getTrait(LengthTrait.class).orElse(null));
@@ -75,27 +86,28 @@ public final class BoundaryGenerator implements Generator {
         }
         length.getMin().ifPresent(min -> {
             int v = min.intValue();
-            emit(op, struct, model, member, lengthValue(type, v),
+            emit(op, baseline, member, lengthValue(type, v),
                     "boundary.length.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             if (v > 0) {
-                emit(op, struct, model, member, lengthValue(type, v - 1),
+                emit(op, baseline, member, lengthValue(type, v - 1),
                         "boundary.length.under.min." + member.getMemberName(),
                         ExpectedOutcome.CLIENT_ERROR, out);
             }
         });
         length.getMax().ifPresent(max -> {
             int v = max.intValue();
-            emit(op, struct, model, member, lengthValue(type, v),
+            emit(op, baseline, member, lengthValue(type, v),
                     "boundary.length.max." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
-            emit(op, struct, model, member, lengthValue(type, v + 1),
+            emit(op, baseline, member, lengthValue(type, v + 1),
                     "boundary.length.over.max." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
     }
 
-    private void collectRangeCases(OperationShape op, StructureShape struct, Model model,
+    private void collectRangeCases(OperationShape op,
+                                   java.util.function.Supplier<ObjectNode> baseline,
                                    MemberShape member, Shape target, List<GeneratedCase> out) {
         RangeTrait range = member.getTrait(RangeTrait.class)
                 .orElse(target.getTrait(RangeTrait.class).orElse(null));
@@ -106,20 +118,20 @@ public final class BoundaryGenerator implements Generator {
             return;
         }
         range.getMin().ifPresent(min -> {
-            emit(op, struct, model, member, numberValue(target.getType(), min),
+            emit(op, baseline, member, numberValue(target.getType(), min),
                     "boundary.range.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             BigDecimal below = min.subtract(BigDecimal.ONE);
-            emit(op, struct, model, member, numberValue(target.getType(), below),
+            emit(op, baseline, member, numberValue(target.getType(), below),
                     "boundary.range.under.min." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
         range.getMax().ifPresent(max -> {
-            emit(op, struct, model, member, numberValue(target.getType(), max),
+            emit(op, baseline, member, numberValue(target.getType(), max),
                     "boundary.range.max." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             BigDecimal above = max.add(BigDecimal.ONE);
-            emit(op, struct, model, member, numberValue(target.getType(), above),
+            emit(op, baseline, member, numberValue(target.getType(), above),
                     "boundary.range.over.max." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
@@ -168,11 +180,10 @@ public final class BoundaryGenerator implements Generator {
         };
     }
 
-    private static void emit(OperationShape op, StructureShape struct, Model model,
+    private static void emit(OperationShape op, java.util.function.Supplier<ObjectNode> baseline,
                              MemberShape member, JsonNode value,
                              String generatorName, ExpectedOutcome outcome, List<GeneratedCase> out) {
-        InputSynthesizer base = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
-        ObjectNode input = base.synthesizeInput(struct);
+        ObjectNode input = baseline.get().deepCopy();
         input.set(member.getMemberName(), value);
         out.add(new GeneratedCase(op, generatorName, input, outcome, null));
     }
