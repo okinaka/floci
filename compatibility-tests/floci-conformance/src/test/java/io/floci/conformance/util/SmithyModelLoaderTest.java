@@ -36,4 +36,12 @@ class SmithyModelLoaderTest {
                 ShapeId.from("com.amazonaws.s3#AmazonS3"), ServiceShape.class);
         assertThat(svc.getAllOperations()).isNotEmpty();
     }
+
+    @Test
+    void loadsSsm() {
+        Model m = SmithyModelLoader.loadSsm();
+        ServiceShape svc = m.expectShape(
+                ShapeId.from("com.amazonaws.ssm#AmazonSSM"), ServiceShape.class);
+        assertThat(svc.getAllOperations()).isNotEmpty();
+    }
 }
