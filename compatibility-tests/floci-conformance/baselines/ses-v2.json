@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-10T01:12:47.904364Z"
+    "capturedAt" : "2026-06-10T02:10:45.467363Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -1753,14 +1753,14 @@
       "boundary.length.min.ResourceArn" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.under.min.ResourceArn" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.arn.ResourceArn" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.ResourceArn" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.short.ResourceArn" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.wrong-account.ResourceArn" : "PASS",
+      "identifier-fanout.wrong-account.ResourceArn" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.wrong-region.ResourceArn" : "PASS",
       "negative.missing-required.ResourceArn" : "PASS",
       "negative.missing-required.TagKeys" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
-      "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.required-only" : "INCONCLUSIVE_MISSING",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
