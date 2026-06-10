@@ -44,4 +44,12 @@ class SmithyModelLoaderTest {
                 ShapeId.from("com.amazonaws.ssm#AmazonSSM"), ServiceShape.class);
         assertThat(svc.getAllOperations()).isNotEmpty();
     }
+
+    @Test
+    void loadsDynamoDb() {
+        Model m = SmithyModelLoader.loadDynamoDb();
+        ServiceShape svc = m.expectShape(
+                ShapeId.from("com.amazonaws.dynamodb#DynamoDB_20120810"), ServiceShape.class);
+        assertThat(svc.getAllOperations()).isNotEmpty();
+    }
 }
