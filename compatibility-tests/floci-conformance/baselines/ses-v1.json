@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-10T03:03:59.846410Z"
+    "capturedAt" : "2026-06-10T14:29:54.347948Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -811,7 +811,7 @@
       "model-examples.1.SendRawEmail" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.RawMessage" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
-      "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
