@@ -4,6 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link FormatHints}: member-name → synthetic-value
+ * heuristics (email, domain, service-specific ARNs, URLs) and the default
+ * placeholder fallback.
+ */
 class FormatHintsTest {
 
     @Test

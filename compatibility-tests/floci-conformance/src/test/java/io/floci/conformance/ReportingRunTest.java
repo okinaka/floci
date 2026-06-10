@@ -24,16 +24,24 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * End-to-end report generation: runs every Phase B generator against SES v1
- * and v2 and writes Markdown and JSON reports under {@code target/}.
+ * Report-generation driver: runs the full conformance suite — every input
+ * generator plus the two-step write/read scenarios — against the emulator at
+ * {@code FLOCI_BASE_URL} (default {@code http://localhost:4566}) and writes
+ * the human-readable Markdown report and machine-diffable JSON report to
+ * {@code target/conformance-ses.{md,json}} (SES v1) and
+ * {@code target/conformance-sesv2.{md,json}} (SES v2).
  *
- * <p>Skips when Floci isn't reachable, so CI without an emulator stays green.
- * To produce real reports locally:
+ * <p>Skips when no emulator is reachable, so CI without one stays green.
+ * To produce reports locally:
  * <pre>
- *   docker run -p 4566:4566 --rm hectorvent/floci:latest &amp;
+ *   docker run -p 4566:4566 --rm floci/floci:latest &amp;
  *   mvn -q test -Dtest=ReportingRunTest
  *   ls target/conformance-*.md target/conformance-*.json
  * </pre>
+ *
+ * <p>The target doesn't have to be Floci — any LocalStack-compatible emulator
+ * on the same port works, which is how cross-implementation comparisons are
+ * produced.
  */
 class ReportingRunTest {
 

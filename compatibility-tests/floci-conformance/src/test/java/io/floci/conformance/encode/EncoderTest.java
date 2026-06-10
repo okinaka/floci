@@ -13,7 +13,12 @@ import software.amazon.smithy.model.shapes.ShapeId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Offline checks for the wire encoders. */
+/**
+ * Offline unit tests for the wire encoders: {@link QueryFormEncoder} dotted
+ * form-param emission (lists as {@code Name.member.N}) and
+ * {@link RestJsonEncoder} member splitting across path / query / header /
+ * body by HTTP binding trait.
+ */
 class EncoderTest {
 
     @Test

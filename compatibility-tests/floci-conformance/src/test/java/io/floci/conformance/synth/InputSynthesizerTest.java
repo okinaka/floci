@@ -9,6 +9,10 @@ import software.amazon.smithy.model.shapes.StructureShape;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Offline unit tests for {@link InputSynthesizer}: the required-only and
+ * all-members member filters against a real SES v2 input structure.
+ */
 class InputSynthesizerTest {
 
     @Test
