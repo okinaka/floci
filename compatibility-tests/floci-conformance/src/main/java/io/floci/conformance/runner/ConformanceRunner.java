@@ -27,7 +27,6 @@ import software.amazon.smithy.model.shapes.ShapeId;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,14 +66,7 @@ public final class ConformanceRunner {
     }
 
     public List<VariantResult> run(String serviceShapeId) {
-        Collection<OperationShape> ops = operationsOf(serviceShapeId);
-        List<VariantResult> results = new ArrayList<>();
-        for (OperationShape op : ops) {
-            for (Generator gen : generators) {
-                gen.generate(op, model).forEach(c -> results.add(execute(c)));
-            }
-        }
-        return results;
+        return runFiltered(serviceShapeId, op -> true);
     }
 
     /**
@@ -95,10 +87,14 @@ public final class ConformanceRunner {
     }
 
     public List<VariantResult> runOperations(String serviceShapeId, Set<String> operationNames) {
-        Set<OperationShape> all = new HashSet<>(operationsOf(serviceShapeId));
+        return runFiltered(serviceShapeId, op -> operationNames.contains(op.getId().getName()));
+    }
+
+    private List<VariantResult> runFiltered(String serviceShapeId,
+                                            java.util.function.Predicate<OperationShape> filter) {
         List<VariantResult> results = new ArrayList<>();
-        for (OperationShape op : all) {
-            if (!operationNames.contains(op.getId().getName())) {
+        for (OperationShape op : operationsOf(serviceShapeId)) {
+            if (!filter.test(op)) {
                 continue;
             }
             for (Generator gen : generators) {
@@ -136,50 +132,53 @@ public final class ConformanceRunner {
         return classify(variant, resp);
     }
 
+    /** Outcome of one scenario step: either a terminal result or a 2xx response to continue with. */
+    private record StepOutcome(Variant variant, InvocationResponse resp, VariantResult terminal) {
+    }
+
+    private StepOutcome sendStep(GeneratedCase stepCase, String phase) {
+        Variant variant;
+        try {
+            variant = encoder.encode(stepCase);
+        } catch (RuntimeException e) {
+            return new StepOutcome(null, null, new VariantResult(
+                    placeholderVariant(stepCase), Verdict.HARNESS_ERROR, -1,
+                    null, phase + " encode error: " + e.getMessage()));
+        }
+        InvocationResponse resp;
+        try {
+            resp = invoker.send(variant);
+        } catch (IOException e) {
+            return new StepOutcome(null, null, new VariantResult(
+                    variant, Verdict.HARNESS_ERROR, -1, null,
+                    phase + " I/O error: " + e.getMessage()));
+        }
+        if (!resp.is2xx()) {
+            return new StepOutcome(null, null, classify(variant, resp));
+        }
+        return new StepOutcome(variant, resp, null);
+    }
+
     private VariantResult executeScenario(RoundTripScenario s) {
         // Step 1 — setup. Failure here means we can't tell if the verify step
         // would have round-tripped; report whatever the setup yielded so the
         // user knows it never reached the assertion.
-        GeneratedCase setupCase = new GeneratedCase(
-                s.setupOp(), s.generatorName(), s.setupInput(), ExpectedOutcome.SUCCESS, null);
-        Variant setupVariant;
-        try {
-            setupVariant = encoder.encode(setupCase);
-        } catch (RuntimeException e) {
-            return new VariantResult(placeholderVariant(setupCase), Verdict.HARNESS_ERROR, -1,
-                    null, "setup encode error: " + e.getMessage());
-        }
-        InvocationResponse setupResp;
-        try {
-            setupResp = invoker.send(setupVariant);
-        } catch (IOException e) {
-            return new VariantResult(setupVariant, Verdict.HARNESS_ERROR, -1, null,
-                    "setup I/O error: " + e.getMessage());
-        }
-        if (!setupResp.is2xx()) {
-            return classify(setupVariant, setupResp);
+        StepOutcome setup = sendStep(new GeneratedCase(
+                s.setupOp(), s.generatorName(), s.setupInput(), ExpectedOutcome.SUCCESS, null),
+                "setup");
+        if (setup.terminal() != null) {
+            return setup.terminal();
         }
 
         // Step 2 — verify.
-        GeneratedCase verifyCase = new GeneratedCase(
-                s.verifyOp(), s.generatorName(), s.verifyInput(), ExpectedOutcome.SUCCESS, null);
-        Variant verifyVariant;
-        try {
-            verifyVariant = encoder.encode(verifyCase);
-        } catch (RuntimeException e) {
-            return new VariantResult(placeholderVariant(verifyCase), Verdict.HARNESS_ERROR, -1,
-                    null, "verify encode error: " + e.getMessage());
+        StepOutcome verify = sendStep(new GeneratedCase(
+                s.verifyOp(), s.generatorName(), s.verifyInput(), ExpectedOutcome.SUCCESS, null),
+                "verify");
+        if (verify.terminal() != null) {
+            return verify.terminal();
         }
-        InvocationResponse verifyResp;
-        try {
-            verifyResp = invoker.send(verifyVariant);
-        } catch (IOException e) {
-            return new VariantResult(verifyVariant, Verdict.HARNESS_ERROR, -1, null,
-                    "verify I/O error: " + e.getMessage());
-        }
-        if (!verifyResp.is2xx()) {
-            return classify(verifyVariant, verifyResp);
-        }
+        Variant verifyVariant = verify.variant();
+        InvocationResponse verifyResp = verify.resp();
 
         // Step 3 — parse, validate shape, then check echo.
         JsonNode body;
@@ -218,7 +217,7 @@ public final class ConformanceRunner {
             if (expected == null) {
                 continue;
             }
-            if (actual == null || !echoEquals(expected, actual)) {
+            if (actual == null || !echoEquals(expected, unwrapXmlCollection(expected, actual))) {
                 mismatches.add(path + " (set " + valueToString(expected)
                         + ", got " + valueToString(actual) + ")");
             }
@@ -230,7 +229,29 @@ public final class ConformanceRunner {
                 null, String.join("; ", mismatches));
     }
 
+    /**
+     * awsQuery XML serializes lists as {@code <Items><member>...</member></Items>},
+     * which the XmlMapper decodes to {@code {"member": <one element or array>}}.
+     * When the expected value is an array, unwrap that single-key indirection
+     * so the echo comparison sees the same shape on both sides.
+     */
+    private JsonNode unwrapXmlCollection(JsonNode expected, JsonNode actual) {
+        if (!xmlMode || actual == null || !expected.isArray()
+                || !actual.isObject() || actual.size() != 1) {
+            return actual;
+        }
+        JsonNode inner = actual.elements().next();
+        if (inner.isArray()) {
+            return inner;
+        }
+        // Single-element list: XML collapses it to the bare element.
+        return JSON.createArrayNode().add(inner);
+    }
+
     private static boolean echoEquals(JsonNode expected, JsonNode actual) {
+        if (actual == null) {
+            return false;
+        }
         if (expected.isTextual() && actual.isTextual()) {
             return expected.asText().equals(actual.asText());
         }
@@ -254,12 +275,11 @@ public final class ConformanceRunner {
     private VariantResult classify(Variant variant, InvocationResponse resp) {
         if (resp.is5xx()) {
             String rawType = extractErrorType(resp);
-            // HTTP 501 with an AWS-shaped error body is the canonical "Not
-            // Implemented" semantic — LocalStack uses 501+InternalFailure and
-            // fakecloud uses 501+InvalidAction for ops it hasn't built yet.
-            if (resp.httpStatus() == 501 && rawType != null) {
+            if (rawType != null && errorClassifier.classify(
+                    variant.operation(), resp.httpStatus(), rawType) == Category.NOT_IMPLEMENTED) {
                 return new VariantResult(variant, Verdict.NOT_IMPLEMENTED, resp.httpStatus(),
-                        rawType, "501 not implemented (" + ErrorClassifier.normalize(rawType) + ")");
+                        rawType, "operation not implemented ("
+                        + ErrorClassifier.normalize(rawType) + ")");
             }
             return new VariantResult(variant, Verdict.FAIL_5XX, resp.httpStatus(),
                     rawType, truncate(resp.body()));
@@ -270,15 +290,9 @@ public final class ConformanceRunner {
                 return new VariantResult(variant, Verdict.FAIL_4XX_UNROUTED, resp.httpStatus(),
                         null, truncate(resp.body()));
             }
-            // HTTP 405 (Method Not Allowed) carries the same "this method is
-            // not implemented for this resource" semantic — ministack uses
-            // 405+MethodNotAllowed where Floci would say UnsupportedOperation.
-            if (resp.httpStatus() == 405) {
-                return new VariantResult(variant, Verdict.NOT_IMPLEMENTED, resp.httpStatus(),
-                        rawType, "405 method not allowed (" + ErrorClassifier.normalize(rawType) + ")");
-            }
             String normalized = ErrorClassifier.normalize(rawType);
-            Category category = errorClassifier.classify(variant.operation(), rawType);
+            Category category = errorClassifier.classify(
+                    variant.operation(), resp.httpStatus(), rawType);
             boolean negative = variant.expectedOutcome() == ExpectedOutcome.CLIENT_ERROR;
 
             if (category == Category.NOT_IMPLEMENTED) {
