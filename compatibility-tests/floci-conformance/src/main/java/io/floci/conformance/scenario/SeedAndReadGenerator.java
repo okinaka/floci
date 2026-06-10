@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.floci.conformance.synth.FormatHints;
 import io.floci.conformance.synth.InputSynthesizer;
 import software.amazon.smithy.model.Model;
-import software.amazon.smithy.model.shapes.ListShape;
 import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.ServiceShape;
@@ -178,12 +177,7 @@ public final class SeedAndReadGenerator {
         Shape targetShape = model.expectShape(member.getTarget());
         if (targetShape.getType() == ShapeType.LIST) {
             ArrayNode arr = NODES.arrayNode();
-            Shape elementShape = model.expectShape(((ListShape) targetShape).getMember().getTarget());
-            if (elementShape.getType() == ShapeType.STRING) {
-                arr.add(seedValue);
-            } else {
-                arr.add(NODES.textNode(seedValue));
-            }
+            arr.add(seedValue);
             target.set(memberName, arr);
         } else {
             target.set(memberName, NODES.textNode(seedValue));

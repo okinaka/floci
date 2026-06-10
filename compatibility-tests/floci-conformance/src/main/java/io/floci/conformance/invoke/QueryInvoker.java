@@ -10,7 +10,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Invoker for the AWS Query protocol — used by SES v1, SQS, SNS, IAM, STS, etc.
@@ -88,12 +87,5 @@ public final class QueryInvoker implements Invoker {
 
     private static String urlEncode(String s) {
         return java.net.URLEncoder.encode(s, StandardCharsets.UTF_8);
-    }
-
-    /** Convenience for tests; preserves insertion order. */
-    static String formEncode(Map<String, String> params) {
-        return params.entrySet().stream()
-                .map(e -> urlEncode(e.getKey()) + "=" + urlEncode(e.getValue()))
-                .collect(Collectors.joining("&"));
     }
 }
