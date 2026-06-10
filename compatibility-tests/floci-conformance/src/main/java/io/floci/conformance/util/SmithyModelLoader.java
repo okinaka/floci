@@ -33,6 +33,11 @@ public final class SmithyModelLoader {
         return loadFromClasspath("models/s3.json");
     }
 
+    /** SSM (AWS JSON 1.1 protocol). */
+    public static Model loadSsm() {
+        return loadFromClasspath("models/ssm.json");
+    }
+
     public static Model loadFromClasspath(String resourcePath) {
         URL url = Thread.currentThread().getContextClassLoader().getResource(resourcePath);
         if (url == null) {
