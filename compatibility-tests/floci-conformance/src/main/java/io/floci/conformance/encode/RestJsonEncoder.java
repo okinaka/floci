@@ -86,6 +86,14 @@ public final class RestJsonEncoder implements RequestEncoder {
         if (v.isBoolean()) {
             return v.booleanValue() ? "true" : "false";
         }
+        // Containers don't stringify via asText() (it returns ""). A
+        // list-valued @httpQuery should serialize as a repeated param, which
+        // Variant's Map<String,String> can't carry — take the first element so
+        // single-element synthesized lists round-trip correctly instead of
+        // producing an empty value.
+        if (v.isArray()) {
+            return v.isEmpty() ? "" : scalarToString(v.get(0));
+        }
         return v.asText();
     }
 }

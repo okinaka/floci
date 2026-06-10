@@ -75,21 +75,21 @@ public final class BoundaryGenerator implements Generator {
         }
         length.getMin().ifPresent(min -> {
             int v = min.intValue();
-            emit(op, struct, model, member, target, lengthValue(type, v),
+            emit(op, struct, model, member, lengthValue(type, v),
                     "boundary.length.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             if (v > 0) {
-                emit(op, struct, model, member, target, lengthValue(type, v - 1),
+                emit(op, struct, model, member, lengthValue(type, v - 1),
                         "boundary.length.under.min." + member.getMemberName(),
                         ExpectedOutcome.CLIENT_ERROR, out);
             }
         });
         length.getMax().ifPresent(max -> {
             int v = max.intValue();
-            emit(op, struct, model, member, target, lengthValue(type, v),
+            emit(op, struct, model, member, lengthValue(type, v),
                     "boundary.length.max." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
-            emit(op, struct, model, member, target, lengthValue(type, v + 1),
+            emit(op, struct, model, member, lengthValue(type, v + 1),
                     "boundary.length.over.max." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
@@ -106,20 +106,20 @@ public final class BoundaryGenerator implements Generator {
             return;
         }
         range.getMin().ifPresent(min -> {
-            emit(op, struct, model, member, target, numberValue(target.getType(), min),
+            emit(op, struct, model, member, numberValue(target.getType(), min),
                     "boundary.range.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             BigDecimal below = min.subtract(BigDecimal.ONE);
-            emit(op, struct, model, member, target, numberValue(target.getType(), below),
+            emit(op, struct, model, member, numberValue(target.getType(), below),
                     "boundary.range.under.min." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
         range.getMax().ifPresent(max -> {
-            emit(op, struct, model, member, target, numberValue(target.getType(), max),
+            emit(op, struct, model, member, numberValue(target.getType(), max),
                     "boundary.range.max." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             BigDecimal above = max.add(BigDecimal.ONE);
-            emit(op, struct, model, member, target, numberValue(target.getType(), above),
+            emit(op, struct, model, member, numberValue(target.getType(), above),
                     "boundary.range.over.max." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
@@ -169,7 +169,7 @@ public final class BoundaryGenerator implements Generator {
     }
 
     private static void emit(OperationShape op, StructureShape struct, Model model,
-                             MemberShape member, Shape ignoredTarget, JsonNode value,
+                             MemberShape member, JsonNode value,
                              String generatorName, ExpectedOutcome outcome, List<GeneratedCase> out) {
         InputSynthesizer base = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
         ObjectNode input = base.synthesizeInput(struct);
