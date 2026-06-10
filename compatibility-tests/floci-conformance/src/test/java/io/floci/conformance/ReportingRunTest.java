@@ -3,11 +3,11 @@ package io.floci.conformance;
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.encode.RestXmlEncoder;
-import io.floci.conformance.encode.AwsJson11Encoder;
+import io.floci.conformance.encode.AwsJsonEncoder;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.invoke.RestXmlInvoker;
-import io.floci.conformance.invoke.AwsJson11Invoker;
+import io.floci.conformance.invoke.AwsJsonInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
@@ -117,8 +117,8 @@ class ReportingRunTest {
         Model model = SmithyModelLoader.loadSsm();
         ConformanceRunner runner = new ConformanceRunner(
                 model,
-                new AwsJson11Invoker(BASE_URL + "/", "AmazonSSM", "ssm"),
-                new AwsJson11Encoder(),
+                new AwsJsonInvoker(BASE_URL + "/", "AmazonSSM", "ssm", AwsJsonInvoker.Flavor.AWS_JSON_1_1),
+                AwsJsonEncoder.json11(),
                 AllGenerators.ALL);
 
         List<VariantResult> results = new java.util.ArrayList<>(
@@ -128,6 +128,26 @@ class ReportingRunTest {
                 "com.amazonaws.ssm#AmazonSSM", "2014-11-06", Instant.now().toString());
 
         writeReports("conformance-ssm", meta, results);
+    }
+
+    @Test
+    void dynamodb_reports() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadDynamoDb();
+        ConformanceRunner runner = new ConformanceRunner(
+                model,
+                new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
+                        AwsJsonInvoker.Flavor.AWS_JSON_1_0),
+                AwsJsonEncoder.json10(),
+                AllGenerators.ALL);
+
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.dynamodb#DynamoDB_20120810"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.dynamodb#DynamoDB_20120810"));
+        ReportMeta meta = new ReportMeta(
+                "com.amazonaws.dynamodb#DynamoDB_20120810", "2012-08-10", Instant.now().toString());
+
+        writeReports("conformance-dynamodb", meta, results);
     }
 
     private static void writeReports(String stem, ReportMeta meta, List<VariantResult> results)

@@ -53,6 +53,9 @@ public final class ErrorClassifier {
             "NotImplementedException",
             "OperationNotPermitted",
             "OperationNotPermittedException",
+            // DynamoDB's dialect for "this Action isn't supported here".
+            "UnknownOperationException",
+            "UnknownOperation",
             // "InvalidAction" is the awsQuery-specific code for "the service
             // does not know this Action" — emitted by ministack at HTTP 400 and
             // by fakecloud at HTTP 501. Either way, the op isn't dispatched.
@@ -93,7 +96,11 @@ public final class ErrorClassifier {
             Pattern.compile(".*RequestExpired.*"),
             // S3: content digest of the synthesized body never matches a
             // synthesized Content-MD5 header — input-quality, not a drift.
-            Pattern.compile("BadDigest")
+            Pattern.compile("BadDigest"),
+            // Authorization rejection of the harness's synthetic cross-account
+            // ARNs — the input references a principal the emulator doesn't
+            // know, which is an input-quality concern, not a drift.
+            Pattern.compile("AccessDenied(Exception)?")
     );
 
     /**
