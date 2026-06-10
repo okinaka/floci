@@ -56,12 +56,12 @@ public final class RoundTripEchoGenerator {
             if (verifyOp == null) {
                 continue;
             }
-            StructureShape setupInputShape = inputStruct(setupOp, model);
-            StructureShape verifyInputShape = inputStruct(verifyOp, model);
+            StructureShape setupInputShape = ScenarioSupport.inputStruct(setupOp, model);
+            StructureShape verifyInputShape = ScenarioSupport.inputStruct(verifyOp, model);
             if (setupInputShape == null || verifyInputShape == null) {
                 continue;
             }
-            Set<String> shared = sharedTopLevelMembers(setupInputShape, verifyInputShape);
+            Set<String> shared = ScenarioSupport.sharedTopLevelMembers(setupInputShape, verifyInputShape);
             if (shared.isEmpty()) {
                 continue;
             }
@@ -81,7 +81,7 @@ public final class RoundTripEchoGenerator {
                 verifyInput.set(memberName, NODES.textNode(identifierValue));
             }
 
-            List<String> echoedPaths = echoedFields(setupInputShape, verifyOp, model);
+            List<String> echoedPaths = ScenarioSupport.echoedFields(setupInputShape, verifyOp, model);
             if (echoedPaths.isEmpty()) {
                 continue;
             }
@@ -108,41 +108,6 @@ public final class RoundTripEchoGenerator {
         return null;
     }
 
-    private static StructureShape inputStruct(OperationShape op, Model model) {
-        if (op.getInputShape().toString().equals("smithy.api#Unit")) {
-            return null;
-        }
-        Shape s = model.expectShape(op.getInputShape());
-        return (s instanceof StructureShape st) ? st : null;
-    }
 
-    private static Set<String> sharedTopLevelMembers(StructureShape a, StructureShape b) {
-        Set<String> common = new LinkedHashSet<>(a.getAllMembers().keySet());
-        common.retainAll(b.getAllMembers().keySet());
-        return common;
-    }
 
-    /**
-     * Setup-input top-level members that also appear in the verify-output
-     * structure. These are candidates the harness can check survived the
-     * round-trip.
-     */
-    private static List<String> echoedFields(StructureShape setupInput,
-                                             OperationShape verifyOp, Model model) {
-        if (verifyOp.getOutputShape().toString().equals("smithy.api#Unit")) {
-            return List.of();
-        }
-        Shape outShape = model.expectShape(verifyOp.getOutputShape());
-        if (!(outShape instanceof StructureShape outStruct)) {
-            return List.of();
-        }
-        Set<String> outMembers = outStruct.getAllMembers().keySet();
-        List<String> echoed = new ArrayList<>();
-        for (MemberShape m : setupInput.getAllMembers().values()) {
-            if (outMembers.contains(m.getMemberName())) {
-                echoed.add(m.getMemberName());
-            }
-        }
-        return echoed;
-    }
 }
