@@ -6,10 +6,12 @@ import io.floci.conformance.baseline.BaselineGate;
 import io.floci.conformance.baseline.BaselineStore;
 import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
+import io.floci.conformance.encode.RestXmlEncoder;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.invoke.Invoker;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
+import io.floci.conformance.invoke.RestXmlInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
@@ -78,6 +80,17 @@ class BaselineGateTest {
                 model,
                 new RestJsonInvoker(BASE_URL, "ses"),
                 new RestJsonEncoder(model));
+    }
+
+    @Test
+    void gate_s3() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadS3();
+        runGate("s3",
+                "com.amazonaws.s3#AmazonS3", "2006-03-01",
+                model,
+                new RestXmlInvoker(BASE_URL, "s3"),
+                new RestXmlEncoder(model));
     }
 
     private static void runGate(String stem, String serviceShapeId, String modelVersion,

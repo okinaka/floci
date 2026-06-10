@@ -1,7 +1,5 @@
 package io.floci.conformance.invoke;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.floci.conformance.model.Variant;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.traits.HttpTrait;
@@ -17,17 +15,14 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Invoker for the AWS REST JSON protocol — used by SES v2, Lambda, API Gateway, etc.
- *
- * <p>Uses the operation's {@code @http} trait to determine method, path template,
- * and status code. Path labels ({@code {name}}) are substituted from
- * {@link Variant#pathParams()}.
+ * Invoker for the AWS REST XML protocol — S3, Route 53, CloudFront. Resolves
+ * the operation's {@code @http} method and path template like the REST JSON
+ * invoker, but sends the encoder's pre-serialized {@code rawBody} (XML
+ * documents or raw payload bytes) with its accompanying content type.
  */
-public final class RestJsonInvoker implements Invoker {
+public final class RestXmlInvoker implements Invoker {
 
-    private static final String PROTOCOL = "aws.protocols#restJson1";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
+    private static final String PROTOCOL = "aws.protocols#restXml";
     private static final String DEFAULT_REGION = "us-east-1";
 
     /** Headers the JDK HttpClient refuses to set explicitly. */
@@ -39,8 +34,8 @@ public final class RestJsonInvoker implements Invoker {
     private final String sigV4Service;
     private final String region;
 
-    public RestJsonInvoker(String baseUrl, String sigV4Service, String region) {
-        this.baseUrl = stripTrailingSlash(baseUrl);
+    public RestXmlInvoker(String baseUrl, String sigV4Service, String region) {
+        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.sigV4Service = sigV4Service;
         this.region = region;
         this.http = HttpClient.newBuilder()
@@ -48,7 +43,7 @@ public final class RestJsonInvoker implements Invoker {
                 .build();
     }
 
-    public RestJsonInvoker(String baseUrl, String sigV4Service) {
+    public RestXmlInvoker(String baseUrl, String sigV4Service) {
         this(baseUrl, sigV4Service, DEFAULT_REGION);
     }
 
@@ -60,17 +55,17 @@ public final class RestJsonInvoker implements Invoker {
     @Override
     public InvocationResponse send(Variant variant) throws IOException {
         OperationShape op = variant.operation();
-        HttpTrait http = op.getTrait(HttpTrait.class).orElseThrow(() ->
+        HttpTrait httpTrait = op.getTrait(HttpTrait.class).orElseThrow(() ->
                 new IllegalStateException("Operation " + op.getId() + " lacks @http trait"));
 
-        String method = http.getMethod();
-        String path = resolvePath(http.getUri().toString(), variant.pathParams());
+        String method = httpTrait.getMethod();
+        String path = resolvePath(httpTrait.getUri().toString(), variant.pathParams());
         String url = baseUrl + path + buildQueryString(variant.queryParams());
 
         HttpRequest.Builder b = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(10))
-                .header("Accept", "application/json")
+                .header("Accept", "application/xml")
                 .header("Authorization", SigV4Stub.authorization(sigV4Service, region))
                 .header("x-amz-date", SigV4Stub.AMZ_DATE);
         for (Map.Entry<String, String> e : variant.headers().entrySet()) {
@@ -80,15 +75,14 @@ public final class RestJsonInvoker implements Invoker {
             b.header(e.getKey(), e.getValue());
         }
 
-        byte[] bodyBytes = encodeBody(variant.jsonBody());
-        if (bodyBytes.length > 0) {
-            b.header("Content-Type", "application/json");
-            b.method(method, HttpRequest.BodyPublishers.ofByteArray(bodyBytes));
-        } else if ("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
-            b.method(method, HttpRequest.BodyPublishers.noBody());
+        if (variant.rawBody() != null && !variant.rawBody().isEmpty()) {
+            if (variant.rawContentType() != null) {
+                b.header("Content-Type", variant.rawContentType());
+            }
+            b.method(method, HttpRequest.BodyPublishers.ofString(
+                    variant.rawBody(), StandardCharsets.UTF_8));
         } else {
-            b.header("Content-Type", "application/json");
-            b.method(method, HttpRequest.BodyPublishers.ofString("{}", StandardCharsets.UTF_8));
+            b.method(method, HttpRequest.BodyPublishers.noBody());
         }
 
         try {
@@ -102,17 +96,6 @@ public final class RestJsonInvoker implements Invoker {
         }
     }
 
-    private static byte[] encodeBody(JsonNode body) {
-        if (body == null || body.isMissingNode() || body.isNull()) {
-            return new byte[0];
-        }
-        try {
-            return MAPPER.writeValueAsBytes(body);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to serialize JSON body", e);
-        }
-    }
-
     private static String resolvePath(String template, Map<String, String> labels) {
         String path = template;
         int q = path.indexOf('?');
@@ -120,8 +103,9 @@ public final class RestJsonInvoker implements Invoker {
             path = path.substring(0, q);
         }
         for (Map.Entry<String, String> e : labels.entrySet()) {
-            path = path.replace("{" + e.getKey() + "}", URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
-            path = path.replace("{" + e.getKey() + "+}", e.getValue()); // greedy label, no encode
+            path = path.replace("{" + e.getKey() + "+}", e.getValue()); // greedy, no encode
+            path = path.replace("{" + e.getKey() + "}",
+                    URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
         }
         return path;
     }
@@ -142,9 +126,5 @@ public final class RestJsonInvoker implements Invoker {
             first = false;
         }
         return sb.toString();
-    }
-
-    private static String stripTrailingSlash(String s) {
-        return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
     }
 }
