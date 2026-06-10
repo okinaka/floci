@@ -90,10 +90,40 @@ public final class ConformanceRunner {
         return runFiltered(serviceShapeId, op -> operationNames.contains(op.getId().getName()));
     }
 
+    /**
+     * Write-verb prefixes executed first so later read probes find seeded
+     * state. FormatHints derives identifier values deterministically from
+     * member names, so a {@code GetX} probe naturally references whatever the
+     * earlier {@code CreateX} probe wrote.
+     */
+    private static final List<String> SETUP_VERBS = List.of(
+            "Create", "Put", "Add", "Verify", "Set", "Tag", "Update");
+    /** Destructive verbs executed last so they can't erase state reads depend on. */
+    private static final List<String> TEARDOWN_VERBS = List.of(
+            "Delete", "Remove", "Untag");
+
+    private static int phaseOf(OperationShape op) {
+        String name = op.getId().getName();
+        for (String v : SETUP_VERBS) {
+            if (name.startsWith(v)) {
+                return 0;
+            }
+        }
+        for (String v : TEARDOWN_VERBS) {
+            if (name.startsWith(v)) {
+                return 2;
+            }
+        }
+        return 1;
+    }
+
     private List<VariantResult> runFiltered(String serviceShapeId,
                                             java.util.function.Predicate<OperationShape> filter) {
+        List<OperationShape> ordered = new ArrayList<>(operationsOf(serviceShapeId));
+        // Stable sort: writes → reads/actions → deletes, model order within a phase.
+        ordered.sort(java.util.Comparator.comparingInt(ConformanceRunner::phaseOf));
         List<VariantResult> results = new ArrayList<>();
-        for (OperationShape op : operationsOf(serviceShapeId)) {
+        for (OperationShape op : ordered) {
             if (!filter.test(op)) {
                 continue;
             }
