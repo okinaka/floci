@@ -187,7 +187,7 @@ public final class ConformanceRunner {
             body = verifyResp.body() == null || verifyResp.body().isEmpty()
                     ? JSON.nullNode()
                     : (xmlMode
-                            ? XML.readTree(verifyResp.body().getBytes())
+                            ? XML.readTree(verifyResp.body().getBytes(java.nio.charset.StandardCharsets.UTF_8))
                             : JSON.readTree(verifyResp.body()));
         } catch (IOException e) {
             return new VariantResult(verifyVariant, Verdict.FAIL_SHAPE, verifyResp.httpStatus(),
@@ -287,9 +287,25 @@ public final class ConformanceRunner {
             }
 
             if (negative) {
-                if (variant.expectedError() != null
-                        && variant.expectedError().equals(normalized)) {
-                    return new VariantResult(variant, Verdict.PASS, resp.httpStatus(), rawType, null);
+                if (variant.expectedError() != null) {
+                    if (variant.expectedError().equals(normalized)) {
+                        return new VariantResult(variant, Verdict.PASS, resp.httpStatus(),
+                                rawType, null);
+                    }
+                    // The variant names one specific error (e.g. a Smithy
+                    // @examples error case). A different error type is a real
+                    // drift — except state/seed noise, which stays inconclusive.
+                    return switch (category) {
+                        case STATE -> new VariantResult(
+                                variant, Verdict.INCONCLUSIVE_STATE, resp.httpStatus(), rawType,
+                                "state collision masked negative test (" + normalized + ")");
+                        case MISSING -> new VariantResult(
+                                variant, Verdict.INCONCLUSIVE_MISSING, resp.httpStatus(), rawType,
+                                "synthetic identifier not seeded (" + normalized + ")");
+                        default -> new VariantResult(
+                                variant, Verdict.FAIL_WRONG_ERROR_TYPE, resp.httpStatus(), rawType,
+                                "expected " + variant.expectedError() + ", got " + normalized);
+                    };
                 }
                 return switch (category) {
                     case VALIDATION, DECLARED_BY_OP -> new VariantResult(
@@ -353,7 +369,7 @@ public final class ConformanceRunner {
         }
         JsonNode root;
         try {
-            root = xmlMode ? XML.readTree(resp.body().getBytes()) : JSON.readTree(resp.body());
+            root = xmlMode ? XML.readTree(resp.body().getBytes(java.nio.charset.StandardCharsets.UTF_8)) : JSON.readTree(resp.body());
         } catch (IOException e) {
             return new VariantResult(variant, Verdict.FAIL_SHAPE, resp.httpStatus(), null,
                     "2xx body did not parse as "
@@ -396,7 +412,7 @@ public final class ConformanceRunner {
         String ct = resp.contentType() == null ? "" : resp.contentType().toLowerCase();
         try {
             if (ct.contains("xml") || resp.body().startsWith("<")) {
-                JsonNode root = XML.readTree(resp.body().getBytes());
+                JsonNode root = XML.readTree(resp.body().getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 JsonNode code = root.findValue("Code");
                 return code != null && code.isTextual() ? code.asText() : null;
             }
