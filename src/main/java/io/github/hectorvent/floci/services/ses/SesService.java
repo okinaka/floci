@@ -629,6 +629,9 @@ public class SesService {
         if (configSet.getSuppressionOptions() != null
                 && configSet.getSuppressionOptions().getSuppressedReasons() != null) {
             for (String reason : configSet.getSuppressionOptions().getSuppressedReasons()) {
+                if (reason == null) {
+                    validateConfigSetSuppressionReason(reason);
+                }
                 if (!isValidConfigSetSuppressionReason(reason)) {
                     throw new AwsException("BadRequestException",
                             "1 validation error detected: Value at "
@@ -1350,8 +1353,9 @@ public class SesService {
      * endpoint than on the three older suppression APIs above:
      *   "Reason <X> is invalid, must be one of [BOUNCE, COMPLAINT]."
      * (Verified against real AWS V2 SES on 2026-06-03.) CreateConfigurationSet
-     * instead reports the constraint-style validation message; see
-     * {@link #createConfigurationSet}.
+     * reports the constraint-style validation message for invalid non-null
+     * values but falls back to this sentence for null elements, matching AWS
+     * (verified 2026-06-13); see {@link #createConfigurationSet}.
      */
     private static void validateConfigSetSuppressionReason(String reason) {
         if (!isValidConfigSetSuppressionReason(reason)) {

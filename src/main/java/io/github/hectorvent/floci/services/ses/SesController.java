@@ -1280,9 +1280,11 @@ public class SesController {
      * structure only; reason values are validated by the service layer.
      * Structural violations reproduce the AWS deserialization-layer errors
      * (verified against real AWS SES V2 on 2026-06-13): a non-array node and
-     * non-string elements fail with {@code SerializationException}. Missing /
-     * null yields an empty list for the PUT path, which AWS treats as an
-     * explicit empty override.
+     * non-string scalar / container elements fail with
+     * {@code SerializationException}, while {@code null} elements pass
+     * deserialization and are rejected by the service-layer value validation,
+     * exactly as AWS does. Missing / null yields an empty list for the PUT
+     * path, which AWS treats as an explicit empty override.
      */
     private static List<String> parseSuppressedReasons(JsonNode reasonsNode) {
         List<String> reasons = new ArrayList<>();

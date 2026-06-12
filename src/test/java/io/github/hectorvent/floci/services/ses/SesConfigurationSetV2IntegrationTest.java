@@ -573,4 +573,56 @@ class SesConfigurationSetV2IntegrationTest {
             .statusCode(200)
             .body("SuppressionOptions.SuppressedReasons", hasSize(0));
     }
+
+    @Test
+    @Order(26)
+    void createConfigurationSet_nullSuppressedReason_rejectedWithPutStyleMessage() {
+        // A null element passes AWS deserialization ("Expected list or null")
+        // and fails value validation with the natural-language sentence, not
+        // the constraint-style message used for invalid non-null values
+        // (verified against real AWS SES V2 on 2026-06-13).
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-null-reason",
+                  "SuppressionOptions": {"SuppressedReasons": ["BOUNCE", null]}
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("BadRequestException"))
+            .body("message", equalTo("Reason null is invalid, must be one of [BOUNCE, COMPLAINT]."));
+
+        given()
+            .header("Authorization", AUTH_HEADER)
+        .when()
+            .get("/v2/email/configuration-sets/v2-cs-null-reason")
+        .then()
+            .statusCode(404);
+    }
+
+    @Test
+    @Order(27)
+    void createConfigurationSet_booleanSuppressedReason_serializationError() {
+        // Verified against real AWS SES V2 on 2026-06-13.
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-boolean-reason",
+                  "SuppressionOptions": {"SuppressedReasons": [false]}
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("SerializationException"))
+            .body("message", equalTo("FALSE_VALUE can not be converted to a String"));
+    }
 }
