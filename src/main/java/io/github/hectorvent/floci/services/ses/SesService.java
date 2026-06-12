@@ -630,7 +630,8 @@ public class SesService {
                 && configSet.getSuppressionOptions().getSuppressedReasons() != null) {
             for (String reason : configSet.getSuppressionOptions().getSuppressedReasons()) {
                 if (reason == null) {
-                    validateConfigSetSuppressionReason(reason);
+                    throw new AwsException("BadRequestException",
+                            invalidSuppressionReasonMessage(null), 400);
                 }
                 if (!isValidConfigSetSuppressionReason(reason)) {
                     throw new AwsException("BadRequestException",
@@ -1360,12 +1361,16 @@ public class SesService {
     private static void validateConfigSetSuppressionReason(String reason) {
         if (!isValidConfigSetSuppressionReason(reason)) {
             throw new AwsException("BadRequestException",
-                    "Reason " + reason + " is invalid, must be one of [BOUNCE, COMPLAINT].", 400);
+                    invalidSuppressionReasonMessage(reason), 400);
         }
     }
 
     private static boolean isValidConfigSetSuppressionReason(String reason) {
         return "BOUNCE".equals(reason) || "COMPLAINT".equals(reason);
+    }
+
+    private static String invalidSuppressionReasonMessage(String reason) {
+        return "Reason " + reason + " is invalid, must be one of [BOUNCE, COMPLAINT].";
     }
 
     static void validateTag(Tag tag) {

@@ -625,4 +625,43 @@ class SesConfigurationSetV2IntegrationTest {
             .body("__type", equalTo("SerializationException"))
             .body("message", equalTo("FALSE_VALUE can not be converted to a String"));
     }
+
+    @Test
+    @Order(28)
+    void createConfigurationSet_nonObjectOptionBlocks_serializationError() {
+        // "Expected null" looks odd but is the verbatim AWS response for a
+        // non-object option block (verified against real AWS SES V2 on
+        // 2026-06-13).
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-string-suppression",
+                  "SuppressionOptions": "nope"
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("SerializationException"))
+            .body("message", equalTo("Expected null"));
+
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-string-options",
+                  "SendingOptions": "nope"
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("SerializationException"))
+            .body("message", equalTo("Expected null"));
+    }
 }
