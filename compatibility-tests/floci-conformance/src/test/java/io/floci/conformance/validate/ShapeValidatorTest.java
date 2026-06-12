@@ -189,6 +189,34 @@ class ShapeValidatorTest {
     }
 
     @Test
+    void overdeclared_mailFrom_fields_are_not_enforced() throws Exception {
+        // Real AWS for an identity with no MAIL FROM domain (verified
+        // 2026-06-12): only BehaviorOnMXFailure is present.
+        String xml = """
+                <GetIdentityMailFromDomainAttributesResponse>
+                  <GetIdentityMailFromDomainAttributesResult>
+                    <MailFromDomainAttributes>
+                      <entry>
+                        <key>probe@example.com</key>
+                        <value>
+                          <BehaviorOnMXFailure>UseDefaultValue</BehaviorOnMXFailure>
+                        </value>
+                      </entry>
+                    </MailFromDomainAttributes>
+                  </GetIdentityMailFromDomainAttributesResult>
+                </GetIdentityMailFromDomainAttributesResponse>""";
+        var root = XML.readTree(xml.getBytes());
+        var unwrapped = ShapeValidator.unwrapXmlResult(root, "GetIdentityMailFromDomainAttributes");
+        StructureShape out = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#GetIdentityMailFromDomainAttributesResponse"),
+                StructureShape.class);
+        ShapeValidator.Result result = new ShapeValidator(V1, true).validate(unwrapped, out);
+        assertThat(result.ok())
+                .as("AWS-faithful response should validate, got: %s", result.issues())
+                .isTrue();
+    }
+
+    @Test
     void truly_required_forwardingEnabled_is_still_enforced() throws Exception {
         // An entirely empty value (Floci 1.5.2x behavior) still violates the
         // genuinely-required ForwardingEnabled.
