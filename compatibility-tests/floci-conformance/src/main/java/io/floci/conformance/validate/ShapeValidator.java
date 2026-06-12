@@ -56,7 +56,13 @@ public final class ShapeValidator {
             // when no topic is configured.
             "com.amazonaws.ses#IdentityNotificationAttributes$BounceTopic",
             "com.amazonaws.ses#IdentityNotificationAttributes$ComplaintTopic",
-            "com.amazonaws.ses#IdentityNotificationAttributes$DeliveryTopic");
+            "com.amazonaws.ses#IdentityNotificationAttributes$DeliveryTopic",
+            // GetIdentityMailFromDomainAttributes against a fresh identity
+            // (verified 2026-06-12): AWS returns only BehaviorOnMXFailure
+            // ("UseDefaultValue") when no MAIL FROM domain is configured,
+            // omitting both fields below despite their @required.
+            "com.amazonaws.ses#IdentityMailFromDomainAttributes$MailFromDomain",
+            "com.amazonaws.ses#IdentityMailFromDomainAttributes$MailFromDomainStatus");
 
     private static boolean requiredEnforced(MemberShape m) {
         return m.hasTrait(RequiredTrait.class)
