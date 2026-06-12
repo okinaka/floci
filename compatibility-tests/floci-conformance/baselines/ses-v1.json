@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-12T07:48:48.587137Z"
+    "capturedAt" : "2026-06-12T08:12:11.738825Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -431,7 +431,7 @@
     "GetIdentityDkimAttributes" : {
       "empty.passthrough" : "PASS",
       "model-examples.1.GetIdentityDkimAttributes" : "PASS",
-      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Identities" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
@@ -443,7 +443,7 @@
     "GetIdentityMailFromDomainAttributes" : {
       "empty.passthrough" : "PASS",
       "model-examples.1.GetIdentityMailFromDomainAttributes" : "PASS",
-      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Identities" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
@@ -455,7 +455,7 @@
     "GetIdentityNotificationAttributes" : {
       "empty.passthrough" : "PASS",
       "model-examples.1.GetIdentityNotificationAttributes" : "PASS",
-      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Identities" : "PASS",
       "optionals.all-members" : "FAIL_SHAPE",
       "optionals.required-only" : "FAIL_SHAPE",
       "property-based.seed-0" : "FAIL_SHAPE",
@@ -484,7 +484,7 @@
     "GetIdentityVerificationAttributes" : {
       "empty.passthrough" : "PASS",
       "model-examples.1.GetIdentityVerificationAttributes" : "PASS",
-      "negative.missing-required.Identities" : "FAIL_SILENT_PASS",
+      "negative.missing-required.Identities" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
