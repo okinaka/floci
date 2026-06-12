@@ -139,6 +139,18 @@ public final class ErrorClassifier {
         return Category.OTHER;
     }
 
+    /**
+     * Whether the given error-shape name belongs to the not-found family
+     * ({@code *NotFound*}, {@code *DoesNotExist*}, {@code NoSuch*}). Exposed
+     * so generators can derive per-operation lookup semantics: an op that
+     * declares such an error is strict about unknown identifiers, while one
+     * that doesn't is idempotent/lenient (e.g. SES v1 DeleteIdentity returns
+     * 200 for identities that never existed).
+     */
+    public static boolean missingFamily(String shapeName) {
+        return shapeName != null && matchesAny(normalize(shapeName), MISSING_PATTERNS);
+    }
+
     /** Whether {@code name} matches any error shape declared on the op. */
     public boolean isDeclaredByOp(OperationShape op, String rawType) {
         if (rawType == null) {

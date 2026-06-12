@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.dynamodb#DynamoDB_20120810",
     "modelVersion" : "2012-08-10",
-    "capturedAt" : "2026-06-10T22:01:17.717205Z"
+    "capturedAt" : "2026-06-12T07:48:49.576856Z"
   },
   "cases" : {
     "BatchExecuteStatement" : {
@@ -149,10 +149,10 @@
       "identifier-fanout.arn.TableName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.GlobalTableSourceArn" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.TableName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.wrong-account.GlobalTableSourceArn" : "PASS",
-      "identifier-fanout.wrong-account.TableName" : "PASS",
-      "identifier-fanout.wrong-region.GlobalTableSourceArn" : "PASS",
-      "identifier-fanout.wrong-region.TableName" : "PASS",
+      "identifier-fanout.wrong-account.GlobalTableSourceArn" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.wrong-account.TableName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.wrong-region.GlobalTableSourceArn" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.wrong-region.TableName" : "INCONCLUSIVE_VALIDATION",
       "negative.invalid-enum.BillingMode" : "PASS",
       "negative.invalid-enum.GlobalTableSettingsReplicationMode" : "PASS",
       "negative.invalid-enum.TableClass" : "PASS",
@@ -804,8 +804,8 @@
       "empty.passthrough" : "PASS",
       "identifier-fanout.arn.TableArn" : "PASS",
       "identifier-fanout.short.TableArn" : "PASS",
-      "identifier-fanout.wrong-account.TableArn" : "FAIL_SILENT_PASS",
-      "identifier-fanout.wrong-region.TableArn" : "FAIL_SILENT_PASS",
+      "identifier-fanout.wrong-account.TableArn" : "PASS",
+      "identifier-fanout.wrong-region.TableArn" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
@@ -876,8 +876,8 @@
       "empty.passthrough" : "PASS",
       "identifier-fanout.arn.ExclusiveStartTableName" : "PASS",
       "identifier-fanout.short.ExclusiveStartTableName" : "PASS",
-      "identifier-fanout.wrong-account.ExclusiveStartTableName" : "FAIL_SILENT_PASS",
-      "identifier-fanout.wrong-region.ExclusiveStartTableName" : "FAIL_SILENT_PASS",
+      "identifier-fanout.wrong-account.ExclusiveStartTableName" : "PASS",
+      "identifier-fanout.wrong-region.ExclusiveStartTableName" : "PASS",
       "model-examples.1.To-list-tables" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
