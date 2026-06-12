@@ -82,6 +82,21 @@ class GeneratorsTest {
     }
 
     @Test
+    void negative_missing_required_list_on_errorless_op_expects_success() {
+        // GetIdentityDkimAttributes declares no errors; awsQuery can't
+        // distinguish absent Identities from an empty list, and AWS returns
+        // 200 with an empty map (verified live). The omission variant must
+        // therefore predict SUCCESS.
+        OperationShape op = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#GetIdentityDkimAttributes"), OperationShape.class);
+        List<GeneratedCase> cases = new NegativeGenerator().generate(op, V1)
+                .filter(c -> c.generator().equals("negative.missing-required.Identities"))
+                .toList();
+        assertThat(cases).hasSize(1);
+        assertThat(cases.get(0).expectedOutcome()).isEqualTo(ExpectedOutcome.SUCCESS);
+    }
+
+    @Test
     void negative_invalid_enum_emits_one_per_enum_member() {
         OperationShape op = V1.expectShape(
                 ShapeId.from("com.amazonaws.ses#ListIdentities"), OperationShape.class);
