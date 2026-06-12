@@ -44,6 +44,25 @@ public final class ShapeValidator {
         }
     }
 
+    /**
+     * {@code @required} members that real AWS omits in practice — the model
+     * over-declares them, so enforcing them would flag faithful emulators as
+     * drifting. Each entry carries the live-AWS verification that justifies it.
+     */
+    private static final java.util.Set<String> OVERDECLARED_REQUIRED = java.util.Set.of(
+            // GetIdentityNotificationAttributes against a fresh identity
+            // (verified 2026-06-12): AWS returns ForwardingEnabled and the
+            // three HeadersIn*Enabled fields, omitting all SNS topic fields
+            // when no topic is configured.
+            "com.amazonaws.ses#IdentityNotificationAttributes$BounceTopic",
+            "com.amazonaws.ses#IdentityNotificationAttributes$ComplaintTopic",
+            "com.amazonaws.ses#IdentityNotificationAttributes$DeliveryTopic");
+
+    private static boolean requiredEnforced(MemberShape m) {
+        return m.hasTrait(RequiredTrait.class)
+                && !OVERDECLARED_REQUIRED.contains(m.getId().toString());
+    }
+
     private final Model model;
     private final boolean xmlMode;
 
@@ -91,7 +110,7 @@ public final class ShapeValidator {
         if (xmlMode && node.isTextual() && node.asText().isEmpty()) {
             // <Foo/> for an empty struct is fine if there are no @required members.
             for (MemberShape m : struct.getAllMembers().values()) {
-                if (m.hasTrait(RequiredTrait.class)) {
+                if (requiredEnforced(m)) {
                     out.add(new Issue(path + "." + m.getMemberName(), "missing @required"));
                 }
             }
@@ -105,7 +124,7 @@ public final class ShapeValidator {
             JsonNode value = node.get(m.getMemberName());
             String mPath = path + "." + m.getMemberName();
             if (value == null || value.isNull() || value.isMissingNode()) {
-                if (m.hasTrait(RequiredTrait.class)) {
+                if (requiredEnforced(m)) {
                     out.add(new Issue(mPath, "missing @required"));
                 }
                 continue;
@@ -246,7 +265,7 @@ public final class ShapeValidator {
     }
 
     private static boolean hasRequired(StructureShape s) {
-        return s.getAllMembers().values().stream().anyMatch(m -> m.hasTrait(RequiredTrait.class));
+        return s.getAllMembers().values().stream().anyMatch(ShapeValidator::requiredEnforced);
     }
 
     private static boolean isNumeric(String s) {
