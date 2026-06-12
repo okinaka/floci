@@ -11,6 +11,7 @@ import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeType;
 import software.amazon.smithy.model.shapes.StructureShape;
+import software.amazon.smithy.model.traits.HttpLabelTrait;
 import software.amazon.smithy.model.traits.LengthTrait;
 import software.amazon.smithy.model.traits.RangeTrait;
 
@@ -89,7 +90,14 @@ public final class BoundaryGenerator implements Generator {
             emit(op, baseline, member, lengthValue(type, v),
                     "boundary.length.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
-            if (v > 0) {
+            // An empty @httpLabel value changes the URL structure and routes
+            // to a different operation entirely (verified live: GET
+            // /v2/email/templates/ with an empty TemplateName lands on
+            // ListEmailTemplates and returns 200). The variant wouldn't test
+            // the target op, so skip under-min when it degenerates to "".
+            boolean emptyLabel = v - 1 == 0 && member.hasTrait(HttpLabelTrait.class)
+                    && type == ShapeType.STRING;
+            if (v > 0 && !emptyLabel) {
                 emit(op, baseline, member, lengthValue(type, v - 1),
                         "boundary.length.under.min." + member.getMemberName(),
                         ExpectedOutcome.CLIENT_ERROR, out);

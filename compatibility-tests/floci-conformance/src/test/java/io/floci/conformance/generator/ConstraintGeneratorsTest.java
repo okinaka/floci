@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ConstraintGeneratorsTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();
+    private static final Model V2 = SmithyModelLoader.loadSesV2();
 
     @Test
     void boundary_emits_length_cases_for_constrained_member() {
@@ -44,6 +45,20 @@ class ConstraintGeneratorsTest {
                 assertThat(c.expectedOutcome()).isEqualTo(ExpectedOutcome.SUCCESS);
             }
         }
+    }
+
+    @Test
+    void boundary_skips_under_min_when_it_would_empty_an_httpLabel() {
+        // GetEmailTemplate.TemplateName is @httpLabel with @length(min: 1).
+        // An empty label re-routes the request to ListEmailTemplates
+        // (verified live), so the under-min variant must not be emitted;
+        // the at-min variant still is.
+        OperationShape op = V2.expectShape(
+                ShapeId.from("com.amazonaws.sesv2#GetEmailTemplate"), OperationShape.class);
+        List<GeneratedCase> cases = new BoundaryGenerator().generate(op, V2).toList();
+        var names = cases.stream().map(GeneratedCase::generator).toList();
+        assertThat(names).contains("boundary.length.min.TemplateName");
+        assertThat(names).doesNotContain("boundary.length.under.min.TemplateName");
     }
 
     @Test
