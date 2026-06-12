@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-12T08:12:12.234504Z"
+    "capturedAt" : "2026-06-12T09:35:05.044100Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -22,7 +22,6 @@
     },
     "CancelExportJob" : {
       "boundary.length.min.JobId" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.JobId" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.JobId" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.JobId" : "FAIL_4XX_UNROUTED",
@@ -200,9 +199,7 @@
       "boundary.length.min.Policy" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "boundary.length.over.max.PolicyName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "boundary.length.under.min.Policy" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.PolicyName" : "FAIL_4XX_UNROUTED",
@@ -398,7 +395,6 @@
     },
     "DeleteCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.TemplateName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -428,7 +424,6 @@
     },
     "DeleteEmailIdentity" : {
       "boundary.length.min.EmailIdentity" : "PASS",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.EmailIdentity" : "PASS",
       "identifier-fanout.short.EmailIdentity" : "PASS",
@@ -447,8 +442,6 @@
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "boundary.length.over.max.PolicyName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.PolicyName" : "FAIL_4XX_UNROUTED",
@@ -468,7 +461,6 @@
     },
     "DeleteEmailTemplate" : {
       "boundary.length.min.TemplateName" : "PASS",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "PASS",
       "identifier-fanout.arn.TemplateName" : "PASS",
       "identifier-fanout.short.TemplateName" : "PASS",
@@ -486,7 +478,6 @@
       "boundary.length.max.EndpointName" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.EndpointName" : "FAIL_4XX_UNROUTED",
       "boundary.length.over.max.EndpointName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EndpointName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EndpointName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.EndpointName" : "FAIL_4XX_UNROUTED",
@@ -644,7 +635,6 @@
     },
     "GetCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.TemplateName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -737,7 +727,6 @@
     },
     "GetDomainStatisticsReport" : {
       "boundary.length.min.Domain" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Domain" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "negative.missing-required.EndDate" : "FAIL_4XX_UNROUTED",
       "negative.missing-required.StartDate" : "FAIL_4XX_UNROUTED",
@@ -764,7 +753,6 @@
     },
     "GetEmailIdentity" : {
       "boundary.length.min.EmailIdentity" : "PASS",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.EmailIdentity" : "PASS",
       "identifier-fanout.short.EmailIdentity" : "PASS",
@@ -784,7 +772,6 @@
     },
     "GetEmailIdentityPolicies" : {
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "INCONCLUSIVE_MISSING",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.EmailIdentity" : "FAIL_4XX_UNROUTED",
@@ -803,7 +790,6 @@
     },
     "GetEmailTemplate" : {
       "boundary.length.min.TemplateName" : "PASS",
-      "boundary.length.under.min.TemplateName" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "identifier-fanout.arn.TemplateName" : "PASS",
       "identifier-fanout.short.TemplateName" : "PASS",
@@ -820,7 +806,6 @@
     },
     "GetExportJob" : {
       "boundary.length.min.JobId" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.JobId" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.JobId" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.JobId" : "FAIL_4XX_UNROUTED",
@@ -836,7 +821,6 @@
     },
     "GetImportJob" : {
       "boundary.length.min.JobId" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.JobId" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.JobId" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.JobId" : "FAIL_4XX_UNROUTED",
@@ -868,7 +852,6 @@
       "boundary.length.max.EndpointName" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.EndpointName" : "FAIL_4XX_UNROUTED",
       "boundary.length.over.max.EndpointName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EndpointName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EndpointName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.EndpointName" : "FAIL_4XX_UNROUTED",
@@ -884,7 +867,6 @@
     },
     "GetReputationEntity" : {
       "boundary.length.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
       "negative.invalid-enum.ReputationEntityType" : "FAIL_4XX_UNROUTED",
@@ -1447,7 +1429,6 @@
     },
     "PutEmailIdentityConfigurationSetAttributes" : {
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.ConfigurationSetName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
@@ -1471,7 +1452,6 @@
     },
     "PutEmailIdentityDkimAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.EmailIdentity" : "PASS",
       "identifier-fanout.short.EmailIdentity" : "PASS",
@@ -1487,7 +1467,6 @@
     },
     "PutEmailIdentityDkimSigningAttributes" : {
       "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_AF_SOUTH_1" : "FAIL_4XX_UNROUTED",
@@ -1536,7 +1515,6 @@
     },
     "PutEmailIdentityFeedbackAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.EmailIdentity" : "PASS",
       "identifier-fanout.short.EmailIdentity" : "PASS",
@@ -1552,7 +1530,6 @@
     },
     "PutEmailIdentityMailFromAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.BehaviorOnMxFailure.REJECT_MESSAGE" : "PASS",
       "enum-exhaust.BehaviorOnMxFailure.USE_DEFAULT_VALUE" : "PASS",
@@ -1734,7 +1711,6 @@
       "boundary.length.min.TemplateData" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.TemplateName" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.over.max.TemplateData" : "PASS",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.TemplateName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.TemplateName" : "INCONCLUSIVE_VALIDATION",
@@ -1816,7 +1792,6 @@
     },
     "UpdateCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.TemplateName" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.short.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -1841,9 +1816,7 @@
       "boundary.length.min.Policy" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "boundary.length.over.max.PolicyName" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "boundary.length.under.min.Policy" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.PolicyName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.PolicyName" : "FAIL_4XX_UNROUTED",
@@ -1864,7 +1837,6 @@
     },
     "UpdateEmailTemplate" : {
       "boundary.length.min.TemplateName" : "PASS",
-      "boundary.length.under.min.TemplateName" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.TemplateName" : "PASS",
       "identifier-fanout.short.TemplateName" : "PASS",
@@ -1881,7 +1853,6 @@
     },
     "UpdateReputationEntityCustomerManagedStatus" : {
       "boundary.length.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.SendingStatus.DISABLED" : "FAIL_4XX_UNROUTED",
@@ -1902,7 +1873,6 @@
       "boundary.length.min.ReputationEntityPolicy" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
       "boundary.length.under.min.ReputationEntityPolicy" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.ReputationEntityReference" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ReputationEntityType.RESOURCE" : "FAIL_4XX_UNROUTED",
       "negative.invalid-enum.ReputationEntityType" : "FAIL_4XX_UNROUTED",
