@@ -613,26 +613,23 @@ public class SesController {
             JsonNode suppressionNode = request.path("SuppressionOptions");
             if (!suppressionNode.isMissingNode() && !suppressionNode.isNull()) {
                 if (!suppressionNode.isObject()) {
-                    throw new AwsException("BadRequestException",
-                            "SuppressionOptions must be an object.", 400);
+                    throw new AwsException("SerializationException", "Expected null", 400);
+                }
+                JsonNode reasonsNode = suppressionNode.path("SuppressedReasons");
+                if (reasonsNode.isMissingNode() || reasonsNode.isNull()) {
+                    throw new AwsException("InternalFailure",
+                            "An internal failure has occurred.", 500);
                 }
                 SuppressionOptions options = new SuppressionOptions();
-                options.setSuppressedReasons(
-                        parseSuppressedReasons(suppressionNode.path("SuppressedReasons")));
+                options.setSuppressedReasons(parseSuppressedReasons(reasonsNode));
                 cs.setSuppressionOptions(options);
             }
             JsonNode sendingNode = request.path("SendingOptions");
             if (!sendingNode.isMissingNode() && !sendingNode.isNull()) {
                 if (!sendingNode.isObject()) {
-                    throw new AwsException("BadRequestException",
-                            "SendingOptions must be an object.", 400);
+                    throw new AwsException("SerializationException", "Expected null", 400);
                 }
-                JsonNode enabledNode = sendingNode.path("SendingEnabled");
-                if (enabledNode.isMissingNode() || enabledNode.isNull() || !enabledNode.isBoolean()) {
-                    throw new AwsException("BadRequestException",
-                            "SendingEnabled must be present and must be a boolean.", 400);
-                }
-                cs.setSendingEnabled(enabledNode.booleanValue());
+                cs.setSendingEnabled(parseSendingEnabled(sendingNode.path("SendingEnabled")));
             }
             sesService.createConfigurationSet(cs, region);
             LOG.infov("SES V2 CreateConfigurationSet: {0}", name);
@@ -1280,26 +1277,71 @@ public class SesController {
 
     /**
      * Parses a {@code SuppressedReasons} JSON array into a list, validating
-     * structure only (array of strings); reason values are validated by the
-     * service layer. Missing / null yields an empty list, which AWS treats as
-     * an explicit empty override.
+     * structure only; reason values are validated by the service layer.
+     * Structural violations reproduce the AWS deserialization-layer errors
+     * (verified against real AWS SES V2 on 2026-06-13): a non-array node and
+     * non-string elements fail with {@code SerializationException}. Missing /
+     * null yields an empty list for the PUT path, which AWS treats as an
+     * explicit empty override.
      */
     private static List<String> parseSuppressedReasons(JsonNode reasonsNode) {
         List<String> reasons = new ArrayList<>();
         if (!reasonsNode.isMissingNode() && !reasonsNode.isNull()) {
             if (!reasonsNode.isArray()) {
-                throw new AwsException("BadRequestException",
-                        "SuppressedReasons must be an array.", 400);
+                throw new AwsException("SerializationException", "Expected list or null", 400);
             }
             for (JsonNode r : reasonsNode) {
-                if (r.isNull() || !r.isTextual()) {
-                    throw new AwsException("BadRequestException",
-                            "SuppressedReasons entries must be strings.", 400);
+                if (r.isTextual() || r.isNull()) {
+                    reasons.add(r.asText(null));
+                } else if (r.isNumber()) {
+                    throw new AwsException("SerializationException",
+                            "NUMBER_VALUE can not be converted to a String", 400);
+                } else if (r.isBoolean()) {
+                    throw new AwsException("SerializationException",
+                            (r.booleanValue() ? "TRUE_VALUE" : "FALSE_VALUE")
+                                    + " can not be converted to a String", 400);
+                } else {
+                    throw unexpectedStartError(r);
                 }
-                reasons.add(r.asText());
             }
         }
         return reasons;
+    }
+
+    /**
+     * Reproduces the AWS deserialization behavior for {@code SendingEnabled}
+     * (verified against real AWS SES V2 on 2026-06-13): a missing member
+     * defaults to {@code false}, any string coerces to {@code true}, and
+     * explicit {@code null} or non-boolean scalars fail with
+     * {@code SerializationException}.
+     */
+    private static boolean parseSendingEnabled(JsonNode enabledNode) {
+        if (enabledNode.isMissingNode()) {
+            return false;
+        }
+        if (enabledNode.isBoolean()) {
+            return enabledNode.booleanValue();
+        }
+        if (enabledNode.isTextual()) {
+            return true;
+        }
+        if (enabledNode.isNull()) {
+            throw new AwsException("SerializationException", null, 400);
+        }
+        if (enabledNode.isNumber()) {
+            throw new AwsException("SerializationException",
+                    "NUMBER_VALUE can not be converted to a Boolean", 400);
+        }
+        throw unexpectedStartError(enabledNode);
+    }
+
+    private static AwsException unexpectedStartError(JsonNode node) {
+        if (node.isArray()) {
+            return new AwsException("SerializationException",
+                    "Start of list found where not expected", 400);
+        }
+        return new AwsException("SerializationException",
+                "Start of structure or map found where not expected.", 400);
     }
 
     /**
