@@ -15,7 +15,6 @@ import software.amazon.smithy.model.traits.RequiredTrait;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -65,14 +64,22 @@ public final class NegativeGenerator implements Generator {
                 continue;
             }
             final String omitted = required.getMemberName();
-            Predicate<MemberShape> excludeOne = m -> !m.getMemberName().equals(omitted);
-            InputSynthesizer synth = new InputSynthesizer(model, excludeOne, null);
-            ObjectNode input = synth.synthesizeInput(struct);
+            // awsQuery cannot distinguish an absent list from an empty one,
+            // and ops that declare no errors are lenient about empty input —
+            // verified live: GetIdentityNotificationAttributes with an
+            // unknown/absent Identities returns 200 with an empty map. For
+            // those members the omission is indistinguishable from valid
+            // input, so the variant predicts SUCCESS instead of an error.
+            Shape requiredTarget = model.expectShape(required.getTarget());
+            boolean lenientListOmission = requiredTarget.getType() == software.amazon.smithy.model.shapes.ShapeType.LIST
+                    && op.getErrors().isEmpty();
             cases.add(new GeneratedCase(
                     op,
                     "negative.missing-required." + omitted,
-                    input,
-                    ExpectedOutcome.CLIENT_ERROR,
+                    new InputSynthesizer(model,
+                            m -> !m.getMemberName().equals(omitted), null)
+                            .synthesizeInput(struct),
+                    lenientListOmission ? ExpectedOutcome.SUCCESS : ExpectedOutcome.CLIENT_ERROR,
                     null));
         }
         return cases;
