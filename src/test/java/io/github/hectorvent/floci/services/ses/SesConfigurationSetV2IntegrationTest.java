@@ -320,4 +320,82 @@ class SesConfigurationSetV2IntegrationTest {
             .body("Tags.find { it.Key == 'team' }.Value", equalTo("platform"))
             .body("Tags.find { it.Key == 'env' }.Value", equalTo("stg"));
     }
+
+    @Test
+    @Order(17)
+    void createConfigurationSet_inlineOptions_echoedOnGet() {
+        // AWS echoes inline options set at create time verbatim
+        // (verified against real AWS SES V2 on 2026-06-12).
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-inline-options",
+                  "SendingOptions": {"SendingEnabled": false},
+                  "SuppressionOptions": {"SuppressedReasons": ["BOUNCE"]}
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(200);
+
+        given()
+            .header("Authorization", AUTH_HEADER)
+        .when()
+            .get("/v2/email/configuration-sets/v2-cs-inline-options")
+        .then()
+            .statusCode(200)
+            .body("SendingOptions.SendingEnabled", equalTo(false))
+            .body("SuppressionOptions.SuppressedReasons", hasSize(1))
+            .body("SuppressionOptions.SuppressedReasons", hasItem("BOUNCE"));
+    }
+
+    @Test
+    @Order(18)
+    void createConfigurationSet_invalidSuppressionReason_rejectedWithoutCreating() {
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-bad-reason",
+                  "SuppressionOptions": {"SuppressedReasons": ["INVALID"]}
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("BadRequestException"));
+
+        // Validation happens before the store write, so the set must not exist.
+        given()
+            .header("Authorization", AUTH_HEADER)
+        .when()
+            .get("/v2/email/configuration-sets/v2-cs-bad-reason")
+        .then()
+            .statusCode(404)
+            .body("__type", equalTo("NotFoundException"));
+    }
+
+    @Test
+    @Order(19)
+    void createConfigurationSet_nonBooleanSendingEnabled_rejected() {
+        given()
+            .contentType("application/json")
+            .header("Authorization", AUTH_HEADER)
+            .body("""
+                {
+                  "ConfigurationSetName": "v2-cs-bad-sending",
+                  "SendingOptions": {"SendingEnabled": "yes"}
+                }
+                """)
+        .when()
+            .post("/v2/email/configuration-sets")
+        .then()
+            .statusCode(400)
+            .body("__type", equalTo("BadRequestException"));
+    }
 }

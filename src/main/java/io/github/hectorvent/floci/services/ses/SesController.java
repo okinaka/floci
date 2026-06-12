@@ -12,6 +12,7 @@ import io.github.hectorvent.floci.services.ses.model.Identity;
 import io.github.hectorvent.floci.services.ses.model.MessageHeader;
 import io.github.hectorvent.floci.services.ses.model.MessageTag;
 import io.github.hectorvent.floci.services.ses.model.SuppressedDestination;
+import io.github.hectorvent.floci.services.ses.model.SuppressionOptions;
 import io.github.hectorvent.floci.services.ses.model.Tag;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -609,6 +610,30 @@ public class SesController {
             if (parsedTags != null) {
                 cs.setTags(parsedTags);
             }
+            JsonNode suppressionNode = request.path("SuppressionOptions");
+            if (!suppressionNode.isMissingNode() && !suppressionNode.isNull()) {
+                if (!suppressionNode.isObject()) {
+                    throw new AwsException("BadRequestException",
+                            "SuppressionOptions must be an object.", 400);
+                }
+                SuppressionOptions options = new SuppressionOptions();
+                options.setSuppressedReasons(
+                        parseSuppressedReasons(suppressionNode.path("SuppressedReasons")));
+                cs.setSuppressionOptions(options);
+            }
+            JsonNode sendingNode = request.path("SendingOptions");
+            if (!sendingNode.isMissingNode() && !sendingNode.isNull()) {
+                if (!sendingNode.isObject()) {
+                    throw new AwsException("BadRequestException",
+                            "SendingOptions must be an object.", 400);
+                }
+                JsonNode enabledNode = sendingNode.path("SendingEnabled");
+                if (enabledNode.isMissingNode() || enabledNode.isNull() || !enabledNode.isBoolean()) {
+                    throw new AwsException("BadRequestException",
+                            "SendingEnabled must be present and must be a boolean.", 400);
+                }
+                cs.setSendingEnabled(enabledNode.booleanValue());
+            }
             sesService.createConfigurationSet(cs, region);
             LOG.infov("SES V2 CreateConfigurationSet: {0}", name);
             return Response.ok(objectMapper.createObjectNode()).build();
@@ -674,21 +699,7 @@ public class SesController {
                     ? objectMapper.createObjectNode()
                     : objectMapper.readTree(body);
             requireJsonObject(request);
-            JsonNode reasonsNode = request.path("SuppressedReasons");
-            List<String> reasons = new ArrayList<>();
-            if (!reasonsNode.isMissingNode() && !reasonsNode.isNull()) {
-                if (!reasonsNode.isArray()) {
-                    throw new AwsException("BadRequestException",
-                            "SuppressedReasons must be an array.", 400);
-                }
-                for (JsonNode r : reasonsNode) {
-                    if (r.isNull() || !r.isTextual()) {
-                        throw new AwsException("BadRequestException",
-                                "SuppressedReasons entries must be strings.", 400);
-                    }
-                    reasons.add(r.asText());
-                }
-            }
+            List<String> reasons = parseSuppressedReasons(request.path("SuppressedReasons"));
             sesService.putConfigurationSetSuppressionOptions(name, reasons, region);
             LOG.infov("SES V2 PutConfigurationSetSuppressionOptions: {0} on {1}", reasons, name);
             return Response.ok(objectMapper.createObjectNode()).build();
@@ -1265,6 +1276,30 @@ public class SesController {
                     t.path("Value").asText(null)));
         }
         return out;
+    }
+
+    /**
+     * Parses a {@code SuppressedReasons} JSON array into a list, validating
+     * structure only (array of strings); reason values are validated by the
+     * service layer. Missing / null yields an empty list, which AWS treats as
+     * an explicit empty override.
+     */
+    private static List<String> parseSuppressedReasons(JsonNode reasonsNode) {
+        List<String> reasons = new ArrayList<>();
+        if (!reasonsNode.isMissingNode() && !reasonsNode.isNull()) {
+            if (!reasonsNode.isArray()) {
+                throw new AwsException("BadRequestException",
+                        "SuppressedReasons must be an array.", 400);
+            }
+            for (JsonNode r : reasonsNode) {
+                if (r.isNull() || !r.isTextual()) {
+                    throw new AwsException("BadRequestException",
+                            "SuppressedReasons entries must be strings.", 400);
+                }
+                reasons.add(r.asText());
+            }
+        }
+        return reasons;
     }
 
     /**

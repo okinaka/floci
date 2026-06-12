@@ -626,6 +626,12 @@ public class SesService {
                 validateTag(tag);
             }
         }
+        if (configSet.getSuppressionOptions() != null
+                && configSet.getSuppressionOptions().getSuppressedReasons() != null) {
+            for (String reason : configSet.getSuppressionOptions().getSuppressedReasons()) {
+                validateConfigSetSuppressionReason(reason);
+            }
+        }
         if (configSetStore.get(key).isPresent()) {
             throw new AwsException("ConfigurationSetAlreadyExists",
                     "Configuration set " + configSet.getName() + " already exists.", 400);
