@@ -26,10 +26,17 @@ import java.util.stream.Stream;
  *   <li>{@code identifier-fanout.arn.<member>} — full AWS ARN with the same
  *       bare name as the tail; predicts SUCCESS.
  *   <li>{@code identifier-fanout.wrong-region.<member>} — ARN with a region
- *       that doesn't match the configured one; predicts CLIENT_ERROR.
+ *       that doesn't match the configured one.
  *   <li>{@code identifier-fanout.wrong-account.<member>} — ARN with the
- *       all-zeros account; predicts CLIENT_ERROR.
+ *       all-zeros account.
  * </ul>
+ *
+ * <p>The wrong-* variants' expectation depends on the operation's lookup
+ * semantics, derived from its Smithy {@code errors} declaration: ops that
+ * declare a not-found-family error are strict about unknown identifiers
+ * (CLIENT_ERROR expected), while ops that don't are idempotent or lenient —
+ * real AWS returns 200 for e.g. DeleteIdentity on a name that never existed —
+ * so SUCCESS is expected there.
  *
  * <p>The other members of the input are filled with a baseline synthesizer
  * so only the identifier varies.
@@ -53,6 +60,12 @@ public final class IdentifierFanoutGenerator implements Generator {
             return Stream.empty();
         }
         String serviceHint = inferServiceHint(op);
+        boolean strictLookup = op.getErrors().stream()
+                .anyMatch(err -> io.floci.conformance.classify.ErrorClassifier
+                        .missingFamily(err.getName()));
+        io.floci.conformance.model.ExpectedOutcome wrongIdOutcome = strictLookup
+                ? io.floci.conformance.model.ExpectedOutcome.CLIENT_ERROR
+                : io.floci.conformance.model.ExpectedOutcome.SUCCESS;
         List<GeneratedCase> cases = new ArrayList<>();
         for (MemberShape member : struct.getAllMembers().values()) {
             Shape target = model.expectShape(member.getTarget());
@@ -78,10 +91,10 @@ public final class IdentifierFanoutGenerator implements Generator {
                     ExpectedOutcome.SUCCESS, null, cases);
             emit(op, struct, model, member, wrongRegionArn,
                     "identifier-fanout.wrong-region." + member.getMemberName(),
-                    ExpectedOutcome.CLIENT_ERROR, null, cases);
+                    wrongIdOutcome, null, cases);
             emit(op, struct, model, member, wrongAccountArn,
                     "identifier-fanout.wrong-account." + member.getMemberName(),
-                    ExpectedOutcome.CLIENT_ERROR, null, cases);
+                    wrongIdOutcome, null, cases);
         }
         return cases.stream();
     }
