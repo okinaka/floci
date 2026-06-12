@@ -36,7 +36,22 @@ class IdentifierFanoutGeneratorTest {
                 "identifier-fanout.wrong-region.Identity",
                 "identifier-fanout.wrong-account.Identity");
 
-        // SUCCESS for short/arn; CLIENT_ERROR for wrong-*.
+        // DeleteIdentity declares no not-found error — AWS deletes are
+        // idempotent here (verified live: deleting a nonexistent identity
+        // returns 200) — so even the wrong-* variants expect SUCCESS.
+        for (GeneratedCase c : cases) {
+            assertThat(c.expectedOutcome()).isEqualTo(ExpectedOutcome.SUCCESS);
+        }
+    }
+
+    @Test
+    void wrong_variants_expect_error_only_for_strict_lookup_ops() {
+        // GetTemplate declares TemplateDoesNotExistException — unknown
+        // identifiers must be rejected, so wrong-* predicts CLIENT_ERROR.
+        OperationShape op = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#GetTemplate"), OperationShape.class);
+        List<GeneratedCase> cases = new IdentifierFanoutGenerator().generate(op, V1).toList();
+
         for (GeneratedCase c : cases) {
             if (c.generator().contains("wrong-")) {
                 assertThat(c.expectedOutcome()).isEqualTo(ExpectedOutcome.CLIENT_ERROR);
