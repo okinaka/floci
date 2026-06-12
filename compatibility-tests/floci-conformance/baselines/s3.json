@@ -2,12 +2,11 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.s3#AmazonS3",
     "modelVersion" : "2006-03-01",
-    "capturedAt" : "2026-06-12T08:12:11.242968Z"
+    "capturedAt" : "2026-06-12T09:35:04.061206Z"
   },
   "cases" : {
     "AbortMultipartUpload" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "INCONCLUSIVE_STATE",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.UploadId" : "INCONCLUSIVE_MISSING",
@@ -27,7 +26,6 @@
     },
     "CompleteMultipartUpload" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_STATE",
-      "boundary.length.under.min.Key" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ChecksumType.COMPOSITE" : "INCONCLUSIVE_MISSING",
       "enum-exhaust.ChecksumType.FULL_OBJECT" : "INCONCLUSIVE_MISSING",
@@ -50,7 +48,6 @@
     },
     "CopyObject" : {
       "boundary.length.min.Key" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Key" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ACL.authenticated-read" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ACL.aws-exec-read" : "FAIL_4XX_UNROUTED",
@@ -309,7 +306,6 @@
     },
     "CreateMultipartUpload" : {
       "boundary.length.min.Key" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Key" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ACL.authenticated-read" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ACL.aws-exec-read" : "FAIL_4XX_UNROUTED",
@@ -615,7 +611,6 @@
     },
     "DeleteObject" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "INCONCLUSIVE_STATE",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "PASS",
       "identifier-fanout.arn.VersionId" : "PASS",
@@ -635,7 +630,6 @@
     },
     "DeleteObjectTagging" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "INCONCLUSIVE_STATE",
       "empty.passthrough" : "PASS",
       "identifier-fanout.arn.VersionId" : "PASS",
       "identifier-fanout.short.VersionId" : "PASS",
@@ -1558,7 +1552,6 @@
     },
     "GetObject" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumMode.ENABLED" : "INCONCLUSIVE_MISSING",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
@@ -1606,7 +1599,6 @@
     },
     "GetObjectAcl" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.VersionId" : "INCONCLUSIVE_MISSING",
@@ -1651,7 +1643,6 @@
     },
     "GetObjectAttributes" : {
       "boundary.length.min.Key" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "FAIL_4XX_UNROUTED",
       "identifier-fanout.arn.VersionId" : "FAIL_4XX_UNROUTED",
@@ -1696,7 +1687,6 @@
     },
     "GetObjectLegalHold" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.VersionId" : "INCONCLUSIVE_MISSING",
@@ -1777,7 +1767,6 @@
     },
     "GetObjectRetention" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.VersionId" : "INCONCLUSIVE_MISSING",
@@ -1821,7 +1810,6 @@
     },
     "GetObjectTagging" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "FAIL_SHAPE",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.VersionId" : "INCONCLUSIVE_MISSING",
@@ -1867,7 +1855,6 @@
     },
     "GetObjectTorrent" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "model-examples.1.To-retrieve-torrent-files-for-an-object" : "PASS",
@@ -1956,7 +1943,6 @@
     },
     "HeadObject" : {
       "boundary.length.min.Key" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumMode.ENABLED" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.RequestPayer.requester" : "FAIL_4XX_UNROUTED",
@@ -2318,7 +2304,6 @@
     },
     "ListParts" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.UploadId" : "INCONCLUSIVE_MISSING",
@@ -2764,7 +2749,6 @@
     },
     "PutObject" : {
       "boundary.length.min.Key" : "FAIL_4XX_UNROUTED",
-      "boundary.length.under.min.Key" : "FAIL_4XX_UNROUTED",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ACL.authenticated-read" : "FAIL_4XX_UNROUTED",
       "enum-exhaust.ACL.aws-exec-read" : "FAIL_4XX_UNROUTED",
@@ -2875,7 +2859,6 @@
     },
     "PutObjectAcl" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ACL.authenticated-read" : "PASS",
       "enum-exhaust.ACL.aws-exec-read" : "PASS",
@@ -2913,7 +2896,6 @@
     },
     "PutObjectLegalHold" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "PASS",
@@ -2966,7 +2948,6 @@
     },
     "PutObjectRetention" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "PASS",
@@ -2996,7 +2977,6 @@
     },
     "PutObjectTagging" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "PASS",
@@ -3050,7 +3030,6 @@
     },
     "RenameObject" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_STATE",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "negative.missing-required.RenameSource" : "INCONCLUSIVE_STATE",
       "optionals.all-members" : "INCONCLUSIVE_STATE",
@@ -3063,7 +3042,6 @@
     },
     "RestoreObject" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.under.min.Key" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "INCONCLUSIVE_VALIDATION",
@@ -3093,7 +3071,6 @@
     },
     "SelectObjectContent" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.under.min.Key" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ExpressionType.SQL" : "INCONCLUSIVE_VALIDATION",
       "negative.invalid-enum.ExpressionType" : "PASS",
@@ -3155,7 +3132,6 @@
     },
     "UpdateObjectEncryption" : {
       "boundary.length.min.Key" : "PASS",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "PASS",
@@ -3185,7 +3161,6 @@
     },
     "UploadPart" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "INCONCLUSIVE_VALIDATION",
@@ -3217,7 +3192,6 @@
     },
     "UploadPartCopy" : {
       "boundary.length.min.Key" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.under.min.Key" : "FAIL_SILENT_PASS",
       "empty.passthrough" : "PASS",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.UploadId" : "INCONCLUSIVE_VALIDATION",
