@@ -62,7 +62,13 @@ public final class ShapeValidator {
             // ("UseDefaultValue") when no MAIL FROM domain is configured,
             // omitting both fields below despite their @required.
             "com.amazonaws.ses#IdentityMailFromDomainAttributes$MailFromDomain",
-            "com.amazonaws.ses#IdentityMailFromDomainAttributes$MailFromDomainStatus");
+            "com.amazonaws.ses#IdentityMailFromDomainAttributes$MailFromDomainStatus",
+            // GetEmailIdentity (V2) against an identity with no MAIL FROM
+            // configured (verified 2026-06-13): AWS keeps the MailFromAttributes
+            // block with only BehaviorOnMxFailure ("USE_DEFAULT_VALUE"), omitting
+            // both fields below despite their @required.
+            "com.amazonaws.sesv2#MailFromAttributes$MailFromDomain",
+            "com.amazonaws.sesv2#MailFromAttributes$MailFromDomainStatus");
 
     private static boolean requiredEnforced(MemberShape m) {
         return m.hasTrait(RequiredTrait.class)
