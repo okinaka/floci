@@ -32,9 +32,10 @@ import java.util.stream.Stream;
  * means within Smithy {@code @length} / {@code @range} bounds where declared,
  * and using arbitrary ASCII / numbers otherwise.
  *
- * <p>Seed is derived from the operation ID so successive runs against the same
- * model produce the same variants — the fuzz is deterministic in baseline
- * terms, just diverse across operations.
+ * <p>Seed is derived from the operation ID mixed with the current run nonce
+ * ({@link io.floci.conformance.synth.NameSalt}), so within a run the fuzz is
+ * deterministic and diverse across operations, while across runs it draws fresh
+ * resource names that don't collide with a persistent emulator's prior run.
  *
  * <p>Honours {@code @pattern} by falling back to the {@link InputSynthesizer}
  * placeholder for that member rather than risking a random string that doesn't
@@ -58,7 +59,10 @@ public final class PropertyBasedGenerator implements Generator {
         if (!(inputShape instanceof StructureShape struct)) {
             return Stream.empty();
         }
-        long seed = op.getId().toString().hashCode();
+        // Mix the per-run nonce into the seed so the fuzzer draws fresh values
+        // each run; otherwise the deterministic seed reproduces identical
+        // resource names that collide with a persistent emulator's prior run.
+        long seed = io.floci.conformance.synth.NameSalt.seedFor(op.getId().toString());
         Random rng = new Random(seed);
         List<GeneratedCase> cases = new ArrayList<>();
         for (int i = 0; i < VARIANTS_PER_OP; i++) {

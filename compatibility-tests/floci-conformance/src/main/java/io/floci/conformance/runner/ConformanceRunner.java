@@ -11,6 +11,7 @@ import io.floci.conformance.generator.Generator;
 import io.floci.conformance.scenario.RoundTripEchoGenerator;
 import io.floci.conformance.scenario.RoundTripScenario;
 import io.floci.conformance.scenario.SeedAndReadGenerator;
+import io.floci.conformance.synth.NameSalt;
 import io.floci.conformance.validate.ShapeValidator;
 import software.amazon.smithy.model.shapes.ServiceShape;
 import software.amazon.smithy.model.shapes.StructureShape;
@@ -78,6 +79,7 @@ public final class ConformanceRunner {
      * field-level echo. Returns one {@link VariantResult} per scenario.
      */
     public List<VariantResult> runRoundTrip(String serviceShapeId) {
+        NameSalt.startRun();
         ServiceShape svc = model.expectShape(ShapeId.from(serviceShapeId), ServiceShape.class);
         List<RoundTripScenario> scenarios = new ArrayList<>();
         scenarios.addAll(new RoundTripEchoGenerator().generate(svc, model));
@@ -122,6 +124,7 @@ public final class ConformanceRunner {
 
     private List<VariantResult> runFiltered(String serviceShapeId,
                                             java.util.function.Predicate<OperationShape> filter) {
+        NameSalt.startRun();
         List<OperationShape> ordered = new ArrayList<>(operationsOf(serviceShapeId));
         // Stable sort: writes → reads/actions → deletes, model order within a phase.
         ordered.sort(java.util.Comparator.comparingInt(ConformanceRunner::phaseOf));
@@ -147,6 +150,7 @@ public final class ConformanceRunner {
     }
 
     private VariantResult execute(GeneratedCase generated) {
+        generated = saltInput(generated);
         Variant variant;
         try {
             variant = encoder.encode(generated);
@@ -163,6 +167,19 @@ public final class ConformanceRunner {
                     "I/O error: " + e.getMessage());
         }
         return classify(variant, resp);
+    }
+
+    /**
+     * Rewrite synthetic identifiers in the case input so each case (and each
+     * run) uses its own resource namespace; see {@link NameSalt}.
+     */
+    private static GeneratedCase saltInput(GeneratedCase c) {
+        JsonNode salted = NameSalt.apply(c.logicalInput(), c.generator());
+        if (salted == c.logicalInput()) {
+            return c;
+        }
+        return new GeneratedCase(c.operation(), c.generator(), salted,
+                c.expectedOutcome(), c.expectedError());
     }
 
     /** Outcome of one scenario step: either a terminal result or a 2xx response to continue with. */
@@ -193,11 +210,17 @@ public final class ConformanceRunner {
     }
 
     private VariantResult executeScenario(RoundTripScenario s) {
+        // Salt setup and verify with the one scenario label so the seeded
+        // identifier matches on both steps; use the salted setup input for the
+        // echo comparison below, not the raw one.
+        JsonNode setupInput = NameSalt.apply(s.setupInput(), s.generatorName());
+        JsonNode verifyInput = NameSalt.apply(s.verifyInput(), s.generatorName());
+
         // Step 1 — setup. Failure here means we can't tell if the verify step
         // would have round-tripped; report whatever the setup yielded so the
         // user knows it never reached the assertion.
         StepOutcome setup = sendStep(new GeneratedCase(
-                s.setupOp(), s.generatorName(), s.setupInput(), ExpectedOutcome.SUCCESS, null),
+                s.setupOp(), s.generatorName(), setupInput, ExpectedOutcome.SUCCESS, null),
                 "setup");
         if (setup.terminal() != null) {
             return setup.terminal();
@@ -205,7 +228,7 @@ public final class ConformanceRunner {
 
         // Step 2 — verify.
         StepOutcome verify = sendStep(new GeneratedCase(
-                s.verifyOp(), s.generatorName(), s.verifyInput(), ExpectedOutcome.SUCCESS, null),
+                s.verifyOp(), s.generatorName(), verifyInput, ExpectedOutcome.SUCCESS, null),
                 "verify");
         if (verify.terminal() != null) {
             return verify.terminal();
@@ -245,7 +268,7 @@ public final class ConformanceRunner {
         }
         List<String> mismatches = new ArrayList<>();
         for (String path : s.echoedPaths()) {
-            JsonNode expected = s.setupInput().get(path);
+            JsonNode expected = setupInput.get(path);
             JsonNode actual = body == null ? null : body.get(path);
             if (expected == null) {
                 continue;
