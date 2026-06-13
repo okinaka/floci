@@ -1080,12 +1080,12 @@ public class SesController {
 
         result.set("DkimAttributes", buildDkimAttributes(identity));
 
+        ObjectNode mailFromAttributes = result.putObject("MailFromAttributes");
+        mailFromAttributes.put("BehaviorOnMxFailure", v1BehaviorToV2(identity.getBehaviorOnMxFailure()));
         String mailFromDomain = identity.getMailFromDomain();
         if (mailFromDomain != null && !mailFromDomain.isEmpty()) {
-            ObjectNode mailFromAttributes = result.putObject("MailFromAttributes");
             mailFromAttributes.put("MailFromDomain", mailFromDomain);
             mailFromAttributes.put("MailFromDomainStatus", toV2Status(identity.getMailFromDomainStatus()));
-            mailFromAttributes.put("BehaviorOnMxFailure", v1BehaviorToV2(identity.getBehaviorOnMxFailure()));
         }
 
         result.putObject("Policies");
