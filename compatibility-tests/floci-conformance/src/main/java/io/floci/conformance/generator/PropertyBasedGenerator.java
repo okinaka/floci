@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.floci.conformance.model.ExpectedOutcome;
+import io.floci.conformance.synth.FormatHints;
 import software.amazon.smithy.model.Model;
 import software.amazon.smithy.model.shapes.EnumShape;
 import software.amazon.smithy.model.shapes.ListShape;
@@ -15,8 +16,6 @@ import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeId;
 import software.amazon.smithy.model.shapes.StructureShape;
 import software.amazon.smithy.model.traits.HttpLabelTrait;
-import software.amazon.smithy.model.traits.LengthTrait;
-import software.amazon.smithy.model.traits.PatternTrait;
 import software.amazon.smithy.model.traits.RangeTrait;
 import software.amazon.smithy.model.traits.RequiredTrait;
 
@@ -28,25 +27,25 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Seeded fuzz: generates N random-but-valid inputs per operation. "Valid" here
- * means within Smithy {@code @length} / {@code @range} bounds where declared,
- * and using arbitrary ASCII / numbers otherwise.
+ * Seeded fuzz: generates N inputs per operation, varying the structural
+ * dimensions worth fuzzing — optional-field inclusion, enum value, numeric
+ * range, and collection size — while keeping string fields format-valid.
  *
- * <p>Seed is derived from the operation ID mixed with the current run nonce
- * ({@link io.floci.conformance.synth.NameSalt}), so within a run the fuzz is
- * deterministic and diverse across operations, while across runs it draws fresh
- * resource names that don't collide with a persistent emulator's prior run.
+ * <p>String members take a format-valid, name-derived value from
+ * {@link FormatHints} (salted per case/run by the runner), not random bytes:
+ * random content in identifier / format-constrained fields only flips the
+ * emulator's format validation, which is run-to-run noise rather than signal.
+ * Boundary-length probing is the {@code BoundaryGenerator}'s job.
  *
- * <p>Honours {@code @pattern} by falling back to the {@link InputSynthesizer}
- * placeholder for that member rather than risking a random string that doesn't
- * satisfy the regex.
+ * <p>The seed is derived from the operation ID alone, so the fuzz is
+ * deterministic and reproducible across runs; resource-name uniqueness is
+ * handled by the runner's per-case salt rather than by randomizing here.
  */
 public final class PropertyBasedGenerator implements Generator {
 
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
     private static final int VARIANTS_PER_OP = 5;
     private static final int MAX_DEPTH = 4;
-    private static final String SYNTHETIC = "cov-probe-x";
 
     @Override
     public String name() {
@@ -59,10 +58,10 @@ public final class PropertyBasedGenerator implements Generator {
         if (!(inputShape instanceof StructureShape struct)) {
             return Stream.empty();
         }
-        // Mix the per-run nonce into the seed so the fuzzer draws fresh values
-        // each run; otherwise the deterministic seed reproduces identical
-        // resource names that collide with a persistent emulator's prior run.
-        long seed = io.floci.conformance.synth.NameSalt.seedFor(op.getId().toString());
+        // Deterministic per operation: string fields use format-valid values
+        // (salted per case/run by the runner), so the seed needs no run nonce
+        // and the fuzz is reproducible across runs.
+        long seed = op.getId().toString().hashCode();
         Random rng = new Random(seed);
         List<GeneratedCase> cases = new ArrayList<>();
         for (int i = 0; i < VARIANTS_PER_OP; i++) {
@@ -88,7 +87,7 @@ public final class PropertyBasedGenerator implements Generator {
             case LIST, SET -> buildList((ListShape) shape, model, rng, depth, visiting, owner);
             case MAP -> buildMap((MapShape) shape, model, rng, depth, visiting, owner);
             case ENUM -> pickEnumValue((EnumShape) shape, rng);
-            case STRING -> randomString(shape, owner, rng);
+            case STRING -> randomString(owner);
             case BLOB -> NODES.textNode(java.util.Base64.getEncoder()
                     .encodeToString(new byte[1 + rng.nextInt(8)]));
             case BOOLEAN -> NODES.booleanNode(rng.nextBoolean());
@@ -162,28 +161,20 @@ public final class PropertyBasedGenerator implements Generator {
     private static JsonNode pickEnumValue(EnumShape enumShape, Random rng) {
         var values = new ArrayList<>(enumShape.getEnumValues().values());
         if (values.isEmpty()) {
-            return NODES.textNode(SYNTHETIC);
+            return NODES.textNode(FormatHints.DEFAULT);
         }
         return NODES.textNode(values.get(rng.nextInt(values.size())));
     }
 
-    private static JsonNode randomString(Shape shape, MemberShape owner, Random rng) {
-        // Pattern constraints are hard to satisfy randomly — fall back to placeholder.
-        if (shape.hasTrait(PatternTrait.class)
-                || (owner != null && owner.hasTrait(PatternTrait.class))) {
-            return NODES.textNode(SYNTHETIC);
-        }
-        LengthTrait len = effectiveLength(shape, owner);
-        int min = len != null && len.getMin().isPresent() ? len.getMin().get().intValue() : 1;
-        int max = len != null && len.getMax().isPresent()
-                ? Math.min(len.getMax().get().intValue(), 32)
-                : 16;
-        int n = min + (max > min ? rng.nextInt(max - min) : 0);
-        StringBuilder sb = new StringBuilder(n);
-        for (int i = 0; i < n; i++) {
-            sb.append((char) ('a' + rng.nextInt(26)));
-        }
-        return NODES.textNode(sb.toString());
+    private static JsonNode randomString(MemberShape owner) {
+        // Use a format-valid, name-derived value rather than random bytes.
+        // Random content in identifier / format-constrained fields (email, ARN,
+        // domain, name, ...) only toggles whether the emulator's format/length
+        // validation passes, producing run-to-run verdict noise rather than
+        // signal. The runner salts these per case/run for uniqueness. The
+        // meaningful fuzz dimensions — optional-field inclusion, enum picks,
+        // numeric ranges, collection sizes — remain randomized.
+        return NODES.textNode(FormatHints.stringFor(owner));
     }
 
     private static int randomInt(Shape shape, MemberShape owner, Random rng) {
@@ -197,11 +188,6 @@ public final class PropertyBasedGenerator implements Generator {
             return min;
         }
         return min + rng.nextInt(max - min);
-    }
-
-    private static LengthTrait effectiveLength(Shape shape, MemberShape owner) {
-        return shape.getTrait(LengthTrait.class)
-                .orElse(owner != null ? owner.getTrait(LengthTrait.class).orElse(null) : null);
     }
 
     private static boolean isRequiredOrLabel(MemberShape m) {
