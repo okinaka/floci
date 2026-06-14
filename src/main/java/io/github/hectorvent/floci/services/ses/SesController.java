@@ -1076,6 +1076,31 @@ public class SesController {
         }
     }
 
+    // ─────────────── Deliverability / reputation reports ───────────────
+    // These report on data AWS derives from real sending infrastructure
+    // (RBL blacklist lookups, reputation tracking) that the emulator cannot
+    // synthesize. The faithful response for a local account with no such
+    // history is an empty collection.
+
+    @GET
+    @Path("/deliverability-dashboard/blacklist-report")
+    public Response getBlacklistReports(@QueryParam("BlacklistItemNames") List<String> blacklistItemNames) {
+        if (blacklistItemNames == null || blacklistItemNames.isEmpty()) {
+            throw new AwsException("BadRequestException", "Items to query must be provided.", 400);
+        }
+        ObjectNode result = objectMapper.createObjectNode();
+        result.putObject("BlacklistReport");
+        return Response.ok(result).build();
+    }
+
+    @POST
+    @Path("/reputation/entities")
+    public Response listReputationEntities() {
+        ObjectNode result = objectMapper.createObjectNode();
+        result.putArray("ReputationEntities");
+        return Response.ok(result).build();
+    }
+
     // ──────────────────────────── Helpers ────────────────────────────
 
     private ObjectNode buildFullIdentityResponse(Identity identity) {
