@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ssm#AmazonSSM",
     "modelVersion" : "2014-11-06",
-    "capturedAt" : "2026-06-13T07:10:04.252397Z"
+    "capturedAt" : "2026-06-14T10:44:43.202088Z"
   },
   "cases" : {
     "AddTagsToResource" : {
@@ -691,11 +691,11 @@
       "negative.missing-required.Name" : "INCONCLUSIVE_MISSING",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "DeleteParameters" : {
       "boundary.length.max.Names" : "PASS",
@@ -2064,11 +2064,11 @@
       "negative.missing-required.Name" : "FAIL_SILENT_PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS",
       "seed-and-read.PutParameter_to_GetParameter" : "PASS"
     },
     "GetParameterHistory" : {
@@ -2088,11 +2088,11 @@
       "negative.missing-required.Name" : "FAIL_SILENT_PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS",
       "seed-and-read.PutParameter_to_GetParameterHistory" : "PASS"
     },
     "GetParameters" : {
@@ -2625,11 +2625,11 @@
       "negative.missing-required.ResourceType" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ModifyDocumentPermission" : {
       "boundary.length.max.AccountIdsToAdd" : "NOT_IMPLEMENTED",
@@ -3118,11 +3118,11 @@
       "negative.missing-required.DocumentName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "PASS",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "PASS"
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "StartAccessRequest" : {
       "boundary.length.max.Reason" : "NOT_IMPLEMENTED",
