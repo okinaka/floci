@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-13T07:10:06.229741Z"
+    "capturedAt" : "2026-06-14T10:44:44.769051Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -47,11 +47,11 @@
       "negative.missing-required.EventDestination" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS",
       "seed-and-read.CreateConfigurationSetEventDestination_to_DescribeConfigurationSet" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateConfigurationSetTrackingOptions" : {
@@ -148,8 +148,8 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
     },
@@ -162,11 +162,11 @@
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "DeleteConfigurationSetEventDestination" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -321,11 +321,11 @@
       "negative.missing-required.TemplateName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "DeleteVerifiedEmailAddress" : {
       "empty.passthrough" : "PASS",
@@ -359,10 +359,10 @@
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
     },
     "DescribeReceiptRule" : {
@@ -524,11 +524,11 @@
       "negative.missing-required.TemplateName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ListConfigurationSets" : {
       "empty.passthrough" : "PASS",
@@ -738,11 +738,11 @@
       "negative.missing-required.Template" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "SendCustomVerificationEmail" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -784,10 +784,10 @@
       "negative.missing-required.Source" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
     },
     "SendRawEmail" : {
@@ -812,11 +812,11 @@
       "negative.missing-required.RawMessage" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "SendTemplatedEmail" : {
       "boundary.length.max.TemplateData" : "INCONCLUSIVE_VALIDATION",
@@ -996,11 +996,11 @@
       "negative.missing-required.TemplateName" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateAccountSendingEnabled" : {
       "empty.passthrough" : "PASS",
@@ -1024,10 +1024,10 @@
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "PASS"
     },
     "UpdateConfigurationSetReputationMetricsEnabled" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -1057,11 +1057,11 @@
       "negative.missing-required.Enabled" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "UpdateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -1116,11 +1116,11 @@
       "negative.missing-required.Template" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "VerifyDomainDkim" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
