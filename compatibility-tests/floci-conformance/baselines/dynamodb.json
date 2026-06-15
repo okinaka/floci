@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.dynamodb#DynamoDB_20120810",
     "modelVersion" : "2012-08-10",
-    "capturedAt" : "2026-06-14T10:44:46.060732Z"
+    "capturedAt" : "2026-06-15T05:44:03.560166Z"
   },
   "cases" : {
     "BatchExecuteStatement" : {
