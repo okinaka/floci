@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.s3#AmazonS3",
     "modelVersion" : "2006-03-01",
-    "capturedAt" : "2026-06-14T10:44:44.503969Z"
+    "capturedAt" : "2026-06-15T05:44:01.937266Z"
   },
   "cases" : {
     "AbortMultipartUpload" : {

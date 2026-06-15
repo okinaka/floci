@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-14T10:44:44.769051Z"
+    "capturedAt" : "2026-06-15T05:44:02.212676Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -456,13 +456,13 @@
       "empty.passthrough" : "PASS",
       "model-examples.1.GetIdentityNotificationAttributes" : "PASS",
       "negative.missing-required.Identities" : "PASS",
-      "optionals.all-members" : "FAIL_SHAPE",
-      "optionals.required-only" : "FAIL_SHAPE",
-      "property-based.seed-0" : "FAIL_SHAPE",
-      "property-based.seed-1" : "FAIL_SHAPE",
-      "property-based.seed-2" : "FAIL_SHAPE",
-      "property-based.seed-3" : "FAIL_SHAPE",
-      "property-based.seed-4" : "FAIL_SHAPE"
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "GetIdentityPolicies" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
