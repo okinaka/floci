@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.services.glue.GlueClient;
 import software.amazon.awssdk.services.glue.model.BatchCreatePartitionRequest;
 import software.amazon.awssdk.services.glue.model.BatchDeleteTableRequest;
@@ -15,16 +16,20 @@ import software.amazon.awssdk.services.glue.model.ColumnStatistics;
 import software.amazon.awssdk.services.glue.model.ColumnStatisticsData;
 import software.amazon.awssdk.services.glue.model.CreateDatabaseRequest;
 import software.amazon.awssdk.services.glue.model.CreatePartitionRequest;
+import software.amazon.awssdk.services.glue.model.CreateTableOptimizerRequest;
 import software.amazon.awssdk.services.glue.model.CreateTableRequest;
 import software.amazon.awssdk.services.glue.model.CreateUserDefinedFunctionRequest;
+import software.amazon.awssdk.services.glue.model.DataLakePrincipal;
 import software.amazon.awssdk.services.glue.model.DatabaseInput;
 import software.amazon.awssdk.services.glue.model.DeleteColumnStatisticsForPartitionRequest;
 import software.amazon.awssdk.services.glue.model.DeleteColumnStatisticsForTableRequest;
 import software.amazon.awssdk.services.glue.model.DeleteDatabaseRequest;
 import software.amazon.awssdk.services.glue.model.DeletePartitionRequest;
+import software.amazon.awssdk.services.glue.model.DeleteTableOptimizerRequest;
 import software.amazon.awssdk.services.glue.model.DeleteTableRequest;
 import software.amazon.awssdk.services.glue.model.DeleteUserDefinedFunctionRequest;
 import software.amazon.awssdk.services.glue.model.EntityNotFoundException;
+import software.amazon.awssdk.services.glue.model.GetTableOptimizerRequest;
 import software.amazon.awssdk.services.glue.model.GetColumnStatisticsForPartitionRequest;
 import software.amazon.awssdk.services.glue.model.GetColumnStatisticsForTableRequest;
 import software.amazon.awssdk.services.glue.model.GetDatabaseRequest;
@@ -35,18 +40,28 @@ import software.amazon.awssdk.services.glue.model.GetTableRequest;
 import software.amazon.awssdk.services.glue.model.GetTablesRequest;
 import software.amazon.awssdk.services.glue.model.GetUserDefinedFunctionRequest;
 import software.amazon.awssdk.services.glue.model.GetUserDefinedFunctionsRequest;
+import software.amazon.awssdk.services.glue.model.CreateIcebergTableInput;
+import software.amazon.awssdk.services.glue.model.IcebergInput;
+import software.amazon.awssdk.services.glue.model.IcebergSchema;
+import software.amazon.awssdk.services.glue.model.IcebergStructField;
 import software.amazon.awssdk.services.glue.model.LongColumnStatisticsData;
+import software.amazon.awssdk.services.glue.model.MetadataOperation;
+import software.amazon.awssdk.services.glue.model.OpenTableFormatInput;
 import software.amazon.awssdk.services.glue.model.PartitionInput;
 import software.amazon.awssdk.services.glue.model.PartitionValueList;
+import software.amazon.awssdk.services.glue.model.Permission;
+import software.amazon.awssdk.services.glue.model.PrincipalPermissions;
 import software.amazon.awssdk.services.glue.model.PrincipalType;
 import software.amazon.awssdk.services.glue.model.ResourceType;
 import software.amazon.awssdk.services.glue.model.ResourceUri;
 import software.amazon.awssdk.services.glue.model.SerDeInfo;
 import software.amazon.awssdk.services.glue.model.StorageDescriptor;
 import software.amazon.awssdk.services.glue.model.TableInput;
+import software.amazon.awssdk.services.glue.model.TableOptimizerConfiguration;
 import software.amazon.awssdk.services.glue.model.UpdateColumnStatisticsForPartitionRequest;
 import software.amazon.awssdk.services.glue.model.UpdateColumnStatisticsForTableRequest;
 import software.amazon.awssdk.services.glue.model.UpdatePartitionRequest;
+import software.amazon.awssdk.services.glue.model.UpdateTableOptimizerRequest;
 import software.amazon.awssdk.services.glue.model.UpdateTableRequest;
 import software.amazon.awssdk.services.glue.model.UpdateUserDefinedFunctionRequest;
 import software.amazon.awssdk.services.glue.model.UserDefinedFunction;
@@ -69,6 +84,12 @@ class GlueCatalogTest {
     private static final String SECOND_TABLE_NAME = "catalog_table_second";
     private static final String FUNCTION_NAME = "catalog_function";
     private static final String DATABASE_TAGGED_NAME = TestFixtures.uniqueName("catalog_tagged_db");
+    private static final String DEFAULT_PERMS_DATABASE_NAME = TestFixtures.uniqueName("catalog_perms_db");
+    private static final String ICEBERG_DATABASE_NAME = TestFixtures.uniqueName("catalog_iceberg_db");
+    private static final String ICEBERG_TABLE_NAME = "email_archive_summaries";
+    private static final String OPTIMIZER_DATABASE_NAME = TestFixtures.uniqueName("catalog_optimizer_db");
+    private static final String OPTIMIZER_TABLE_NAME = "optimizer_table";
+    private static final String CATALOG_ID = "000000000000";
 
     private static GlueClient glue;
     private static ResourceGroupsTaggingApiClient tagging;
@@ -123,6 +144,12 @@ class GlueCatalogTest {
                     .build());
         }
         catch (Exception ignored) {}
+        for (String db : new String[]{DEFAULT_PERMS_DATABASE_NAME, ICEBERG_DATABASE_NAME, OPTIMIZER_DATABASE_NAME}) {
+            try {
+                glue.deleteDatabase(DeleteDatabaseRequest.builder().name(db).build());
+            }
+            catch (Exception ignored) {}
+        }
         glue.close();
         tagging.close();
     }
@@ -529,6 +556,194 @@ class GlueCatalogTest {
                     .containsEntry("Environment", "dev")
                     .containsEntry("Project", "project1");
         });
+    }
+
+    @Test
+    @DisplayName("CreateTableDefaultPermissions round-trips through GetDatabase")
+    void createDatabaseWithDefaultPermissions() {
+        glue.createDatabase(CreateDatabaseRequest.builder()
+                .databaseInput(DatabaseInput.builder()
+                        .name(DEFAULT_PERMS_DATABASE_NAME)
+                        .createTableDefaultPermissions(PrincipalPermissions.builder()
+                                .principal(DataLakePrincipal.builder()
+                                        .dataLakePrincipalIdentifier("IAM_ALLOWED_PRINCIPALS")
+                                        .build())
+                                .permissions(Permission.ALL)
+                                .build())
+                        .build())
+                .build());
+
+        var database = glue.getDatabase(GetDatabaseRequest.builder()
+                .name(DEFAULT_PERMS_DATABASE_NAME)
+                .build()).database();
+
+        assertThat(database.createTableDefaultPermissions())
+                .singleElement()
+                .satisfies(permission -> {
+                    assertThat(permission.principal().dataLakePrincipalIdentifier())
+                            .isEqualTo("IAM_ALLOWED_PRINCIPALS");
+                    assertThat(permission.permissions()).containsExactly(Permission.ALL);
+                });
+
+        glue.deleteDatabase(DeleteDatabaseRequest.builder()
+                .name(DEFAULT_PERMS_DATABASE_NAME)
+                .build());
+    }
+
+    @Test
+    @DisplayName("CreateTable with OpenTableFormatInput creates an Iceberg catalog table")
+    void createIcebergTable() {
+        glue.createDatabase(CreateDatabaseRequest.builder()
+                .databaseInput(DatabaseInput.builder().name(ICEBERG_DATABASE_NAME).build())
+                .build());
+
+        String location = "s3://floci-glue-catalog/" + ICEBERG_DATABASE_NAME + "/" + ICEBERG_TABLE_NAME;
+        Document listType = Document.mapBuilder()
+                .putString("type", "list")
+                .putNumber("element-id", 10)
+                .putString("element", "string")
+                .putBoolean("element-required", false)
+                .build();
+
+        glue.createTable(CreateTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .tableInput(TableInput.builder()
+                        .name(ICEBERG_TABLE_NAME)
+                        .tableType("EXTERNAL_TABLE")
+                        .build())
+                .openTableFormatInput(OpenTableFormatInput.builder()
+                        .icebergInput(IcebergInput.builder()
+                                .metadataOperation(MetadataOperation.CREATE)
+                                .version("2")
+                                .createIcebergTableInput(CreateIcebergTableInput.builder()
+                                        .location(location)
+                                        .schema(IcebergSchema.builder()
+                                                .schemaId(0)
+                                                .type("struct")
+                                                .fields(
+                                                        IcebergStructField.builder()
+                                                                .id(1)
+                                                                .name("mail_notification_id")
+                                                                .required(true)
+                                                                .type(Document.fromString("uuid"))
+                                                                .build(),
+                                                        IcebergStructField.builder()
+                                                                .id(2)
+                                                                .name("created_at")
+                                                                .required(true)
+                                                                .type(Document.fromString("timestamptz"))
+                                                                .build(),
+                                                        IcebergStructField.builder()
+                                                                .id(5)
+                                                                .name("to_address_mail_addresses")
+                                                                .required(false)
+                                                                .type(listType)
+                                                                .build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build());
+
+        var table = glue.getTable(GetTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .name(ICEBERG_TABLE_NAME)
+                .build()).table();
+
+        assertThat(table.name()).isEqualTo(ICEBERG_TABLE_NAME);
+        assertThat(table.parameters()).containsEntry("table_type", "ICEBERG");
+        assertThat(table.parameters().get("metadata_location")).startsWith(location);
+        assertThat(table.storageDescriptor().location()).isEqualTo(location);
+        assertThat(table.storageDescriptor().columns())
+                .extracting(Column::name)
+                .containsExactly("mail_notification_id", "created_at", "to_address_mail_addresses");
+        assertThat(table.storageDescriptor().columns())
+                .extracting(Column::type)
+                .containsExactly("string", "timestamp", "array<string>");
+
+        glue.deleteTable(DeleteTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .name(ICEBERG_TABLE_NAME)
+                .build());
+        glue.deleteDatabase(DeleteDatabaseRequest.builder()
+                .name(ICEBERG_DATABASE_NAME)
+                .build());
+    }
+
+    @Test
+    @DisplayName("TableOptimizer Create/Get/Update/Delete round-trips")
+    void tableOptimizerLifecycle() {
+        glue.createDatabase(CreateDatabaseRequest.builder()
+                .databaseInput(DatabaseInput.builder().name(OPTIMIZER_DATABASE_NAME).build())
+                .build());
+        glue.createTable(CreateTableRequest.builder()
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableInput(tableInput(OPTIMIZER_DATABASE_NAME, OPTIMIZER_TABLE_NAME, "optimizer table"))
+                .build());
+
+        String roleArn = "arn:aws:iam::000000000000:role/email-archive-summaries-table-optimizer-role";
+        glue.createTableOptimizer(CreateTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .tableOptimizerConfiguration(TableOptimizerConfiguration.builder()
+                        .roleArn(roleArn)
+                        .enabled(true)
+                        .build())
+                .build());
+
+        var created = glue.getTableOptimizer(GetTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .build());
+        assertThat(created.databaseName()).isEqualTo(OPTIMIZER_DATABASE_NAME);
+        assertThat(created.tableName()).isEqualTo(OPTIMIZER_TABLE_NAME);
+        assertThat(created.tableOptimizer().typeAsString()).isEqualTo("compaction");
+        assertThat(created.tableOptimizer().configuration().roleArn()).isEqualTo(roleArn);
+        assertThat(created.tableOptimizer().configuration().enabled()).isTrue();
+
+        glue.updateTableOptimizer(UpdateTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .tableOptimizerConfiguration(TableOptimizerConfiguration.builder()
+                        .roleArn(roleArn)
+                        .enabled(false)
+                        .build())
+                .build());
+        assertThat(glue.getTableOptimizer(GetTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .build()).tableOptimizer().configuration().enabled())
+                .isFalse();
+
+        glue.deleteTableOptimizer(DeleteTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .build());
+        assertThatThrownBy(() -> glue.getTableOptimizer(GetTableOptimizerRequest.builder()
+                .catalogId(CATALOG_ID)
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .tableName(OPTIMIZER_TABLE_NAME)
+                .type("compaction")
+                .build()))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        glue.deleteTable(DeleteTableRequest.builder()
+                .databaseName(OPTIMIZER_DATABASE_NAME)
+                .name(OPTIMIZER_TABLE_NAME)
+                .build());
+        glue.deleteDatabase(DeleteDatabaseRequest.builder()
+                .name(OPTIMIZER_DATABASE_NAME)
+                .build());
     }
 
     private static TableInput tableInput(String description) {
