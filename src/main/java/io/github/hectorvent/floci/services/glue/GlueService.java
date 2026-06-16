@@ -8,10 +8,12 @@ import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
 import io.github.hectorvent.floci.services.glue.model.Column;
 import io.github.hectorvent.floci.services.glue.model.Database;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.Partition;
 import io.github.hectorvent.floci.services.glue.model.SchemaReference;
 import io.github.hectorvent.floci.services.glue.model.StorageDescriptor;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.TableOptimizer;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.SchemaToColumnsConverter;
@@ -61,6 +63,7 @@ public class GlueService {
     private final StorageBackend<String, Partition> partitionStore;
     private final StorageBackend<String, Map<String, Object>> partitionColumnStatisticsStore;
     private final StorageBackend<String, UserDefinedFunction> functionStore;
+    private final StorageBackend<String, TableOptimizer> tableOptimizerStore;
     private final GlueSchemaRegistryService schemaRegistryService;
     private final RegionResolver regionResolver;
     private final ResourceGroupsTaggingService resourceGroupsTaggingService;
@@ -78,6 +81,7 @@ public class GlueService {
         this.partitionColumnStatisticsStore = storageFactory.create(
                 "glue", "partition_column_statistics.json", new TypeReference<>() {});
         this.functionStore = storageFactory.create("glue", "functions.json", new TypeReference<>() {});
+        this.tableOptimizerStore = storageFactory.create("glue", "table_optimizers.json", new TypeReference<>() {});
         this.schemaRegistryService = schemaRegistryService;
         this.regionResolver = regionResolver;
         this.resourceGroupsTaggingService = resourceGroupsTaggingService;
@@ -90,6 +94,7 @@ public class GlueService {
                 StorageBackend<String, Partition> partitionStore,
                 StorageBackend<String, Map<String, Object>> partitionColumnStatisticsStore,
                 StorageBackend<String, UserDefinedFunction> functionStore,
+                StorageBackend<String, TableOptimizer> tableOptimizerStore,
                 GlueSchemaRegistryService schemaRegistryService,
                 RegionResolver regionResolver,
                 ResourceGroupsTaggingService resourceGroupsTaggingService) {
@@ -100,6 +105,7 @@ public class GlueService {
         this.partitionStore = partitionStore;
         this.partitionColumnStatisticsStore = partitionColumnStatisticsStore;
         this.functionStore = functionStore;
+        this.tableOptimizerStore = tableOptimizerStore;
         this.schemaRegistryService = schemaRegistryService;
         this.regionResolver = regionResolver;
         this.resourceGroupsTaggingService = resourceGroupsTaggingService;
@@ -115,6 +121,9 @@ public class GlueService {
             throw new AwsException("AlreadyExistsException", "Database already exists: " + database.getName(), 400);
         }
         database.setName(databaseName);
+        if (database.getCatalogId() == null) {
+            database.setCatalogId(regionResolver.getAccountId());
+        }
         databaseStore.put(databaseName, database);
         if (tags != null && !tags.isEmpty()) {
             resourceGroupsTaggingService.tagResources(List.of(databaseArn(region, databaseName)), tags, region);
@@ -143,6 +152,8 @@ public class GlueService {
         updated.setLocationUri(database.getLocationUri());
         updated.setParameters(database.getParameters() == null ? null : new LinkedHashMap<>(database.getParameters()));
         updated.setCreateTime(existing.getCreateTime());
+        updated.setCatalogId(existing.getCatalogId());
+        updated.setCreateTableDefaultPermissions(database.getCreateTableDefaultPermissions());
         databaseStore.put(databaseName, updated);
         LOG.infov("Updated Glue Database: {0}", databaseName);
     }
@@ -161,6 +172,11 @@ public class GlueService {
         databaseStore.delete(databaseName);
         resourceGroupsTaggingService.deleteResources(List.of(databaseArn(region, databaseName)), region);
         LOG.infov("Deleted Glue Database: {0}", name);
+    }
+
+    public void createTable(String databaseName, Table table, OpenTableFormatInput openTableFormatInput) {
+        applyOpenTableFormat(table, openTableFormatInput);
+        createTable(databaseName, table);
     }
 
     public void createTable(String databaseName, Table table) {
@@ -536,6 +552,53 @@ public class GlueService {
         functionStore.delete(functionKey(databaseName, functionName));
     }
 
+    public void createTableOptimizer(String catalogId, String databaseName, String tableName,
+                                     String type, TableOptimizer.TableOptimizerConfiguration configuration) {
+        getTable(databaseName, tableName);
+        String key = tableOptimizerKey(catalogId, databaseName, tableName, type);
+        if (tableOptimizerStore.get(key).isPresent()) {
+            throw new AwsException("AlreadyExistsException",
+                    "Table optimizer already exists for " + databaseName + "." + tableName + " (" + type + ")", 400);
+        }
+        TableOptimizer optimizer = new TableOptimizer();
+        optimizer.setType(type);
+        optimizer.setConfiguration(configuration);
+        tableOptimizerStore.put(key, optimizer);
+        LOG.infov("Created Glue TableOptimizer: {0}.{1} ({2})", databaseName, tableName, type);
+    }
+
+    public TableOptimizer getTableOptimizer(String catalogId, String databaseName, String tableName, String type) {
+        return tableOptimizerStore.get(tableOptimizerKey(catalogId, databaseName, tableName, type))
+                .orElseThrow(() -> new AwsException("EntityNotFoundException",
+                        "Table optimizer not found for " + databaseName + "." + tableName + " (" + type + ")", 400));
+    }
+
+    public void updateTableOptimizer(String catalogId, String databaseName, String tableName,
+                                     String type, TableOptimizer.TableOptimizerConfiguration configuration) {
+        String key = tableOptimizerKey(catalogId, databaseName, tableName, type);
+        TableOptimizer existing = tableOptimizerStore.get(key)
+                .orElseThrow(() -> new AwsException("EntityNotFoundException",
+                        "Table optimizer not found for " + databaseName + "." + tableName + " (" + type + ")", 400));
+        existing.setConfiguration(configuration);
+        tableOptimizerStore.put(key, existing);
+        LOG.infov("Updated Glue TableOptimizer: {0}.{1} ({2})", databaseName, tableName, type);
+    }
+
+    public void deleteTableOptimizer(String catalogId, String databaseName, String tableName, String type) {
+        String key = tableOptimizerKey(catalogId, databaseName, tableName, type);
+        if (tableOptimizerStore.get(key).isEmpty()) {
+            throw new AwsException("EntityNotFoundException",
+                    "Table optimizer not found for " + databaseName + "." + tableName + " (" + type + ")", 400);
+        }
+        tableOptimizerStore.delete(key);
+        LOG.infov("Deleted Glue TableOptimizer: {0}.{1} ({2})", databaseName, tableName, type);
+    }
+
+    private String tableOptimizerKey(String catalogId, String databaseName, String tableName, String type) {
+        String catalog = catalogId == null ? regionResolver.getAccountId() : catalogId;
+        return catalog + ":" + normalizeName(databaseName) + ":" + normalizeName(tableName) + ":" + type;
+    }
+
     private void validateSchemaReference(Table table) {
         SchemaReference ref = schemaReferenceOf(table);
         if (ref == null) {
@@ -837,6 +900,124 @@ public class GlueService {
 
     private String databaseArn(String region, String databaseName) {
         return regionResolver.buildArn("glue", region, "database/" + databaseName);
+    }
+
+    private static final String ICEBERG_INPUT_FORMAT = "org.apache.iceberg.mr.hive.HiveIcebergInputFormat";
+    private static final String ICEBERG_OUTPUT_FORMAT = "org.apache.iceberg.mr.hive.HiveIcebergOutputFormat";
+    private static final String ICEBERG_SERDE = "org.apache.iceberg.mr.hive.HiveIcebergSerDe";
+
+    /**
+     * Translates an Iceberg {@code OpenTableFormatInput} into the catalog representation of a table
+     * (columns, storage descriptor, and Iceberg parameters), mirroring what AWS Glue persists when a
+     * table is created with {@code CreateIcebergTableInput}. No Iceberg metadata is written to S3.
+     */
+    private void applyOpenTableFormat(Table table, OpenTableFormatInput openTableFormatInput) {
+        if (openTableFormatInput == null || openTableFormatInput.getIcebergInput() == null) {
+            return;
+        }
+        OpenTableFormatInput.CreateIcebergTableInput input =
+                openTableFormatInput.getIcebergInput().getCreateIcebergTableInput();
+        if (input == null) {
+            return;
+        }
+
+        StorageDescriptor sd = table.getStorageDescriptor();
+        if (sd == null) {
+            sd = new StorageDescriptor();
+            table.setStorageDescriptor(sd);
+        }
+        if (input.getLocation() != null) {
+            sd.setLocation(input.getLocation());
+        }
+        if (input.getSchema() != null && input.getSchema().getFields() != null) {
+            List<Column> columns = new ArrayList<>();
+            for (OpenTableFormatInput.IcebergField field : input.getSchema().getFields()) {
+                Column column = new Column(field.getName(), icebergTypeToHive(field.getType()));
+                columns.add(column);
+            }
+            sd.setColumns(columns);
+        }
+        sd.setInputFormat(ICEBERG_INPUT_FORMAT);
+        sd.setOutputFormat(ICEBERG_OUTPUT_FORMAT);
+        StorageDescriptor.SerDeInfo serdeInfo = new StorageDescriptor.SerDeInfo();
+        serdeInfo.setSerializationLibrary(ICEBERG_SERDE);
+        sd.setSerdeInfo(serdeInfo);
+
+        Map<String, String> parameters = table.getParameters() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(table.getParameters());
+        parameters.put("table_type", "ICEBERG");
+        if (input.getLocation() != null && !parameters.containsKey("metadata_location")) {
+            parameters.put("metadata_location",
+                    input.getLocation() + "/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json");
+        }
+        if (openTableFormatInput.getIcebergInput().getVersion() != null) {
+            parameters.put("format-version", openTableFormatInput.getIcebergInput().getVersion());
+        }
+        table.setParameters(parameters);
+        if (table.getTableType() == null) {
+            table.setTableType("EXTERNAL_TABLE");
+        }
+    }
+
+    /**
+     * Maps an Iceberg type (a JSON document: either a primitive name string or a nested
+     * list/map/struct object) to the equivalent Hive/Glue column type string. Best-effort:
+     * unknown primitives fall back to "string".
+     */
+    @SuppressWarnings("unchecked")
+    static String icebergTypeToHive(Object type) {
+        if (type == null) {
+            return "string";
+        }
+        if (type instanceof String name) {
+            return icebergPrimitiveToHive(name);
+        }
+        if (type instanceof Map<?, ?> node) {
+            Map<String, Object> map = (Map<String, Object>) node;
+            Object kind = map.get("type");
+            if ("list".equals(kind)) {
+                return "array<" + icebergTypeToHive(map.get("element")) + ">";
+            }
+            if ("map".equals(kind)) {
+                return "map<" + icebergTypeToHive(map.get("key")) + "," + icebergTypeToHive(map.get("value")) + ">";
+            }
+            if ("struct".equals(kind) && map.get("fields") instanceof List<?> fields) {
+                List<String> parts = new ArrayList<>();
+                for (Object f : fields) {
+                    if (f instanceof Map<?, ?> fieldMap) {
+                        Object fieldName = ((Map<String, Object>) fieldMap).get("name");
+                        Object fieldType = ((Map<String, Object>) fieldMap).get("type");
+                        parts.add(fieldName + ":" + icebergTypeToHive(fieldType));
+                    }
+                }
+                return "struct<" + String.join(",", parts) + ">";
+            }
+            return kind != null ? icebergPrimitiveToHive(kind.toString()) : "string";
+        }
+        return "string";
+    }
+
+    private static String icebergPrimitiveToHive(String name) {
+        if (name == null) {
+            return "string";
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("decimal") || lower.startsWith("fixed")) {
+            return lower.startsWith("decimal") ? lower : "binary";
+        }
+        return switch (lower) {
+            case "boolean" -> "boolean";
+            case "int", "integer" -> "int";
+            case "long" -> "bigint";
+            case "float" -> "float";
+            case "double" -> "double";
+            case "date" -> "date";
+            case "timestamp", "timestamptz", "timestamp_ns", "timestamptz_ns" -> "timestamp";
+            case "binary" -> "binary";
+            case "string", "uuid", "time" -> "string";
+            default -> "string";
+        };
     }
 
     private static Pattern compileFunctionPattern(String pattern) {

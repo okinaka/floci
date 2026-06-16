@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 @RegisterForReflection
@@ -19,6 +20,10 @@ public class Database {
     @JsonProperty("CreateTime")
     @JsonFormat(shape = JsonFormat.Shape.NUMBER)
     private Instant createTime;
+    @JsonProperty("CatalogId")
+    private String catalogId;
+    @JsonProperty("CreateTableDefaultPermissions")
+    private List<PrincipalPermissions> createTableDefaultPermissions;
 
     public Database() {}
     public Database(String name) {
@@ -36,4 +41,10 @@ public class Database {
     public void setParameters(Map<String, String> parameters) { this.parameters = parameters; }
     public Instant getCreateTime() { return createTime; }
     public void setCreateTime(Instant createTime) { this.createTime = createTime; }
+    public String getCatalogId() { return catalogId; }
+    public void setCatalogId(String catalogId) { this.catalogId = catalogId; }
+    public List<PrincipalPermissions> getCreateTableDefaultPermissions() { return createTableDefaultPermissions; }
+    public void setCreateTableDefaultPermissions(List<PrincipalPermissions> createTableDefaultPermissions) {
+        this.createTableDefaultPermissions = createTableDefaultPermissions;
+    }
 }

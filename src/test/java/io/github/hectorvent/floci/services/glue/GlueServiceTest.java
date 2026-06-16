@@ -8,10 +8,12 @@ import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
 import io.github.hectorvent.floci.services.glue.model.Column;
 import io.github.hectorvent.floci.services.glue.model.Database;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.Partition;
 import io.github.hectorvent.floci.services.glue.model.SchemaReference;
 import io.github.hectorvent.floci.services.glue.model.StorageDescriptor;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.TableOptimizer;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.model.RegistryId;
@@ -69,6 +71,7 @@ class GlueServiceTest {
                 partitionStore,
                 new InMemoryStorage<String, Map<String, Object>>(),
                 new InMemoryStorage<String, UserDefinedFunction>(),
+                new InMemoryStorage<String, TableOptimizer>(),
                 schemaRegistryService, regionResolver, new ResourceGroupsTaggingService());
         glueService.createDatabase(new Database("db1"));
     }
@@ -1009,6 +1012,97 @@ class GlueServiceTest {
         sd.setSchemaReference(ref);
         table.setStorageDescriptor(sd);
         return table;
+    }
+
+    @Test
+    void icebergTypeToHiveMapsPrimitivesAndLists() {
+        assertEquals("string", GlueService.icebergTypeToHive("uuid"));
+        assertEquals("string", GlueService.icebergTypeToHive("string"));
+        assertEquals("timestamp", GlueService.icebergTypeToHive("timestamptz"));
+        assertEquals("bigint", GlueService.icebergTypeToHive("long"));
+        assertEquals("array<string>",
+                GlueService.icebergTypeToHive(Map.of("type", "list", "element", "string")));
+        assertEquals("string", GlueService.icebergTypeToHive((Object) null));
+    }
+
+    @Test
+    void createIcebergTableDerivesColumnsAndParameters() {
+        Table table = new Table();
+        table.setName("iceberg_table");
+        table.setTableType("EXTERNAL_TABLE");
+
+        OpenTableFormatInput.IcebergField idField = new OpenTableFormatInput.IcebergField();
+        idField.setName("id");
+        idField.setType("uuid");
+        OpenTableFormatInput.IcebergField tsField = new OpenTableFormatInput.IcebergField();
+        tsField.setName("created_at");
+        tsField.setType("timestamptz");
+
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setType("struct");
+        schema.setFields(java.util.List.of(idField, tsField));
+
+        OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
+        input.setLocation("s3://bucket/iceberg_table");
+        input.setSchema(schema);
+
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setMetadataOperation("CREATE");
+        icebergInput.setVersion("2");
+        icebergInput.setCreateIcebergTableInput(input);
+
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+
+        glueService.createTable("db1", table, otf);
+
+        Table fetched = glueService.getTable("db1", "iceberg_table");
+        assertEquals("ICEBERG", fetched.getParameters().get("table_type"));
+        assertEquals("2", fetched.getParameters().get("format-version"));
+        assertTrue(fetched.getParameters().get("metadata_location").startsWith("s3://bucket/iceberg_table"));
+        assertEquals("s3://bucket/iceberg_table", fetched.getStorageDescriptor().getLocation());
+        assertEquals(2, fetched.getStorageDescriptor().getColumns().size());
+        assertEquals("string", fetched.getStorageDescriptor().getColumns().get(0).getType());
+        assertEquals("timestamp", fetched.getStorageDescriptor().getColumns().get(1).getType());
+    }
+
+    @Test
+    void tableOptimizerCrudRoundTrips() {
+        Table table = new Table();
+        table.setName("opt_table");
+        glueService.createTable("db1", table);
+
+        TableOptimizer.TableOptimizerConfiguration config = new TableOptimizer.TableOptimizerConfiguration();
+        config.setRoleArn("arn:aws:iam::000000000000:role/opt");
+        config.setEnabled(true);
+        glueService.createTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction", config);
+
+        TableOptimizer fetched = glueService.getTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction");
+        assertEquals("compaction", fetched.getType());
+        assertEquals("arn:aws:iam::000000000000:role/opt", fetched.getConfiguration().getRoleArn());
+        assertTrue(fetched.getConfiguration().getEnabled());
+
+        TableOptimizer.TableOptimizerConfiguration updated = new TableOptimizer.TableOptimizerConfiguration();
+        updated.setRoleArn("arn:aws:iam::000000000000:role/opt");
+        updated.setEnabled(false);
+        glueService.updateTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction", updated);
+        assertEquals(false, glueService.getTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction")
+                .getConfiguration().getEnabled());
+
+        glueService.deleteTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction");
+        AwsException notFound = assertThrows(AwsException.class,
+                () -> glueService.getTableOptimizer(ACCOUNT_ID, "db1", "opt_table", "compaction"));
+        assertEquals("EntityNotFoundException", notFound.getErrorCode());
+    }
+
+    @Test
+    void createTableOptimizerOnMissingTableThrows() {
+        TableOptimizer.TableOptimizerConfiguration config = new TableOptimizer.TableOptimizerConfiguration();
+        config.setRoleArn("arn:aws:iam::000000000000:role/opt");
+        config.setEnabled(true);
+        AwsException exception = assertThrows(AwsException.class,
+                () -> glueService.createTableOptimizer(ACCOUNT_ID, "db1", "missing", "compaction", config));
+        assertEquals("EntityNotFoundException", exception.getErrorCode());
     }
 
     private static Map<String, Object> columnStatistics(String columnName) {

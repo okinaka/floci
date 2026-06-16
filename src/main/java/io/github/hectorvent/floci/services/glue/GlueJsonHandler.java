@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.services.glue.model.Database;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.Partition;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.TableOptimizer;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.model.Registry;
@@ -78,7 +80,13 @@ public class GlueJsonHandler {
             case "CreateTable" -> {
                 String dbName = request.get("DatabaseName").asText();
                 Table table = mapper.treeToValue(request.get("TableInput"), Table.class);
-                glueService.createTable(dbName, table);
+                if (request.hasNonNull("OpenTableFormatInput")) {
+                    OpenTableFormatInput openTableFormatInput =
+                            mapper.treeToValue(request.get("OpenTableFormatInput"), OpenTableFormatInput.class);
+                    glueService.createTable(dbName, table, openTableFormatInput);
+                } else {
+                    glueService.createTable(dbName, table);
+                }
                 yield Response.ok().build();
             }
             case "GetTable" -> {
@@ -164,6 +172,10 @@ public class GlueJsonHandler {
             case "PutSchemaVersionMetadata" -> handlePutSchemaVersionMetadata(request);
             case "RemoveSchemaVersionMetadata" -> handleRemoveSchemaVersionMetadata(request);
             case "QuerySchemaVersionMetadata" -> handleQuerySchemaVersionMetadata(request);
+            case "CreateTableOptimizer" -> handleCreateTableOptimizer(request);
+            case "GetTableOptimizer" -> handleGetTableOptimizer(request);
+            case "UpdateTableOptimizer" -> handleUpdateTableOptimizer(request);
+            case "DeleteTableOptimizer" -> handleDeleteTableOptimizer(request);
             case "TagResource" -> handleTagResource(request);
             case "UntagResource" -> handleUntagResource(request);
             case "GetTags" -> handleGetTags(request);
@@ -688,6 +700,51 @@ public class GlueJsonHandler {
         response.put("MetadataKey", result.metadataKey());
         response.put("MetadataValue", result.metadataValue());
         return response;
+    }
+
+    private Response handleCreateTableOptimizer(JsonNode request) throws Exception {
+        String catalogId = request.path("CatalogId").asText(null);
+        String dbName = request.get("DatabaseName").asText();
+        String tableName = request.get("TableName").asText();
+        String type = request.get("Type").asText();
+        TableOptimizer.TableOptimizerConfiguration configuration = mapper.treeToValue(
+                request.get("TableOptimizerConfiguration"), TableOptimizer.TableOptimizerConfiguration.class);
+        glueService.createTableOptimizer(catalogId, dbName, tableName, type, configuration);
+        return Response.ok().build();
+    }
+
+    private Response handleGetTableOptimizer(JsonNode request) {
+        String catalogId = request.path("CatalogId").asText(null);
+        String dbName = request.get("DatabaseName").asText();
+        String tableName = request.get("TableName").asText();
+        String type = request.get("Type").asText();
+        TableOptimizer optimizer = glueService.getTableOptimizer(catalogId, dbName, tableName, type);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("CatalogId", catalogId != null ? catalogId : "");
+        response.put("DatabaseName", dbName);
+        response.put("TableName", tableName);
+        response.put("TableOptimizer", optimizer);
+        return Response.ok(response).build();
+    }
+
+    private Response handleUpdateTableOptimizer(JsonNode request) throws Exception {
+        String catalogId = request.path("CatalogId").asText(null);
+        String dbName = request.get("DatabaseName").asText();
+        String tableName = request.get("TableName").asText();
+        String type = request.get("Type").asText();
+        TableOptimizer.TableOptimizerConfiguration configuration = mapper.treeToValue(
+                request.get("TableOptimizerConfiguration"), TableOptimizer.TableOptimizerConfiguration.class);
+        glueService.updateTableOptimizer(catalogId, dbName, tableName, type, configuration);
+        return Response.ok().build();
+    }
+
+    private Response handleDeleteTableOptimizer(JsonNode request) {
+        String catalogId = request.path("CatalogId").asText(null);
+        String dbName = request.get("DatabaseName").asText();
+        String tableName = request.get("TableName").asText();
+        String type = request.get("Type").asText();
+        glueService.deleteTableOptimizer(catalogId, dbName, tableName, type);
+        return Response.ok().build();
     }
 
     @SuppressWarnings("unchecked")
