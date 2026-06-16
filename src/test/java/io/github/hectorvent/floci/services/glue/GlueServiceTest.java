@@ -1096,6 +1096,55 @@ class GlueServiceTest {
     }
 
     @Test
+    void deleteTableCascadeDeletesTableOptimizer() {
+        Table table = new Table();
+        table.setName("cascade_table");
+        glueService.createTable("db1", table);
+        TableOptimizer.TableOptimizerConfiguration config = new TableOptimizer.TableOptimizerConfiguration();
+        config.setRoleArn("arn:aws:iam::000000000000:role/opt");
+        config.setEnabled(true);
+        glueService.createTableOptimizer(ACCOUNT_ID, "db1", "cascade_table", "compaction", config);
+
+        glueService.deleteTable("db1", "cascade_table");
+
+        AwsException notFound = assertThrows(AwsException.class,
+                () -> glueService.getTableOptimizer(ACCOUNT_ID, "db1", "cascade_table", "compaction"));
+        assertEquals("EntityNotFoundException", notFound.getErrorCode());
+
+        // Recreating the table and optimizer with the same name must succeed (no stale entry).
+        Table recreated = new Table();
+        recreated.setName("cascade_table");
+        glueService.createTable("db1", recreated);
+        glueService.createTableOptimizer(ACCOUNT_ID, "db1", "cascade_table", "compaction", config);
+        assertEquals("compaction",
+                glueService.getTableOptimizer(ACCOUNT_ID, "db1", "cascade_table", "compaction").getType());
+    }
+
+    @Test
+    void createIcebergTableNormalizesTrailingSlashInMetadataLocation() {
+        Table table = new Table();
+        table.setName("iceberg_slash");
+        OpenTableFormatInput.IcebergField field = new OpenTableFormatInput.IcebergField();
+        field.setName("id");
+        field.setType("uuid");
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setFields(java.util.List.of(field));
+        OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
+        input.setLocation("s3://bucket/iceberg_slash/");
+        input.setSchema(schema);
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setCreateIcebergTableInput(input);
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+
+        glueService.createTable("db1", table, otf);
+
+        String metadataLocation = glueService.getTable("db1", "iceberg_slash").getParameters().get("metadata_location");
+        assertEquals("s3://bucket/iceberg_slash/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json",
+                metadataLocation);
+    }
+
+    @Test
     void createTableOptimizerOnMissingTableThrows() {
         TableOptimizer.TableOptimizerConfiguration config = new TableOptimizer.TableOptimizerConfiguration();
         config.setRoleArn("arn:aws:iam::000000000000:role/opt");

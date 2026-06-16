@@ -721,8 +721,8 @@ public class GlueJsonHandler {
         TableOptimizer optimizer = glueService.getTableOptimizer(catalogId, dbName, tableName, type);
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("CatalogId", glueService.resolveCatalogId(catalogId));
-        response.put("DatabaseName", dbName);
-        response.put("TableName", tableName);
+        response.put("DatabaseName", glueService.canonicalName(dbName));
+        response.put("TableName", glueService.canonicalName(tableName));
         response.put("TableOptimizer", optimizer);
         return Response.ok(response).build();
     }

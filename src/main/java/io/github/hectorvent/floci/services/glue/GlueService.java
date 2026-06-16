@@ -267,6 +267,10 @@ public class GlueService {
         partitionColumnStatisticsStore.keys().stream()
                 .filter(statisticsKey -> statisticsKey.startsWith(key + ":"))
                 .forEach(partitionColumnStatisticsStore::delete);
+        String optimizerSegment = ":" + normalizeName(databaseName) + ":" + normalizeName(tableName) + ":";
+        tableOptimizerStore.keys().stream()
+                .filter(optimizerKey -> optimizerKey.contains(optimizerSegment))
+                .forEach(tableOptimizerStore::delete);
         LOG.infov("Deleted Glue Table: {0}.{1}", databaseName, tableName);
     }
 
@@ -596,6 +600,10 @@ public class GlueService {
 
     public String resolveCatalogId(String catalogId) {
         return catalogId == null ? regionResolver.getAccountId() : catalogId;
+    }
+
+    public String canonicalName(String name) {
+        return normalizeName(name);
     }
 
     private String tableOptimizerKey(String catalogId, String databaseName, String tableName, String type) {
@@ -951,8 +959,12 @@ public class GlueService {
                 : new LinkedHashMap<>(table.getParameters());
         parameters.put("table_type", "ICEBERG");
         if (input.getLocation() != null && !parameters.containsKey("metadata_location")) {
+            String base = input.getLocation();
+            while (base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
             parameters.put("metadata_location",
-                    input.getLocation() + "/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json");
+                    base + "/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json");
         }
         if (openTableFormatInput.getIcebergInput().getVersion() != null) {
             parameters.put("format-version", openTableFormatInput.getIcebergInput().getVersion());
