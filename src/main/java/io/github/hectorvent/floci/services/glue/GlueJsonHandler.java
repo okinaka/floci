@@ -107,9 +107,16 @@ public class GlueJsonHandler {
                     Table tableInput = request.hasNonNull("TableInput")
                             ? mapper.treeToValue(request.get("TableInput"), Table.class)
                             : null;
-                    String tableName = request.hasNonNull("Name")
-                            ? request.get("Name").asText()
-                            : tableInput != null ? tableInput.getName() : null;
+                    String topName = request.hasNonNull("Name") ? request.get("Name").asText() : null;
+                    String inputName = tableInput != null ? tableInput.getName() : null;
+                    if (topName != null && inputName != null && !topName.equals(inputName)) {
+                        throw new AwsException("InvalidInputException",
+                                "Name and TableInput.Name must match", 400);
+                    }
+                    String tableName = topName != null ? topName : inputName;
+                    if (tableName == null) {
+                        throw new AwsException("InvalidInputException", "Table name is required", 400);
+                    }
                     glueService.updateTableIceberg(dbName, tableName, tableInput, update,
                             request.path("VersionId").asText(null), request.path("SkipArchive").asBoolean(false));
                 } else {

@@ -97,4 +97,42 @@ class GlueIcebergUpdateTableIntegrationTest {
                 .body("Table.StorageDescriptor.Columns.Name", hasItems("id", "subject"))
                 .body("Table.StorageDescriptor.Columns.find { it.Name == 'subject' }.Type", equalTo("string"));
     }
+
+    @Test
+    void updateTableIcebergWithoutNameReturns400() {
+        given().contentType(CONTENT_TYPE)
+                .header("X-Amz-Target", "AWSGlue.UpdateTable")
+                .body("""
+                        {
+                          "DatabaseName": "anything",
+                          "UpdateOpenTableFormatInput": {
+                            "UpdateIcebergInput": { "UpdateIcebergTableInput": { "Updates": [] } }
+                          }
+                        }
+                        """)
+        .when().post("/")
+        .then()
+                .statusCode(400)
+                .body("__type", org.hamcrest.Matchers.containsString("InvalidInputException"));
+    }
+
+    @Test
+    void updateTableIcebergWithConflictingNamesReturns400() {
+        given().contentType(CONTENT_TYPE)
+                .header("X-Amz-Target", "AWSGlue.UpdateTable")
+                .body("""
+                        {
+                          "DatabaseName": "anything",
+                          "Name": "table_a",
+                          "TableInput": { "Name": "table_b" },
+                          "UpdateOpenTableFormatInput": {
+                            "UpdateIcebergInput": { "UpdateIcebergTableInput": { "Updates": [] } }
+                          }
+                        }
+                        """)
+        .when().post("/")
+        .then()
+                .statusCode(400)
+                .body("__type", org.hamcrest.Matchers.containsString("InvalidInputException"));
+    }
 }
