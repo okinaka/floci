@@ -64,8 +64,9 @@ public final class RestJsonInvoker implements Invoker {
                 new IllegalStateException("Operation " + op.getId() + " lacks @http trait"));
 
         String method = http.getMethod();
-        String path = resolvePath(http.getUri().toString(), variant.pathParams());
-        String url = baseUrl + path + buildQueryString(variant.queryParams());
+        String uri = http.getUri().toString();
+        String path = resolvePath(uri, variant.pathParams());
+        String url = baseUrl + path + buildQueryString(staticQuery(uri), variant.queryParams());
 
         HttpRequest.Builder b = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -126,12 +127,26 @@ public final class RestJsonInvoker implements Invoker {
         return path;
     }
 
-    private static String buildQueryString(Map<String, String> params) {
-        if (params.isEmpty()) {
+    /**
+     * Literal query string declared in the {@code @http} URI template (e.g. an
+     * {@code ?x-id=...} disambiguator). Must be sent or the request can degrade to
+     * a different operation. Empty when the template has no query part.
+     */
+    private static String staticQuery(String template) {
+        int q = template.indexOf('?');
+        return q >= 0 ? template.substring(q + 1) : "";
+    }
+
+    private static String buildQueryString(String staticQuery, Map<String, String> params) {
+        if (staticQuery.isEmpty() && params.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder("?");
         boolean first = true;
+        if (!staticQuery.isEmpty()) {
+            sb.append(staticQuery); // model literal, emitted verbatim
+            first = false;
+        }
         for (Map.Entry<String, String> e : params.entrySet()) {
             if (!first) {
                 sb.append('&');
