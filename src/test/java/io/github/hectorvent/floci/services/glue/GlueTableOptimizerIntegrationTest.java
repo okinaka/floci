@@ -2,11 +2,14 @@ package io.github.hectorvent.floci.services.glue;
 
 import io.github.hectorvent.floci.testing.RestAssuredJsonUtils;
 import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -17,14 +20,34 @@ class GlueTableOptimizerIntegrationTest {
 
     private static final String CONTENT_TYPE = "application/x-amz-json-1.1";
     private static final String CATALOG_ID = "000000000000";
-    private static final String DATABASE = "optimizer-db";
-    private static final String TABLE = "optimizer-table";
+    private static final String SUFFIX = UUID.randomUUID().toString().substring(0, 8);
+    private static final String DATABASE = "optimizer-db-" + SUFFIX;
+    private static final String TABLE = "optimizer-table-" + SUFFIX;
     private static final String ROLE_ARN =
             "arn:aws:iam::000000000000:role/email-archive-summaries-table-optimizer-role";
 
     @BeforeAll
     static void configureRestAssured() {
         RestAssuredJsonUtils.configureAwsContentTypes();
+    }
+
+    @AfterAll
+    static void cleanup() {
+        deleteSilently("AWSGlue.DeleteTableOptimizer",
+                "{ \"CatalogId\": \"" + CATALOG_ID + "\", \"DatabaseName\": \"" + DATABASE
+                        + "\", \"TableName\": \"" + TABLE + "\", \"Type\": \"compaction\" }");
+        deleteSilently("AWSGlue.DeleteTable",
+                "{ \"DatabaseName\": \"" + DATABASE + "\", \"Name\": \"" + TABLE + "\" }");
+        deleteSilently("AWSGlue.DeleteDatabase", "{ \"Name\": \"" + DATABASE + "\" }");
+    }
+
+    private static void deleteSilently(String target, String body) {
+        try {
+            given().contentType(CONTENT_TYPE).header("X-Amz-Target", target).body(body).when().post("/");
+        }
+        catch (Exception ignored) {
+            // best-effort teardown
+        }
     }
 
     @Test

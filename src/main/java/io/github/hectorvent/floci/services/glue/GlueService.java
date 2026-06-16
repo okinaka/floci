@@ -594,9 +594,12 @@ public class GlueService {
         LOG.infov("Deleted Glue TableOptimizer: {0}.{1} ({2})", databaseName, tableName, type);
     }
 
+    public String resolveCatalogId(String catalogId) {
+        return catalogId == null ? regionResolver.getAccountId() : catalogId;
+    }
+
     private String tableOptimizerKey(String catalogId, String databaseName, String tableName, String type) {
-        String catalog = catalogId == null ? regionResolver.getAccountId() : catalogId;
-        return catalog + ":" + normalizeName(databaseName) + ":" + normalizeName(tableName) + ":" + type;
+        return resolveCatalogId(catalogId) + ":" + normalizeName(databaseName) + ":" + normalizeName(tableName) + ":" + type;
     }
 
     private void validateSchemaReference(Table table) {
