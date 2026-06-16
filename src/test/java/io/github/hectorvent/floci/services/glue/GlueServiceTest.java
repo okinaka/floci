@@ -1158,6 +1158,62 @@ class GlueServiceTest {
     }
 
     @Test
+    void updateTableIcebergAppliesTableInputAndBackfillsMetadataLocation() {
+        // Create an Iceberg table with a location.
+        Table table = new Table();
+        table.setName("iceberg_combo");
+        OpenTableFormatInput.IcebergField id = new OpenTableFormatInput.IcebergField();
+        id.setName("id");
+        id.setType("uuid");
+        OpenTableFormatInput.IcebergSchema createSchema = new OpenTableFormatInput.IcebergSchema();
+        createSchema.setFields(java.util.List.of(id));
+        OpenTableFormatInput.CreateIcebergTableInput createInput = new OpenTableFormatInput.CreateIcebergTableInput();
+        createInput.setLocation("s3://bucket/iceberg_combo");
+        createInput.setSchema(createSchema);
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setCreateIcebergTableInput(createInput);
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+        glueService.createTable("db1", table, otf);
+
+        // Iceberg update WITHOUT a Location, but WITH a non-Iceberg TableInput (description/owner).
+        OpenTableFormatInput.IcebergField idField = new OpenTableFormatInput.IcebergField();
+        idField.setName("id");
+        idField.setType("uuid");
+        OpenTableFormatInput.IcebergField emailField = new OpenTableFormatInput.IcebergField();
+        emailField.setName("email");
+        emailField.setType("string");
+        OpenTableFormatInput.IcebergSchema newSchema = new OpenTableFormatInput.IcebergSchema();
+        newSchema.setFields(java.util.List.of(idField, emailField));
+        UpdateOpenTableFormatInput.IcebergTableUpdate tableUpdate = new UpdateOpenTableFormatInput.IcebergTableUpdate();
+        tableUpdate.setSchema(newSchema);
+        UpdateOpenTableFormatInput.UpdateIcebergTableInput updateTableInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergTableInput();
+        updateTableInput.setUpdates(java.util.List.of(tableUpdate));
+        UpdateOpenTableFormatInput.UpdateIcebergInput updateIcebergInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergInput();
+        updateIcebergInput.setUpdateIcebergTableInput(updateTableInput);
+        UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
+        update.setUpdateIcebergInput(updateIcebergInput);
+
+        Table tableInput = new Table();
+        tableInput.setName("iceberg_combo");
+        tableInput.setDescription("updated description");
+        tableInput.setOwner("data-team");
+
+        glueService.updateTableIceberg("db1", "iceberg_combo", tableInput, update, null, false);
+
+        Table updated = glueService.getTable("db1", "iceberg_combo");
+        // TableInput fields applied (not dropped).
+        assertEquals("updated description", updated.getDescription());
+        assertEquals("data-team", updated.getOwner());
+        // Iceberg schema evolution applied.
+        assertEquals(2, updated.getStorageDescriptor().getColumns().size());
+        // metadata_location backfilled from the existing location even though no Location was in the update.
+        assertTrue(updated.getParameters().get("metadata_location").startsWith("s3://bucket/iceberg_combo"));
+    }
+
+    @Test
     void updateTableIcebergOnMissingTableThrows() {
         UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
         AwsException exception = assertThrows(AwsException.class,

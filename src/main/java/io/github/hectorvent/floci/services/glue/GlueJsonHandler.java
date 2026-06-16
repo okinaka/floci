@@ -102,10 +102,15 @@ public class GlueJsonHandler {
             case "UpdateTable" -> {
                 String dbName = request.get("DatabaseName").asText();
                 if (request.hasNonNull("UpdateOpenTableFormatInput")) {
-                    String tableName = request.get("Name").asText();
                     UpdateOpenTableFormatInput update = mapper.treeToValue(
                             request.get("UpdateOpenTableFormatInput"), UpdateOpenTableFormatInput.class);
-                    glueService.updateTableIceberg(dbName, tableName, update,
+                    Table tableInput = request.hasNonNull("TableInput")
+                            ? mapper.treeToValue(request.get("TableInput"), Table.class)
+                            : null;
+                    String tableName = request.hasNonNull("Name")
+                            ? request.get("Name").asText()
+                            : tableInput != null ? tableInput.getName() : null;
+                    glueService.updateTableIceberg(dbName, tableName, tableInput, update,
                             request.path("VersionId").asText(null), request.path("SkipArchive").asBoolean(false));
                 } else {
                     Table table = mapper.treeToValue(request.get("TableInput"), Table.class);

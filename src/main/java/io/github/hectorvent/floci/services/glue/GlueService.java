@@ -905,6 +905,12 @@ public class GlueService {
     public synchronized void updateTableIceberg(String databaseName, String tableName,
                                                 UpdateOpenTableFormatInput update,
                                                 String versionId, boolean skipArchive) {
+        updateTableIceberg(databaseName, tableName, null, update, versionId, skipArchive);
+    }
+
+    public synchronized void updateTableIceberg(String databaseName, String tableName, Table tableInput,
+                                                UpdateOpenTableFormatInput update,
+                                                String versionId, boolean skipArchive) {
         getDatabase(databaseName);
         String key = tableKey(databaseName, tableName);
         Table existing = tableStore.get(key)
@@ -918,11 +924,49 @@ public class GlueService {
             tableVersionStore.put(tableVersionKey(existing.getDatabaseName(), existing.getName(), existing.getVersionId()),
                     copyTable(existing));
         }
+        overlayTableInput(existing, tableInput);
         applyIcebergUpdates(existing, update);
         existing.setUpdateTime(Instant.now());
         existing.setVersionId(nextVersionId(existing.getVersionId()));
         tableStore.put(key, existing);
         LOG.infov("Updated Glue Iceberg Table: {0}.{1}", databaseName, tableName);
+    }
+
+    /**
+     * Overlays the non-null mutable fields of a supplied {@code TableInput} onto the existing table when
+     * an {@code UpdateTable} request carries both {@code TableInput} and {@code UpdateOpenTableFormatInput}.
+     * Applied as a partial overlay (not a full replace) so a minimal/echo TableInput does not clobber
+     * Iceberg-managed fields (columns/storage descriptor are owned by the Iceberg update).
+     */
+    private void overlayTableInput(Table existing, Table tableInput) {
+        if (tableInput == null) {
+            return;
+        }
+        if (tableInput.getDescription() != null) {
+            existing.setDescription(tableInput.getDescription());
+        }
+        if (tableInput.getOwner() != null) {
+            existing.setOwner(tableInput.getOwner());
+        }
+        if (tableInput.getPartitionKeys() != null) {
+            existing.setPartitionKeys(tableInput.getPartitionKeys());
+        }
+        if (tableInput.getViewOriginalText() != null) {
+            existing.setViewOriginalText(tableInput.getViewOriginalText());
+        }
+        if (tableInput.getViewExpandedText() != null) {
+            existing.setViewExpandedText(tableInput.getViewExpandedText());
+        }
+        if (tableInput.getTableType() != null) {
+            existing.setTableType(tableInput.getTableType());
+        }
+        if (tableInput.getParameters() != null) {
+            Map<String, String> merged = existing.getParameters() == null
+                    ? new LinkedHashMap<>()
+                    : new LinkedHashMap<>(existing.getParameters());
+            merged.putAll(tableInput.getParameters());
+            existing.setParameters(merged);
+        }
     }
 
     private void applyIcebergUpdates(Table table, UpdateOpenTableFormatInput update) {
@@ -954,6 +998,9 @@ public class GlueService {
             }
         }
         parameters.put("table_type", "ICEBERG");
+        if (!parameters.containsKey("metadata_location") && sd.getLocation() != null) {
+            parameters.put("metadata_location", icebergMetadataLocation(sd.getLocation()));
+        }
         table.setParameters(parameters);
     }
 
