@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.services.glue.model.Database;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.Partition;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.UpdateOpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.model.Registry;
@@ -78,7 +80,13 @@ public class GlueJsonHandler {
             case "CreateTable" -> {
                 String dbName = request.get("DatabaseName").asText();
                 Table table = mapper.treeToValue(request.get("TableInput"), Table.class);
-                glueService.createTable(dbName, table);
+                if (request.hasNonNull("OpenTableFormatInput")) {
+                    OpenTableFormatInput openTableFormatInput =
+                            mapper.treeToValue(request.get("OpenTableFormatInput"), OpenTableFormatInput.class);
+                    glueService.createTable(dbName, table, openTableFormatInput);
+                } else {
+                    glueService.createTable(dbName, table);
+                }
                 yield Response.ok().build();
             }
             case "GetTable" -> {
@@ -93,9 +101,17 @@ public class GlueJsonHandler {
             }
             case "UpdateTable" -> {
                 String dbName = request.get("DatabaseName").asText();
-                Table table = mapper.treeToValue(request.get("TableInput"), Table.class);
-                glueService.updateTable(dbName, table, request.path("VersionId").asText(null),
-                        request.path("SkipArchive").asBoolean(false));
+                if (request.hasNonNull("UpdateOpenTableFormatInput")) {
+                    String tableName = request.get("Name").asText();
+                    UpdateOpenTableFormatInput update = mapper.treeToValue(
+                            request.get("UpdateOpenTableFormatInput"), UpdateOpenTableFormatInput.class);
+                    glueService.updateTableIceberg(dbName, tableName, update,
+                            request.path("VersionId").asText(null), request.path("SkipArchive").asBoolean(false));
+                } else {
+                    Table table = mapper.treeToValue(request.get("TableInput"), Table.class);
+                    glueService.updateTable(dbName, table, request.path("VersionId").asText(null),
+                            request.path("SkipArchive").asBoolean(false));
+                }
                 yield Response.ok().build();
             }
             case "GetTableVersions" -> {

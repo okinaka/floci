@@ -4,8 +4,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.services.glue.GlueClient;
 import software.amazon.awssdk.services.glue.model.BatchCreatePartitionRequest;
+import software.amazon.awssdk.services.glue.model.CreateIcebergTableInput;
+import software.amazon.awssdk.services.glue.model.IcebergInput;
+import software.amazon.awssdk.services.glue.model.IcebergSchema;
+import software.amazon.awssdk.services.glue.model.IcebergStructField;
+import software.amazon.awssdk.services.glue.model.MetadataOperation;
+import software.amazon.awssdk.services.glue.model.OpenTableFormatInput;
 import software.amazon.awssdk.services.glue.model.BatchDeleteTableRequest;
 import software.amazon.awssdk.services.glue.model.BatchGetPartitionRequest;
 import software.amazon.awssdk.services.glue.model.BatchUpdatePartitionRequest;
@@ -69,6 +76,8 @@ class GlueCatalogTest {
     private static final String SECOND_TABLE_NAME = "catalog_table_second";
     private static final String FUNCTION_NAME = "catalog_function";
     private static final String DATABASE_TAGGED_NAME = TestFixtures.uniqueName("catalog_tagged_db");
+    private static final String ICEBERG_DATABASE_NAME = TestFixtures.uniqueName("catalog_iceberg_db");
+    private static final String ICEBERG_TABLE_NAME = "email_archive_summaries";
 
     private static GlueClient glue;
     private static ResourceGroupsTaggingApiClient tagging;
@@ -120,6 +129,19 @@ class GlueCatalogTest {
         try {
             glue.deleteDatabase(DeleteDatabaseRequest.builder()
                     .name(DATABASE_NAME)
+                    .build());
+        }
+        catch (Exception ignored) {}
+        try {
+            glue.deleteTable(DeleteTableRequest.builder()
+                    .databaseName(ICEBERG_DATABASE_NAME)
+                    .name(ICEBERG_TABLE_NAME)
+                    .build());
+        }
+        catch (Exception ignored) {}
+        try {
+            glue.deleteDatabase(DeleteDatabaseRequest.builder()
+                    .name(ICEBERG_DATABASE_NAME)
                     .build());
         }
         catch (Exception ignored) {}
@@ -529,6 +551,86 @@ class GlueCatalogTest {
                     .containsEntry("Environment", "dev")
                     .containsEntry("Project", "project1");
         });
+    }
+
+    @Test
+    @DisplayName("CreateTable with OpenTableFormatInput creates an Iceberg catalog table")
+    void createIcebergTable() {
+        glue.createDatabase(CreateDatabaseRequest.builder()
+                .databaseInput(DatabaseInput.builder().name(ICEBERG_DATABASE_NAME).build())
+                .build());
+
+        String location = "s3://floci-glue-catalog/" + ICEBERG_DATABASE_NAME + "/" + ICEBERG_TABLE_NAME;
+        Document listType = Document.mapBuilder()
+                .putString("type", "list")
+                .putNumber("element-id", 10)
+                .putString("element", "string")
+                .putBoolean("element-required", false)
+                .build();
+
+        glue.createTable(CreateTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .tableInput(TableInput.builder()
+                        .name(ICEBERG_TABLE_NAME)
+                        .tableType("EXTERNAL_TABLE")
+                        .build())
+                .openTableFormatInput(OpenTableFormatInput.builder()
+                        .icebergInput(IcebergInput.builder()
+                                .metadataOperation(MetadataOperation.CREATE)
+                                .version("2")
+                                .createIcebergTableInput(CreateIcebergTableInput.builder()
+                                        .location(location)
+                                        .schema(IcebergSchema.builder()
+                                                .schemaId(0)
+                                                .type("struct")
+                                                .fields(
+                                                        IcebergStructField.builder()
+                                                                .id(1)
+                                                                .name("mail_notification_id")
+                                                                .required(true)
+                                                                .type(Document.fromString("uuid"))
+                                                                .build(),
+                                                        IcebergStructField.builder()
+                                                                .id(2)
+                                                                .name("created_at")
+                                                                .required(true)
+                                                                .type(Document.fromString("timestamptz"))
+                                                                .build(),
+                                                        IcebergStructField.builder()
+                                                                .id(5)
+                                                                .name("to_address_mail_addresses")
+                                                                .required(false)
+                                                                .type(listType)
+                                                                .build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build());
+
+        var table = glue.getTable(GetTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .name(ICEBERG_TABLE_NAME)
+                .build()).table();
+
+        assertThat(table.name()).isEqualTo(ICEBERG_TABLE_NAME);
+        assertThat(table.parameters()).containsEntry("table_type", "ICEBERG");
+        assertThat(table.parameters().get("metadata_location")).startsWith(location);
+        assertThat(table.storageDescriptor().location()).isEqualTo(location);
+        assertThat(table.storageDescriptor().columns())
+                .extracting(Column::name)
+                .containsExactly("mail_notification_id", "created_at", "to_address_mail_addresses");
+        assertThat(table.storageDescriptor().columns())
+                .extracting(Column::type)
+                .containsExactly("string", "timestamp", "array<string>");
+
+        glue.deleteTable(DeleteTableRequest.builder()
+                .databaseName(ICEBERG_DATABASE_NAME)
+                .name(ICEBERG_TABLE_NAME)
+                .build());
+        glue.deleteDatabase(DeleteDatabaseRequest.builder()
+                .name(ICEBERG_DATABASE_NAME)
+                .build());
     }
 
     private static TableInput tableInput(String description) {

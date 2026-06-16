@@ -9,9 +9,11 @@ import io.github.hectorvent.floci.core.storage.StorageFactory;
 import io.github.hectorvent.floci.services.glue.model.Column;
 import io.github.hectorvent.floci.services.glue.model.Database;
 import io.github.hectorvent.floci.services.glue.model.Partition;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.SchemaReference;
 import io.github.hectorvent.floci.services.glue.model.StorageDescriptor;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.UpdateOpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.SchemaToColumnsConverter;
@@ -161,6 +163,11 @@ public class GlueService {
         databaseStore.delete(databaseName);
         resourceGroupsTaggingService.deleteResources(List.of(databaseArn(region, databaseName)), region);
         LOG.infov("Deleted Glue Database: {0}", name);
+    }
+
+    public void createTable(String databaseName, Table table, OpenTableFormatInput openTableFormatInput) {
+        applyOpenTableFormat(table, openTableFormatInput);
+        createTable(databaseName, table);
     }
 
     public void createTable(String databaseName, Table table) {
@@ -837,6 +844,193 @@ public class GlueService {
 
     private String databaseArn(String region, String databaseName) {
         return regionResolver.buildArn("glue", region, "database/" + databaseName);
+    }
+
+    private static final String ICEBERG_INPUT_FORMAT = "org.apache.iceberg.mr.hive.HiveIcebergInputFormat";
+    private static final String ICEBERG_OUTPUT_FORMAT = "org.apache.iceberg.mr.hive.HiveIcebergOutputFormat";
+    private static final String ICEBERG_SERDE = "org.apache.iceberg.mr.hive.HiveIcebergSerDe";
+
+    /**
+     * Translates an Iceberg {@code OpenTableFormatInput} into the catalog representation of a table
+     * (columns, storage descriptor, and Iceberg parameters), mirroring what AWS Glue persists when a
+     * table is created with {@code CreateIcebergTableInput}. No Iceberg metadata is written to S3.
+     */
+    private void applyOpenTableFormat(Table table, OpenTableFormatInput openTableFormatInput) {
+        if (openTableFormatInput == null || openTableFormatInput.getIcebergInput() == null) {
+            return;
+        }
+        OpenTableFormatInput.CreateIcebergTableInput input =
+                openTableFormatInput.getIcebergInput().getCreateIcebergTableInput();
+        if (input == null) {
+            return;
+        }
+
+        StorageDescriptor sd = table.getStorageDescriptor();
+        if (sd == null) {
+            sd = new StorageDescriptor();
+            table.setStorageDescriptor(sd);
+        }
+        if (input.getLocation() != null) {
+            sd.setLocation(input.getLocation());
+        }
+        if (input.getSchema() != null && input.getSchema().getFields() != null) {
+            sd.setColumns(icebergColumns(input.getSchema()));
+        }
+        sd.setInputFormat(ICEBERG_INPUT_FORMAT);
+        sd.setOutputFormat(ICEBERG_OUTPUT_FORMAT);
+        StorageDescriptor.SerDeInfo serdeInfo = new StorageDescriptor.SerDeInfo();
+        serdeInfo.setSerializationLibrary(ICEBERG_SERDE);
+        sd.setSerdeInfo(serdeInfo);
+
+        Map<String, String> parameters = table.getParameters() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(table.getParameters());
+        parameters.put("table_type", "ICEBERG");
+        if (input.getLocation() != null && !parameters.containsKey("metadata_location")) {
+            parameters.put("metadata_location", icebergMetadataLocation(input.getLocation()));
+        }
+        if (openTableFormatInput.getIcebergInput().getVersion() != null) {
+            parameters.put("format-version", openTableFormatInput.getIcebergInput().getVersion());
+        }
+        table.setParameters(parameters);
+        if (table.getTableType() == null) {
+            table.setTableType("EXTERNAL_TABLE");
+        }
+    }
+
+    /**
+     * Applies an Iceberg {@code UpdateOpenTableFormatInput} to an existing catalog table: re-derives
+     * columns from an updated schema, updates the location, and merges table properties. Catalog-only;
+     * mirrors AWS Glue {@code UpdateTable} with {@code updateOpenTableFormatInput} (no S3 metadata write).
+     */
+    public synchronized void updateTableIceberg(String databaseName, String tableName,
+                                                UpdateOpenTableFormatInput update,
+                                                String versionId, boolean skipArchive) {
+        getDatabase(databaseName);
+        String key = tableKey(databaseName, tableName);
+        Table existing = tableStore.get(key)
+                .orElseThrow(() -> new AwsException("EntityNotFoundException",
+                        "Table not found: " + databaseName + "." + tableName, 400));
+        if (versionId != null && !versionId.equals(existing.getVersionId())) {
+            throw new AwsException("ConcurrentModificationException",
+                    "Update table failed due to concurrent modifications.", 400);
+        }
+        if (!skipArchive) {
+            tableVersionStore.put(tableVersionKey(existing.getDatabaseName(), existing.getName(), existing.getVersionId()),
+                    copyTable(existing));
+        }
+        applyIcebergUpdates(existing, update);
+        existing.setUpdateTime(Instant.now());
+        existing.setVersionId(nextVersionId(existing.getVersionId()));
+        tableStore.put(key, existing);
+        LOG.infov("Updated Glue Iceberg Table: {0}.{1}", databaseName, tableName);
+    }
+
+    private void applyIcebergUpdates(Table table, UpdateOpenTableFormatInput update) {
+        if (update == null || update.getUpdateIcebergInput() == null
+                || update.getUpdateIcebergInput().getUpdateIcebergTableInput() == null
+                || update.getUpdateIcebergInput().getUpdateIcebergTableInput().getUpdates() == null) {
+            return;
+        }
+        StorageDescriptor sd = table.getStorageDescriptor();
+        if (sd == null) {
+            sd = new StorageDescriptor();
+            table.setStorageDescriptor(sd);
+        }
+        Map<String, String> parameters = table.getParameters() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(table.getParameters());
+        for (UpdateOpenTableFormatInput.IcebergTableUpdate tableUpdate
+                : update.getUpdateIcebergInput().getUpdateIcebergTableInput().getUpdates()) {
+            if (tableUpdate.getSchema() != null && tableUpdate.getSchema().getFields() != null) {
+                sd.setColumns(icebergColumns(tableUpdate.getSchema()));
+            }
+            if (tableUpdate.getLocation() != null) {
+                sd.setLocation(tableUpdate.getLocation());
+                parameters.put("metadata_location", icebergMetadataLocation(tableUpdate.getLocation()));
+            }
+            if (tableUpdate.getProperties() != null) {
+                parameters.putAll(tableUpdate.getProperties());
+            }
+        }
+        parameters.put("table_type", "ICEBERG");
+        table.setParameters(parameters);
+    }
+
+    private static List<Column> icebergColumns(OpenTableFormatInput.IcebergSchema schema) {
+        List<Column> columns = new ArrayList<>();
+        for (OpenTableFormatInput.IcebergField field : schema.getFields()) {
+            columns.add(new Column(field.getName(), icebergTypeToHive(field.getType())));
+        }
+        return columns;
+    }
+
+    private static String icebergMetadataLocation(String location) {
+        String base = location;
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json";
+    }
+
+    /**
+     * Maps an Iceberg type (a JSON document: either a primitive name string or a nested
+     * list/map/struct object) to the equivalent Hive/Glue column type string. Best-effort:
+     * unknown primitives fall back to "string".
+     */
+    @SuppressWarnings("unchecked")
+    static String icebergTypeToHive(Object type) {
+        if (type == null) {
+            return "string";
+        }
+        if (type instanceof String name) {
+            return icebergPrimitiveToHive(name);
+        }
+        if (type instanceof Map<?, ?> node) {
+            Map<String, Object> map = (Map<String, Object>) node;
+            Object kind = map.get("type");
+            if ("list".equals(kind)) {
+                return "array<" + icebergTypeToHive(map.get("element")) + ">";
+            }
+            if ("map".equals(kind)) {
+                return "map<" + icebergTypeToHive(map.get("key")) + "," + icebergTypeToHive(map.get("value")) + ">";
+            }
+            if ("struct".equals(kind) && map.get("fields") instanceof List<?> fields) {
+                List<String> parts = new ArrayList<>();
+                for (Object f : fields) {
+                    if (f instanceof Map<?, ?> fieldMap) {
+                        Object fieldName = ((Map<String, Object>) fieldMap).get("name");
+                        Object fieldType = ((Map<String, Object>) fieldMap).get("type");
+                        parts.add(fieldName + ":" + icebergTypeToHive(fieldType));
+                    }
+                }
+                return "struct<" + String.join(",", parts) + ">";
+            }
+            return kind != null ? icebergPrimitiveToHive(kind.toString()) : "string";
+        }
+        return "string";
+    }
+
+    private static String icebergPrimitiveToHive(String name) {
+        if (name == null) {
+            return "string";
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("decimal") || lower.startsWith("fixed")) {
+            return lower.startsWith("decimal") ? lower : "binary";
+        }
+        return switch (lower) {
+            case "boolean" -> "boolean";
+            case "int", "integer" -> "int";
+            case "long" -> "bigint";
+            case "float" -> "float";
+            case "double" -> "double";
+            case "date" -> "date";
+            case "timestamp", "timestamptz", "timestamp_ns", "timestamptz_ns" -> "timestamp";
+            case "binary" -> "binary";
+            case "string", "uuid", "time" -> "string";
+            default -> "string";
+        };
     }
 
     private static Pattern compileFunctionPattern(String pattern) {

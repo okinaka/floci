@@ -8,10 +8,12 @@ import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
 import io.github.hectorvent.floci.services.glue.model.Column;
 import io.github.hectorvent.floci.services.glue.model.Database;
+import io.github.hectorvent.floci.services.glue.model.OpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.Partition;
 import io.github.hectorvent.floci.services.glue.model.SchemaReference;
 import io.github.hectorvent.floci.services.glue.model.StorageDescriptor;
 import io.github.hectorvent.floci.services.glue.model.Table;
+import io.github.hectorvent.floci.services.glue.model.UpdateOpenTableFormatInput;
 import io.github.hectorvent.floci.services.glue.model.UserDefinedFunction;
 import io.github.hectorvent.floci.services.glue.schemaregistry.GlueSchemaRegistryService;
 import io.github.hectorvent.floci.services.glue.schemaregistry.model.RegistryId;
@@ -1009,6 +1011,144 @@ class GlueServiceTest {
         sd.setSchemaReference(ref);
         table.setStorageDescriptor(sd);
         return table;
+    }
+
+    @Test
+    void icebergTypeToHiveMapsPrimitivesAndLists() {
+        assertEquals("string", GlueService.icebergTypeToHive("uuid"));
+        assertEquals("string", GlueService.icebergTypeToHive("string"));
+        assertEquals("timestamp", GlueService.icebergTypeToHive("timestamptz"));
+        assertEquals("bigint", GlueService.icebergTypeToHive("long"));
+        assertEquals("array<string>",
+                GlueService.icebergTypeToHive(Map.of("type", "list", "element", "string")));
+        assertEquals("string", GlueService.icebergTypeToHive((Object) null));
+    }
+
+    @Test
+    void createIcebergTableDerivesColumnsAndParameters() {
+        Table table = new Table();
+        table.setName("iceberg_table");
+        table.setTableType("EXTERNAL_TABLE");
+
+        OpenTableFormatInput.IcebergField idField = new OpenTableFormatInput.IcebergField();
+        idField.setName("id");
+        idField.setType("uuid");
+        OpenTableFormatInput.IcebergField tsField = new OpenTableFormatInput.IcebergField();
+        tsField.setName("created_at");
+        tsField.setType("timestamptz");
+
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setType("struct");
+        schema.setFields(java.util.List.of(idField, tsField));
+
+        OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
+        input.setLocation("s3://bucket/iceberg_table");
+        input.setSchema(schema);
+
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setMetadataOperation("CREATE");
+        icebergInput.setVersion("2");
+        icebergInput.setCreateIcebergTableInput(input);
+
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+
+        glueService.createTable("db1", table, otf);
+
+        Table fetched = glueService.getTable("db1", "iceberg_table");
+        assertEquals("ICEBERG", fetched.getParameters().get("table_type"));
+        assertEquals("2", fetched.getParameters().get("format-version"));
+        assertTrue(fetched.getParameters().get("metadata_location").startsWith("s3://bucket/iceberg_table"));
+        assertEquals("s3://bucket/iceberg_table", fetched.getStorageDescriptor().getLocation());
+        assertEquals(2, fetched.getStorageDescriptor().getColumns().size());
+        assertEquals("string", fetched.getStorageDescriptor().getColumns().get(0).getType());
+        assertEquals("timestamp", fetched.getStorageDescriptor().getColumns().get(1).getType());
+    }
+
+    @Test
+    void updateTableIcebergReDerivesColumnsAndBumpsVersion() {
+        Table table = new Table();
+        table.setName("iceberg_evolve");
+        OpenTableFormatInput.IcebergField id = new OpenTableFormatInput.IcebergField();
+        id.setName("id");
+        id.setType("uuid");
+        OpenTableFormatInput.IcebergSchema createSchema = new OpenTableFormatInput.IcebergSchema();
+        createSchema.setFields(java.util.List.of(id));
+        OpenTableFormatInput.CreateIcebergTableInput createInput = new OpenTableFormatInput.CreateIcebergTableInput();
+        createInput.setLocation("s3://bucket/iceberg_evolve");
+        createInput.setSchema(createSchema);
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setCreateIcebergTableInput(createInput);
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+        glueService.createTable("db1", table, otf);
+        assertEquals("0", glueService.getTable("db1", "iceberg_evolve").getVersionId());
+
+        // Evolve schema: add a column and change location.
+        OpenTableFormatInput.IcebergField idField = new OpenTableFormatInput.IcebergField();
+        idField.setName("id");
+        idField.setType("uuid");
+        OpenTableFormatInput.IcebergField emailField = new OpenTableFormatInput.IcebergField();
+        emailField.setName("email");
+        emailField.setType("string");
+        OpenTableFormatInput.IcebergSchema newSchema = new OpenTableFormatInput.IcebergSchema();
+        newSchema.setFields(java.util.List.of(idField, emailField));
+
+        UpdateOpenTableFormatInput.IcebergTableUpdate tableUpdate = new UpdateOpenTableFormatInput.IcebergTableUpdate();
+        tableUpdate.setSchema(newSchema);
+        tableUpdate.setProperties(Map.of("write.format.default", "parquet"));
+        UpdateOpenTableFormatInput.UpdateIcebergTableInput updateTableInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergTableInput();
+        updateTableInput.setUpdates(java.util.List.of(tableUpdate));
+        UpdateOpenTableFormatInput.UpdateIcebergInput updateIcebergInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergInput();
+        updateIcebergInput.setUpdateIcebergTableInput(updateTableInput);
+        UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
+        update.setUpdateIcebergInput(updateIcebergInput);
+
+        glueService.updateTableIceberg("db1", "iceberg_evolve", update, "0", false);
+
+        Table updated = glueService.getTable("db1", "iceberg_evolve");
+        assertEquals("1", updated.getVersionId());
+        assertEquals("ICEBERG", updated.getParameters().get("table_type"));
+        assertEquals("parquet", updated.getParameters().get("write.format.default"));
+        assertEquals(2, updated.getStorageDescriptor().getColumns().size());
+        assertEquals("email", updated.getStorageDescriptor().getColumns().get(1).getName());
+        assertEquals("string", updated.getStorageDescriptor().getColumns().get(1).getType());
+        // Previous version archived.
+        assertEquals(2, glueService.getTableVersions("db1", "iceberg_evolve").size());
+    }
+
+    @Test
+    void updateTableIcebergOnMissingTableThrows() {
+        UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
+        AwsException exception = assertThrows(AwsException.class,
+                () -> glueService.updateTableIceberg("db1", "missing", update, null, false));
+        assertEquals("EntityNotFoundException", exception.getErrorCode());
+    }
+
+    @Test
+    void createIcebergTableNormalizesTrailingSlashInMetadataLocation() {
+        Table table = new Table();
+        table.setName("iceberg_slash");
+        OpenTableFormatInput.IcebergField field = new OpenTableFormatInput.IcebergField();
+        field.setName("id");
+        field.setType("uuid");
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setFields(java.util.List.of(field));
+        OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
+        input.setLocation("s3://bucket/iceberg_slash/");
+        input.setSchema(schema);
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setCreateIcebergTableInput(input);
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+
+        glueService.createTable("db1", table, otf);
+
+        String metadataLocation = glueService.getTable("db1", "iceberg_slash").getParameters().get("metadata_location");
+        assertEquals("s3://bucket/iceberg_slash/metadata/00000-00000000-0000-0000-0000-000000000000.metadata.json",
+                metadataLocation);
     }
 
     private static Map<String, Object> columnStatistics(String columnName) {
