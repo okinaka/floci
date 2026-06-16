@@ -59,8 +59,9 @@ public final class RestXmlInvoker implements Invoker {
                 new IllegalStateException("Operation " + op.getId() + " lacks @http trait"));
 
         String method = httpTrait.getMethod();
-        String path = resolvePath(httpTrait.getUri().toString(), variant.pathParams());
-        String url = baseUrl + path + buildQueryString(variant.queryParams());
+        String uri = httpTrait.getUri().toString();
+        String path = resolvePath(uri, variant.pathParams());
+        String url = baseUrl + path + buildQueryString(staticQuery(uri), variant.queryParams());
 
         HttpRequest.Builder b = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -110,12 +111,28 @@ public final class RestXmlInvoker implements Invoker {
         return path;
     }
 
-    private static String buildQueryString(Map<String, String> params) {
-        if (params.isEmpty()) {
+    /**
+     * Literal query string declared in the {@code @http} URI template — e.g.
+     * {@code tagging} in {@code /{Bucket}/{Key+}?tagging}. S3 disambiguates many
+     * sub-resource operations by such a literal, so it must be sent or the request
+     * degrades to a different operation (e.g. plain GetObject). Empty when the
+     * template has no query part.
+     */
+    static String staticQuery(String template) {
+        int q = template.indexOf('?');
+        return q >= 0 ? template.substring(q + 1) : "";
+    }
+
+    private static String buildQueryString(String staticQuery, Map<String, String> params) {
+        if (staticQuery.isEmpty() && params.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder("?");
         boolean first = true;
+        if (!staticQuery.isEmpty()) {
+            sb.append(staticQuery); // model literal, emitted verbatim
+            first = false;
+        }
         for (Map.Entry<String, String> e : params.entrySet()) {
             if (!first) {
                 sb.append('&');
