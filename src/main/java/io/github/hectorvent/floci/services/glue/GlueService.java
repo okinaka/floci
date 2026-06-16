@@ -876,15 +876,14 @@ public class GlueService {
         if (input.getSchema() != null && input.getSchema().getFields() != null) {
             sd.setColumns(icebergColumns(input.getSchema()));
         }
-        sd.setInputFormat(ICEBERG_INPUT_FORMAT);
-        sd.setOutputFormat(ICEBERG_OUTPUT_FORMAT);
-        StorageDescriptor.SerDeInfo serdeInfo = new StorageDescriptor.SerDeInfo();
-        serdeInfo.setSerializationLibrary(ICEBERG_SERDE);
-        sd.setSerdeInfo(serdeInfo);
+        applyIcebergStorageFormats(sd);
 
         Map<String, String> parameters = table.getParameters() == null
                 ? new LinkedHashMap<>()
                 : new LinkedHashMap<>(table.getParameters());
+        if (input.getProperties() != null) {
+            parameters.putAll(input.getProperties());
+        }
         parameters.put("table_type", "ICEBERG");
         if (input.getLocation() != null && !parameters.containsKey("metadata_location")) {
             parameters.put("metadata_location", icebergMetadataLocation(input.getLocation()));
@@ -937,6 +936,7 @@ public class GlueService {
             sd = new StorageDescriptor();
             table.setStorageDescriptor(sd);
         }
+        applyIcebergStorageFormats(sd);
         Map<String, String> parameters = table.getParameters() == null
                 ? new LinkedHashMap<>()
                 : new LinkedHashMap<>(table.getParameters());
@@ -955,6 +955,20 @@ public class GlueService {
         }
         parameters.put("table_type", "ICEBERG");
         table.setParameters(parameters);
+    }
+
+    private static void applyIcebergStorageFormats(StorageDescriptor sd) {
+        if (sd.getInputFormat() == null) {
+            sd.setInputFormat(ICEBERG_INPUT_FORMAT);
+        }
+        if (sd.getOutputFormat() == null) {
+            sd.setOutputFormat(ICEBERG_OUTPUT_FORMAT);
+        }
+        if (sd.getSerdeInfo() == null) {
+            StorageDescriptor.SerDeInfo serdeInfo = new StorageDescriptor.SerDeInfo();
+            serdeInfo.setSerializationLibrary(ICEBERG_SERDE);
+            sd.setSerdeInfo(serdeInfo);
+        }
     }
 
     private static List<Column> icebergColumns(OpenTableFormatInput.IcebergSchema schema) {

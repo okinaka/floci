@@ -1044,6 +1044,7 @@ class GlueServiceTest {
         OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
         input.setLocation("s3://bucket/iceberg_table");
         input.setSchema(schema);
+        input.setProperties(Map.of("write.format.default", "parquet"));
 
         OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
         icebergInput.setMetadataOperation("CREATE");
@@ -1059,6 +1060,7 @@ class GlueServiceTest {
         assertEquals("ICEBERG", fetched.getParameters().get("table_type"));
         assertEquals("2", fetched.getParameters().get("format-version"));
         assertTrue(fetched.getParameters().get("metadata_location").startsWith("s3://bucket/iceberg_table"));
+        assertEquals("parquet", fetched.getParameters().get("write.format.default"));
         assertEquals("s3://bucket/iceberg_table", fetched.getStorageDescriptor().getLocation());
         assertEquals(2, fetched.getStorageDescriptor().getColumns().size());
         assertEquals("string", fetched.getStorageDescriptor().getColumns().get(0).getType());
@@ -1117,6 +1119,42 @@ class GlueServiceTest {
         assertEquals("string", updated.getStorageDescriptor().getColumns().get(1).getType());
         // Previous version archived.
         assertEquals(2, glueService.getTableVersions("db1", "iceberg_evolve").size());
+    }
+
+    @Test
+    void updateTableIcebergPopulatesStorageFormatsWhenMissing() {
+        // Table created without a storage descriptor, then evolved via an Iceberg update.
+        Table table = new Table();
+        table.setName("iceberg_no_sd");
+        glueService.createTable("db1", table);
+
+        OpenTableFormatInput.IcebergField field = new OpenTableFormatInput.IcebergField();
+        field.setName("id");
+        field.setType("uuid");
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setFields(java.util.List.of(field));
+        UpdateOpenTableFormatInput.IcebergTableUpdate tableUpdate = new UpdateOpenTableFormatInput.IcebergTableUpdate();
+        tableUpdate.setSchema(schema);
+        tableUpdate.setLocation("s3://bucket/iceberg_no_sd");
+        UpdateOpenTableFormatInput.UpdateIcebergTableInput updateTableInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergTableInput();
+        updateTableInput.setUpdates(java.util.List.of(tableUpdate));
+        UpdateOpenTableFormatInput.UpdateIcebergInput updateIcebergInput =
+                new UpdateOpenTableFormatInput.UpdateIcebergInput();
+        updateIcebergInput.setUpdateIcebergTableInput(updateTableInput);
+        UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
+        update.setUpdateIcebergInput(updateIcebergInput);
+
+        glueService.updateTableIceberg("db1", "iceberg_no_sd", update, null, false);
+
+        StorageDescriptor sd = glueService.getTable("db1", "iceberg_no_sd").getStorageDescriptor();
+        assertNotNull(sd);
+        assertEquals("org.apache.iceberg.mr.hive.HiveIcebergInputFormat", sd.getInputFormat());
+        assertEquals("org.apache.iceberg.mr.hive.HiveIcebergOutputFormat", sd.getOutputFormat());
+        assertNotNull(sd.getSerdeInfo());
+        assertEquals("org.apache.iceberg.mr.hive.HiveIcebergSerDe", sd.getSerdeInfo().getSerializationLibrary());
+        assertEquals("s3://bucket/iceberg_no_sd", sd.getLocation());
+        assertEquals(1, sd.getColumns().size());
     }
 
     @Test
