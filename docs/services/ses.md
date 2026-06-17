@@ -193,6 +193,10 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `DELETE` | `/v2/email/configuration-sets/{name}/event-destinations/{eventDestinationName}` | `DeleteConfigurationSetEventDestination` |
 | `PUT` | `/v2/email/configuration-sets/{name}/suppression-options` | `PutConfigurationSetSuppressionOptions` |
 | `PUT` | `/v2/email/configuration-sets/{name}/sending` | `PutConfigurationSetSendingOptions` |
+| `PUT` | `/v2/email/configuration-sets/{name}/reputation-options` | `PutConfigurationSetReputationOptions` |
+| `PUT` | `/v2/email/configuration-sets/{name}/tracking-options` | `PutConfigurationSetTrackingOptions` |
+| `PUT` | `/v2/email/configuration-sets/{name}/delivery-options` | `PutConfigurationSetDeliveryOptions` |
+| `PUT` | `/v2/email/configuration-sets/{name}/archiving-options` | `PutConfigurationSetArchivingOptions` |
 | `PUT` | `/v2/email/suppression/addresses` | `PutSuppressedDestination` |
 | `GET` | `/v2/email/suppression/addresses/{EmailAddress}` | `GetSuppressedDestination` |
 | `DELETE` | `/v2/email/suppression/addresses/{EmailAddress}` | `DeleteSuppressedDestination` |
@@ -219,6 +223,8 @@ A successful send without a simulator-address recipient emits only the `Send` ev
 Suppression list entries are stored per region with `Reason` ∈ {`BOUNCE`, `COMPLAINT`}. At send time, a recipient is suppressed when it appears on the suppression list AND its stored `Reason` is contained in the **effective** `SuppressedReasons` for the send. The effective list is the configuration set's `SuppressionOptions.SuppressedReasons` (set via `PutConfigurationSetSuppressionOptions`) when present — an **empty list is preserved as an explicit "no suppression filtering for this configuration set"** — otherwise it falls back to the account-level `AccountSuppressionAttributes.SuppressedReasons` (set via `PutAccountSuppressionAttributes`, default `[BOUNCE, COMPLAINT]`). Following the AWS V2 contract, there is no dedicated `GetConfigurationSetSuppressionOptions` action; once set, the block is read back through `GetConfigurationSet`'s response (the field is omitted when the configuration set has no override).
 
 Suppressed recipients are filtered out of the SMTP relay step (non-suppressed recipients on the same send still reach the relay normally), and the configuration set's event destinations receive a synthetic `Bounce` or `Complaint` event alongside the always-emitted `Send` event. The `SendEmail` API response (`200` + `MessageId`), the stored `SentEmail` visible at `GET /_aws/ses`, and the published event's `mail.destination` all retain the original recipient list — matching the AWS contract that the message is "accepted, just not sent" for suppressed addresses.
+
+A configuration set's `ReputationOptions`, `TrackingOptions`, `DeliveryOptions`, and `ArchivingOptions` can each be set through its dedicated `Put...Options` endpoint or supplied inline to `CreateConfigurationSet`, and are read back through `GetConfigurationSet`. Each option block is omitted from the response when unset, except `ReputationOptions`, which AWS always returns (`ReputationMetricsEnabled` defaults to `true`); an empty-body `PutConfigurationSetReputationOptions` disables it, matching AWS.
 
 Tag operations support these ARN forms: `arn:aws:ses:<region>:<account>:configuration-set/<name>`, `arn:aws:ses:<region>:<account>:template/<name>`, and `arn:aws:ses:<region>:<account>:identity/<email-or-domain>`. Tags supplied to `CreateConfigurationSet`, `CreateEmailTemplate`, and `CreateEmailIdentity` are reachable through `ListTagsForResource`; `UpdateEmailTemplate` does not modify tags. Other resource types return `NotFoundException`.
 
