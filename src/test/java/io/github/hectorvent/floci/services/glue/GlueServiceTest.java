@@ -1217,6 +1217,35 @@ class GlueServiceTest {
     }
 
     @Test
+    void createIcebergTableBackfillsSerdeLibraryWhenSerdeInfoIncomplete() {
+        // TableInput arrives with a SerdeInfo object but no SerializationLibrary (empty object).
+        Table table = new Table();
+        table.setName("iceberg_partial_serde");
+        StorageDescriptor sd = new StorageDescriptor();
+        sd.setSerdeInfo(new StorageDescriptor.SerDeInfo());
+        table.setStorageDescriptor(sd);
+
+        OpenTableFormatInput.IcebergField field = new OpenTableFormatInput.IcebergField();
+        field.setName("id");
+        field.setType("uuid");
+        OpenTableFormatInput.IcebergSchema schema = new OpenTableFormatInput.IcebergSchema();
+        schema.setFields(java.util.List.of(field));
+        OpenTableFormatInput.CreateIcebergTableInput input = new OpenTableFormatInput.CreateIcebergTableInput();
+        input.setLocation("s3://bucket/iceberg_partial_serde");
+        input.setSchema(schema);
+        OpenTableFormatInput.IcebergInput icebergInput = new OpenTableFormatInput.IcebergInput();
+        icebergInput.setCreateIcebergTableInput(input);
+        OpenTableFormatInput otf = new OpenTableFormatInput();
+        otf.setIcebergInput(icebergInput);
+
+        glueService.createTable("db1", table, otf);
+
+        StorageDescriptor fetched = glueService.getTable("db1", "iceberg_partial_serde").getStorageDescriptor();
+        assertEquals("org.apache.iceberg.mr.hive.HiveIcebergSerDe",
+                fetched.getSerdeInfo().getSerializationLibrary());
+    }
+
+    @Test
     void updateTableIcebergOnMissingTableThrows() {
         UpdateOpenTableFormatInput update = new UpdateOpenTableFormatInput();
         AwsException exception = assertThrows(AwsException.class,

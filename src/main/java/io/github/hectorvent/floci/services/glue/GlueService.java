@@ -1018,6 +1018,8 @@ public class GlueService {
             StorageDescriptor.SerDeInfo serdeInfo = new StorageDescriptor.SerDeInfo();
             serdeInfo.setSerializationLibrary(ICEBERG_SERDE);
             sd.setSerdeInfo(serdeInfo);
+        } else if (sd.getSerdeInfo().getSerializationLibrary() == null) {
+            sd.getSerdeInfo().setSerializationLibrary(ICEBERG_SERDE);
         }
     }
 
