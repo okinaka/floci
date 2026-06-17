@@ -1147,7 +1147,10 @@ class GlueServiceTest {
 
         glueService.updateTableIceberg("db1", "iceberg_no_sd", update, null, false);
 
-        StorageDescriptor sd = glueService.getTable("db1", "iceberg_no_sd").getStorageDescriptor();
+        Table evolved = glueService.getTable("db1", "iceberg_no_sd");
+        // TableType defaulted to EXTERNAL_TABLE (mirrors the create path), not left null.
+        assertEquals("EXTERNAL_TABLE", evolved.getTableType());
+        StorageDescriptor sd = evolved.getStorageDescriptor();
         assertNotNull(sd);
         assertEquals("org.apache.iceberg.mr.hive.HiveIcebergInputFormat", sd.getInputFormat());
         assertEquals("org.apache.iceberg.mr.hive.HiveIcebergOutputFormat", sd.getOutputFormat());

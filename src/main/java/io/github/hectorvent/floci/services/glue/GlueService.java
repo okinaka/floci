@@ -1002,6 +1002,9 @@ public class GlueService {
             parameters.put("metadata_location", icebergMetadataLocation(sd.getLocation()));
         }
         table.setParameters(parameters);
+        if (table.getTableType() == null) {
+            table.setTableType("EXTERNAL_TABLE");
+        }
     }
 
     private static void applyIcebergStorageFormats(StorageDescriptor sd) {
