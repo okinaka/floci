@@ -100,62 +100,9 @@ aws glue create-table \
 
 ## Iceberg Tables (catalog-only)
 
-`CreateTable` accepts an `OpenTableFormatInput` and `UpdateTable` accepts an `UpdateOpenTableFormatInput`, so the Terraform AWS provider's `aws_glue_catalog_table` with an `open_table_format_input.iceberg_input` block (and the AWS SDK Iceberg create/update flows) round-trip cleanly.
+`CreateTable` accepts `OpenTableFormatInput` and `UpdateTable` accepts `UpdateOpenTableFormatInput`, so Terraform's `aws_glue_catalog_table` with an `open_table_format_input.iceberg_input` block round-trips. Columns are derived from the Iceberg schema and the table is marked `table_type=ICEBERG`.
 
-This is a **catalog-only** representation:
-
-- Columns are derived from the Iceberg schema fields, and the table is stored with `TableType=EXTERNAL_TABLE`, the Iceberg `InputFormat`/`OutputFormat`/`SerDe`, and the parameters `table_type=ICEBERG`, `format-version`, and `metadata_location`.
-- No Iceberg `metadata.json`, manifests, or data files are written to S3 (`metadata_location` is a placeholder path). Reading actual Iceberg data is out of scope.
-- `UpdateTable` with `UpdateOpenTableFormatInput` applies schema evolution (re-derives columns), location and property changes, archives the previous version, and bumps `VersionId`. A `TableInput` sent alongside it is applied as a partial overlay (it does not clobber the Iceberg-managed columns/storage descriptor).
-
-Iceberg field types are mapped to Glue (Hive) column types:
-
-| Iceberg type | Glue column type |
-|---|---|
-| `uuid`, `string`, `time` | `string` |
-| `int`, `integer` | `int` |
-| `long` | `bigint` |
-| `float` / `double` | `float` / `double` |
-| `boolean` / `date` / `binary` | `boolean` / `date` / `binary` |
-| `timestamp`, `timestamptz` | `timestamp` |
-| `decimal(p,s)` | `decimal(p,s)` |
-| `list` of `T` | `array<T>` |
-| `map` of `K`,`V` | `map<K,V>` |
-| `struct` | `struct<...>` |
-
-```bash
-export AWS_ENDPOINT_URL=http://localhost:4566
-
-aws glue create-table \
-  --database-name analytics \
-  --table-input '{"Name": "email_archive_summaries", "TableType": "EXTERNAL_TABLE"}' \
-  --open-table-format-input '{
-    "IcebergInput": {
-      "MetadataOperation": "CREATE",
-      "Version": "2",
-      "CreateIcebergTableInput": {
-        "Location": "s3://my-bucket/email_archive_summaries",
-        "Schema": {
-          "Type": "struct",
-          "Fields": [
-            {"Id": 1, "Name": "id",         "Required": true,  "Type": "uuid"},
-            {"Id": 2, "Name": "created_at", "Required": true,  "Type": "timestamptz"},
-            {"Id": 3, "Name": "recipients", "Required": false,
-             "Type": {"type": "list", "element-id": 10, "element": "string", "element-required": false}}
-          ]
-        }
-      }
-    }
-  }' \
-  --endpoint-url $AWS_ENDPOINT_URL
-
-# GetTable returns derived columns (id:string, created_at:timestamp, recipients:array<string>)
-# plus parameters table_type=ICEBERG and metadata_location.
-aws glue get-table \
-  --database-name analytics \
-  --name email_archive_summaries \
-  --endpoint-url $AWS_ENDPOINT_URL
-```
+This is **catalog-only**: no Iceberg `metadata.json`, manifests, or data files are written to S3 (`metadata_location` is a placeholder), so reading actual Iceberg data is not supported yet.
 
 ## Schema Registry Example
 
