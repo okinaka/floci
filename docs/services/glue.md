@@ -100,7 +100,7 @@ aws glue create-table \
 
 ## Iceberg Tables (catalog-only)
 
-`CreateTable` accepts `OpenTableFormatInput` and `UpdateTable` accepts `UpdateOpenTableFormatInput`, so Terraform's `aws_glue_catalog_table` with an `open_table_format_input.iceberg_input` block round-trips. Columns are derived from the Iceberg schema and the table is marked `table_type=ICEBERG`.
+`CreateTable` accepts `OpenTableFormatInput` and `UpdateTable` accepts `UpdateOpenTableFormatInput` for Iceberg tables. Columns are derived from the Iceberg schema and the table is marked `table_type=ICEBERG`.
 
 This is **catalog-only**: no Iceberg `metadata.json`, manifests, or data files are written to S3 (`metadata_location` is a placeholder), so reading actual Iceberg data is not supported yet.
 
