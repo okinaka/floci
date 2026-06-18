@@ -57,9 +57,20 @@ public final class ConformanceRunner {
     private final ErrorClassifier errorClassifier;
     private final ShapeValidator shapeValidator;
     private final boolean xmlMode;
+    private final DependencySeeder seeder;
+
+    /** Operations referenced by seeding, resolved lazily by name from the model. */
+    private final java.util.Map<String, OperationShape> seedOpCache = new java.util.HashMap<>();
+    /** Dependency values already seeded this run; reset on each {@link NameSalt#startRun()}. */
+    private final Set<String> seededKeys = new java.util.HashSet<>();
 
     public ConformanceRunner(Model model, Invoker invoker, RequestEncoder encoder,
                              List<Generator> generators) {
+        this(model, invoker, encoder, generators, DependencySeeder.NONE);
+    }
+
+    public ConformanceRunner(Model model, Invoker invoker, RequestEncoder encoder,
+                             List<Generator> generators, DependencySeeder seeder) {
         this.model = model;
         this.invoker = invoker;
         this.encoder = encoder;
@@ -67,6 +78,7 @@ public final class ConformanceRunner {
         this.errorClassifier = new ErrorClassifier();
         this.xmlMode = XML_PROTOCOLS.contains(encoder.protocol());
         this.shapeValidator = new ShapeValidator(model, xmlMode);
+        this.seeder = seeder == null ? DependencySeeder.NONE : seeder;
     }
 
     public List<VariantResult> run(String serviceShapeId) {
@@ -80,6 +92,7 @@ public final class ConformanceRunner {
      */
     public List<VariantResult> runRoundTrip(String serviceShapeId) {
         NameSalt.startRun();
+        seededKeys.clear();
         ServiceShape svc = model.expectShape(ShapeId.from(serviceShapeId), ServiceShape.class);
         List<RoundTripScenario> scenarios = new ArrayList<>();
         scenarios.addAll(new RoundTripEchoGenerator().generate(svc, model));
@@ -125,6 +138,7 @@ public final class ConformanceRunner {
     private List<VariantResult> runFiltered(String serviceShapeId,
                                             java.util.function.Predicate<OperationShape> filter) {
         NameSalt.startRun();
+        seededKeys.clear();
         List<OperationShape> ordered = new ArrayList<>(operationsOf(serviceShapeId));
         // Stable sort: writes → reads/actions → deletes, model order within a phase.
         ordered.sort(java.util.Comparator.comparingInt(ConformanceRunner::phaseOf));
@@ -151,6 +165,7 @@ public final class ConformanceRunner {
 
     private VariantResult execute(GeneratedCase generated) {
         generated = saltInput(generated);
+        seedDependencies(generated.logicalInput());
         Variant variant;
         try {
             variant = encoder.encode(generated);
@@ -180,6 +195,46 @@ public final class ConformanceRunner {
         }
         return new GeneratedCase(c.operation(), c.generator(), salted,
                 c.expectedOutcome(), c.expectedError());
+    }
+
+    /**
+     * Pre-create any resources {@code input} references but doesn't create, so
+     * the operation under test reaches its real logic instead of failing on an
+     * unseeded dependency. Best-effort: the value is already salted, so each
+     * seed is sent verbatim (never re-salted), deduplicated per run, and any
+     * failure (already-exists, unsupported op) is ignored — the case itself
+     * still records the authoritative verdict.
+     */
+    private void seedDependencies(JsonNode input) {
+        if (seeder == DependencySeeder.NONE) {
+            return;
+        }
+        for (DependencySeeder.Seed seed : seeder.seedsFor(input)) {
+            String key = seed.operation() + '|' + seed.value();
+            if (!seededKeys.add(key)) {
+                continue;
+            }
+            OperationShape op = resolveSeedOperation(seed.operation());
+            if (op == null) {
+                continue;
+            }
+            com.fasterxml.jackson.databind.node.ObjectNode seedInput =
+                    JSON.createObjectNode().put(seed.inputMember(), seed.value());
+            GeneratedCase seedCase = new GeneratedCase(
+                    op, "dependency-seed", seedInput, ExpectedOutcome.SUCCESS, null);
+            try {
+                invoker.send(encoder.encode(seedCase));
+            } catch (IOException | RuntimeException ignored) {
+                // Seeding is best-effort; the case under test still reports the real verdict.
+            }
+        }
+    }
+
+    private OperationShape resolveSeedOperation(String name) {
+        return seedOpCache.computeIfAbsent(name, n -> model.getOperationShapes().stream()
+                .filter(o -> o.getId().getName().equals(n))
+                .findFirst()
+                .orElse(null));
     }
 
     /** Outcome of one scenario step: either a terminal result or a 2xx response to continue with. */
@@ -215,6 +270,8 @@ public final class ConformanceRunner {
         // echo comparison below, not the raw one.
         JsonNode setupInput = NameSalt.apply(s.setupInput(), s.generatorName());
         JsonNode verifyInput = NameSalt.apply(s.verifyInput(), s.generatorName());
+        seedDependencies(setupInput);
+        seedDependencies(verifyInput);
 
         // Step 1 — setup. Failure here means we can't tell if the verify step
         // would have round-tripped; report whatever the setup yielded so the

@@ -13,6 +13,7 @@ import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
+import io.floci.conformance.runner.DependencySeeder;
 import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
@@ -81,7 +82,8 @@ class ReportingRunTest {
                 model,
                 new RestJsonInvoker(BASE_URL, "ses"),
                 new RestJsonEncoder(model),
-                AllGenerators.ALL);
+                AllGenerators.ALL,
+                DependencySeeder.sesV2());
 
         List<VariantResult> results = new java.util.ArrayList<>(
                 runner.run("com.amazonaws.sesv2#SimpleEmailService_v2"));
