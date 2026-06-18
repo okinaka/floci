@@ -17,6 +17,7 @@ import io.floci.conformance.invoke.AwsJsonInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
+import io.floci.conformance.runner.DependencySeeder;
 import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
@@ -70,7 +71,8 @@ class BaselineGateTest {
                 "com.amazonaws.ses#SimpleEmailService", "2010-12-01",
                 model,
                 new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
-                new QueryFormEncoder(model));
+                new QueryFormEncoder(model),
+                DependencySeeder.NONE);
     }
 
     @Test
@@ -81,7 +83,8 @@ class BaselineGateTest {
                 "com.amazonaws.sesv2#SimpleEmailService_v2", "2019-09-27",
                 model,
                 new RestJsonInvoker(BASE_URL, "ses"),
-                new RestJsonEncoder(model));
+                new RestJsonEncoder(model),
+                DependencySeeder.sesV2());
     }
 
     @Test
@@ -92,7 +95,8 @@ class BaselineGateTest {
                 "com.amazonaws.s3#AmazonS3", "2006-03-01",
                 model,
                 new RestXmlInvoker(BASE_URL, "s3"),
-                new RestXmlEncoder(model));
+                new RestXmlEncoder(model),
+                DependencySeeder.NONE);
     }
 
     @Test
@@ -103,7 +107,8 @@ class BaselineGateTest {
                 "com.amazonaws.ssm#AmazonSSM", "2014-11-06",
                 model,
                 new AwsJsonInvoker(BASE_URL + "/", "AmazonSSM", "ssm", AwsJsonInvoker.Flavor.AWS_JSON_1_1),
-                AwsJsonEncoder.json11());
+                AwsJsonEncoder.json11(),
+                DependencySeeder.NONE);
     }
 
     @Test
@@ -115,12 +120,14 @@ class BaselineGateTest {
                 model,
                 new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
                         AwsJsonInvoker.Flavor.AWS_JSON_1_0),
-                AwsJsonEncoder.json10());
+                AwsJsonEncoder.json10(),
+                DependencySeeder.NONE);
     }
 
     private static void runGate(String stem, String serviceShapeId, String modelVersion,
-                                Model model, Invoker invoker, RequestEncoder encoder) throws IOException {
-        ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, AllGenerators.ALL);
+                                Model model, Invoker invoker, RequestEncoder encoder,
+                                DependencySeeder seeder) throws IOException {
+        ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, AllGenerators.ALL, seeder);
         List<VariantResult> results = new java.util.ArrayList<>(runner.run(serviceShapeId));
         results.addAll(runner.runRoundTrip(serviceShapeId));
         ReportMeta meta = new ReportMeta(serviceShapeId, modelVersion, Instant.now().toString());
