@@ -44,4 +44,32 @@ class InputSynthesizerTest {
         assertThat(tree.has("EmailIdentity")).isTrue();
         assertThat(tree.has("Tags")).isTrue();
     }
+
+    @Test
+    void numericValue_is_clamped_into_at_range_minimum() {
+        Model model = SmithyModelLoader.loadSesV2();
+        // DeliveryOptions.MaxDeliverySeconds carries @range{min:300,max:50400};
+        // the default 1 must be lifted to the minimum so the input is in-range.
+        StructureShape deliveryOptions = model.expectShape(
+                ShapeId.from("com.amazonaws.sesv2#DeliveryOptions"), StructureShape.class);
+
+        InputSynthesizer synth = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
+        ObjectNode tree = synth.synthesizeInput(deliveryOptions);
+
+        assertThat(tree.get("MaxDeliverySeconds").asLong()).isEqualTo(300L);
+    }
+
+    @Test
+    void numericValue_without_range_stays_at_default() {
+        Model model = SmithyModelLoader.loadSesV2();
+        // SendQuota.Max24HourSend is a Double with no @range — must stay at 1.0,
+        // proving the clamp only fires when the model actually constrains it.
+        StructureShape sendQuota = model.expectShape(
+                ShapeId.from("com.amazonaws.sesv2#SendQuota"), StructureShape.class);
+
+        InputSynthesizer synth = new InputSynthesizer(model, InputSynthesizer.allMembers(), null);
+        ObjectNode tree = synth.synthesizeInput(sendQuota);
+
+        assertThat(tree.get("Max24HourSend").asDouble()).isEqualTo(1.0d);
+    }
 }
