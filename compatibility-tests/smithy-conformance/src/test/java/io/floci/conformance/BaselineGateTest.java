@@ -72,7 +72,7 @@ class BaselineGateTest {
                 model,
                 new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
                 new QueryFormEncoder(model),
-                DependencySeeder.NONE);
+                DependencySeeder.sesV1());
     }
 
     @Test
