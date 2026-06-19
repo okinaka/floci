@@ -59,13 +59,19 @@ public final class DependencySeeder {
     }
 
     /**
-     * SESv2 rules: a configuration set's custom redirect/tracking domain must be
-     * a verified email identity, so seed it with {@code CreateEmailIdentity}
-     * (which Floci auto-verifies) before the referencing operation runs.
+     * SESv2 rules:
+     * <ul>
+     *   <li>a configuration set's custom redirect/tracking domain must be a
+     *       verified email identity, so seed it with {@code CreateEmailIdentity}
+     *       (which Floci auto-verifies) before the referencing operation runs;
+     *   <li>a delivery option's {@code SendingPoolName} must name an existing
+     *       dedicated IP pool, so seed it with {@code CreateDedicatedIpPool}.
+     * </ul>
      */
     public static DependencySeeder sesV2() {
         return new DependencySeeder(List.of(
-                new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity")));
+                new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity"),
+                new SeedRule("SendingPoolName", "CreateDedicatedIpPool", "PoolName")));
     }
 
     /** Every dependency referenced by {@code input}, in encounter order. */
