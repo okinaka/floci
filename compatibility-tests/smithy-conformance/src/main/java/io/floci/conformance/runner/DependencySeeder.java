@@ -61,6 +61,9 @@ public final class DependencySeeder {
     /**
      * SESv2 rules:
      * <ul>
+     *   <li>a {@code ConfigurationSetName} referenced by Send/Get/Delete/Put
+     *       operations must name an existing configuration set, so seed it with
+     *       {@code CreateConfigurationSet} (a minimal, name-only create);
      *   <li>a configuration set's custom redirect/tracking domain must be a
      *       verified email identity, so seed it with {@code CreateEmailIdentity}
      *       (which Floci auto-verifies) before the referencing operation runs;
@@ -70,8 +73,20 @@ public final class DependencySeeder {
      */
     public static DependencySeeder sesV2() {
         return new DependencySeeder(List.of(
+                new SeedRule("ConfigurationSetName", "CreateConfigurationSet", "ConfigurationSetName"),
                 new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity"),
                 new SeedRule("SendingPoolName", "CreateDedicatedIpPool", "PoolName")));
+    }
+
+    /**
+     * SESv1 rules: the various {@code SetIdentity*} attribute operations (and the
+     * Send* operations) reject an {@code Identity} that isn't a verified email
+     * address or domain, so seed it with {@code VerifyEmailIdentity} (which Floci
+     * marks verified immediately) before the referencing operation runs.
+     */
+    public static DependencySeeder sesV1() {
+        return new DependencySeeder(List.of(
+                new SeedRule("Identity", "VerifyEmailIdentity", "EmailAddress")));
     }
 
     /** Every dependency referenced by {@code input}, in encounter order. */

@@ -23,9 +23,13 @@ class DependencySeederTest {
         }
     }
 
+    /** Single-rule seeder so mechanism tests don't depend on the factory's evolving ruleset. */
+    private static final DependencySeeder DOMAIN_RULE = new DependencySeeder(List.of(
+            new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity")));
+
     @Test
     void findsTriggerMemberNestedInInput() {
-        var seeds = SES.seedsFor(tree("""
+        var seeds = DOMAIN_RULE.seedsFor(tree("""
                 {"ConfigurationSetName":"cs","TrackingOptions":{"CustomRedirectDomain":"d.example.com"}}"""));
         assertThat(seeds).containsExactly(
                 new Seed("CreateEmailIdentity", "EmailIdentity", "d.example.com"));
@@ -42,9 +46,28 @@ class DependencySeederTest {
 
     @Test
     void ignoresInputsWithoutTheTriggerMember() {
-        assertThat(SES.seedsFor(tree("""
+        assertThat(DOMAIN_RULE.seedsFor(tree("""
                 {"ConfigurationSetName":"cs","TrackingOptions":{"HttpsPolicy":"REQUIRE"}}""")))
                 .isEmpty();
+    }
+
+    @Test
+    void sesV2FactorySeedsConfigurationSetAndDomainAndPool() {
+        var seeds = DependencySeeder.sesV2().seedsFor(tree("""
+                {"ConfigurationSetName":"cs",
+                 "TrackingOptions":{"CustomRedirectDomain":"d.example.com"},
+                 "DeliveryOptions":{"SendingPoolName":"pool-1"}}"""));
+        assertThat(seeds).containsExactlyInAnyOrder(
+                new Seed("CreateConfigurationSet", "ConfigurationSetName", "cs"),
+                new Seed("CreateEmailIdentity", "EmailIdentity", "d.example.com"),
+                new Seed("CreateDedicatedIpPool", "PoolName", "pool-1"));
+    }
+
+    @Test
+    void sesV1FactorySeedsIdentityViaVerify() {
+        assertThat(DependencySeeder.sesV1().seedsFor(tree("""
+                {"Identity":"user@example.com","ForwardingEnabled":true}""")))
+                .containsExactly(new Seed("VerifyEmailIdentity", "EmailAddress", "user@example.com"));
     }
 
     @Test

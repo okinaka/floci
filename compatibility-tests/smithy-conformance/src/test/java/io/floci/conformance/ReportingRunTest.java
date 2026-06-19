@@ -63,7 +63,8 @@ class ReportingRunTest {
                 model,
                 new QueryInvoker(BASE_URL + "/", "2010-12-01", "ses"),
                 new QueryFormEncoder(model),
-                AllGenerators.ALL);
+                AllGenerators.ALL,
+                DependencySeeder.sesV1());
 
         List<VariantResult> results = new java.util.ArrayList<>(
                 runner.run("com.amazonaws.ses#SimpleEmailService"));
