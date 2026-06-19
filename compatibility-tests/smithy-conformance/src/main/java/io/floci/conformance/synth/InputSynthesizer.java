@@ -12,6 +12,7 @@ import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeId;
 import software.amazon.smithy.model.shapes.StructureShape;
+import software.amazon.smithy.model.traits.RangeTrait;
 import software.amazon.smithy.model.traits.RequiredTrait;
 
 import java.util.HashSet;
@@ -81,17 +82,61 @@ public final class InputSynthesizer {
             // the MIME From:/To: headers stand in for omitted optional params).
             case BLOB -> NODES.textNode(
                     "RnJvbTogY292LXByb2JlQGV4YW1wbGUuY29tDQpUbzogY292LXByb2JlQGV4YW1wbGUuY29tDQpTdWJqZWN0OiBjb3YtcHJvYmUNCg0KY292LXByb2JlLXgNCg==");
-            case INTEGER, SHORT, BYTE -> NODES.numberNode(1);
-            case LONG -> NODES.numberNode(1L);
-            case FLOAT -> NODES.numberNode(1.0f);
-            case DOUBLE -> NODES.numberNode(1.0d);
-            case BIG_INTEGER, BIG_DECIMAL -> NODES.numberNode(1);
+            case INTEGER, SHORT, BYTE -> NODES.numberNode((int) clampLong(shape, owner, 1));
+            case LONG -> NODES.numberNode(clampLong(shape, owner, 1L));
+            case FLOAT -> NODES.numberNode((float) clampDouble(shape, owner, 1.0d));
+            case DOUBLE -> NODES.numberNode(clampDouble(shape, owner, 1.0d));
+            case BIG_INTEGER, BIG_DECIMAL -> NODES.numberNode((int) clampLong(shape, owner, 1));
             case BOOLEAN -> NODES.booleanNode(false);
             case TIMESTAMP -> NODES.numberNode(1577836800L); // 2020-01-01T00:00:00Z epoch
             case DOCUMENT -> NODES.objectNode();
             case UNION -> buildFirstUnionBranch((software.amazon.smithy.model.shapes.UnionShape) shape, depth, visiting);
             default -> NODES.nullNode();
         };
+    }
+
+    /**
+     * Clamps the default numeric value into the member's {@code @range} so the
+     * synthesized input is in-range rather than rejected for an out-of-bounds
+     * value (e.g. SESv2 {@code MaxDeliverySeconds} requires {@code >= 300}). A
+     * value already within range is left untouched, keeping baseline churn
+     * minimal. Member-level {@code @range} wins over the target shape's.
+     */
+    private static long clampLong(Shape shape, MemberShape owner, long base) {
+        RangeTrait range = effectiveRange(shape, owner);
+        if (range == null) {
+            return base;
+        }
+        long v = base;
+        if (range.getMin().isPresent()) {
+            v = Math.max(v, range.getMin().get().longValue());
+        }
+        if (range.getMax().isPresent()) {
+            v = Math.min(v, range.getMax().get().longValue());
+        }
+        return v;
+    }
+
+    private static double clampDouble(Shape shape, MemberShape owner, double base) {
+        RangeTrait range = effectiveRange(shape, owner);
+        if (range == null) {
+            return base;
+        }
+        double v = base;
+        if (range.getMin().isPresent()) {
+            v = Math.max(v, range.getMin().get().doubleValue());
+        }
+        if (range.getMax().isPresent()) {
+            v = Math.min(v, range.getMax().get().doubleValue());
+        }
+        return v;
+    }
+
+    private static RangeTrait effectiveRange(Shape shape, MemberShape owner) {
+        if (owner != null && owner.hasTrait(RangeTrait.class)) {
+            return owner.expectTrait(RangeTrait.class);
+        }
+        return shape == null ? null : shape.getTrait(RangeTrait.class).orElse(null);
     }
 
     private JsonNode buildStruct(StructureShape struct, int depth, Set<ShapeId> visiting) {
