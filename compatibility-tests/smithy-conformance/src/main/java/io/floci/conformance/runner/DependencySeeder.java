@@ -79,14 +79,25 @@ public final class DependencySeeder {
     }
 
     /**
-     * SESv1 rules: the various {@code SetIdentity*} attribute operations (and the
-     * Send* operations) reject an {@code Identity} that isn't a verified email
-     * address or domain, so seed it with {@code VerifyEmailIdentity} (which Floci
-     * marks verified immediately) before the referencing operation runs.
+     * SESv1 rules:
+     * <ul>
+     *   <li>{@code SetIdentity*} attribute operations (and Send*) reject an
+     *       {@code Identity} that isn't a verified email address or domain, so
+     *       seed it with {@code VerifyEmailIdentity} (Floci marks it verified
+     *       immediately);
+     *   <li>the {@code *ConfigurationSetTrackingOptions} operations reject a
+     *       {@code ConfigurationSetName} that doesn't exist, so seed it with
+     *       {@code CreateConfigurationSet} — whose v1 input nests the name under
+     *       {@code ConfigurationSet.Name};
+     *   <li>tracking options reject a {@code CustomRedirectDomain} that isn't a
+     *       verified domain, so seed it with {@code VerifyDomainIdentity}.
+     * </ul>
      */
     public static DependencySeeder sesV1() {
         return new DependencySeeder(List.of(
-                new SeedRule("Identity", "VerifyEmailIdentity", "EmailAddress")));
+                new SeedRule("Identity", "VerifyEmailIdentity", "EmailAddress"),
+                new SeedRule("ConfigurationSetName", "CreateConfigurationSet", "ConfigurationSet.Name"),
+                new SeedRule("CustomRedirectDomain", "VerifyDomainIdentity", "Domain")));
     }
 
     /** Every dependency referenced by {@code input}, in encounter order. */
