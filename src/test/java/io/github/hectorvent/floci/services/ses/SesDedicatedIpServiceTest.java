@@ -77,4 +77,41 @@ class SesDedicatedIpServiceTest {
     void delete_missingThrows() {
         assertThrows(AwsException.class, () -> service.deleteDedicatedIpPool("ghost", REGION));
     }
+
+    @Test
+    void ipLevelOperations_reportIpNotFound() {
+        // Floci models no leased dedicated IPs, so every IP-targeted op reports not-found.
+        assertThrows(AwsException.class, () -> service.getDedicatedIp("1.2.3.4", REGION));
+        assertThrows(AwsException.class, () -> service.putDedicatedIpInPool("1.2.3.4", "pool-a", REGION));
+        assertThrows(AwsException.class, () -> service.putDedicatedIpWarmupAttributes("1.2.3.4", REGION));
+    }
+
+    @Test
+    void putDedicatedIpInPool_validatesBlankDestinationBeforeIp() {
+        assertThrows(AwsException.class, () -> service.putDedicatedIpInPool("1.2.3.4", " ", REGION));
+    }
+
+    @Test
+    void putScalingAttributes_rejectsInvalidMode() {
+        service.createDedicatedIpPool("pool-a", "STANDARD", REGION);
+        assertThrows(AwsException.class,
+                () -> service.putDedicatedIpPoolScalingAttributes("pool-a", "TURBO", REGION));
+    }
+
+    @Test
+    void putScalingAttributes_missingPoolThrows() {
+        assertThrows(AwsException.class,
+                () -> service.putDedicatedIpPoolScalingAttributes("ghost", "MANAGED", REGION));
+    }
+
+    @Test
+    void putScalingAttributes_upgradesStandardToManaged_thenRejectsDowngrade() {
+        service.createDedicatedIpPool("pool-a", "STANDARD", REGION);
+
+        service.putDedicatedIpPoolScalingAttributes("pool-a", "MANAGED", REGION);
+        assertEquals("MANAGED", service.getDedicatedIpPool("pool-a", REGION).getScalingMode());
+
+        assertThrows(AwsException.class,
+                () -> service.putDedicatedIpPoolScalingAttributes("pool-a", "STANDARD", REGION));
+    }
 }

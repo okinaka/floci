@@ -1550,6 +1550,36 @@ public class SesController {
         return Response.ok(result).build();
     }
 
+    @PUT
+    @Path("/dedicated-ip-pools/{poolName}/scaling")
+    public Response putDedicatedIpPoolScalingAttributes(@Context HttpHeaders headers,
+                                                        @PathParam("poolName") String poolName,
+                                                        String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = readOptionBody(body);
+            String scalingMode = parseOptionString(request.path("ScalingMode"), "ScalingMode");
+            sesService.putDedicatedIpPoolScalingAttributes(poolName, scalingMode, region);
+            LOG.infov("SES V2 PutDedicatedIpPoolScalingAttributes on {0}", poolName);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        }
+    }
+
+    // ──────────────────────── Dedicated IPs (IP-level) ────────────────────────
+
+    @GET
+    @Path("/dedicated-ips")
+    public Response getDedicatedIps(@Context HttpHeaders headers) {
+        regionResolver.resolveRegion(headers);
+        // Floci does not model leased dedicated IPs, so the account has none.
+        ObjectNode result = objectMapper.createObjectNode();
+        result.putArray("DedicatedIps");
+        result.putNull("NextToken");
+        return Response.ok(result).build();
+    }
+
     @GET
     @Path("/contact-lists/{contactListName}")
     public Response getContactList(@Context HttpHeaders headers,
@@ -1829,6 +1859,65 @@ public class SesController {
         return result;
     }
 
+    @GET
+    @Path("/dedicated-ips/{ip}")
+    public Response getDedicatedIp(@Context HttpHeaders headers, @PathParam("ip") String ip) {
+        String region = regionResolver.resolveRegion(headers);
+        sesService.getDedicatedIp(ip, region);
+        return Response.ok(objectMapper.createObjectNode()).build();
+    }
+
+    @PUT
+    @Path("/dedicated-ips/{ip}/pool")
+    public Response putDedicatedIpInPool(@Context HttpHeaders headers,
+                                         @PathParam("ip") String ip, String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = readOptionBody(body);
+            String destinationPoolName = parseOptionString(
+                    request.path("DestinationPoolName"), "DestinationPoolName");
+            sesService.putDedicatedIpInPool(ip, destinationPoolName, region);
+            LOG.infov("SES V2 PutDedicatedIpInPool: {0}", ip);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        }
+    }
+
+    @PUT
+    @Path("/dedicated-ips/{ip}/warmup")
+    public Response putDedicatedIpWarmupAttributes(@Context HttpHeaders headers,
+                                                   @PathParam("ip") String ip, String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = readOptionBody(body);
+            // AWS validates WarmupPercentage before it looks up the IP.
+            validateWarmupPercentage(request.path("WarmupPercentage"));
+            sesService.putDedicatedIpWarmupAttributes(ip, region);
+            LOG.infov("SES V2 PutDedicatedIpWarmupAttributes: {0}", ip);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        }
+    }
+
+    // WarmupPercentage is a required integer in 0..100 (AWS returns -1 only in responses, for
+    // managed pools). A missing member is a BadRequestException; a non-integer is a
+    // SerializationException; an out-of-range value is a BadRequestException — all matching AWS.
+    private static void validateWarmupPercentage(JsonNode node) {
+        if (node.isMissingNode() || node.isNull()) {
+            throw new AwsException("BadRequestException", "Warmup Percentage can't be null.", 400);
+        }
+        if (!node.isInt()) {
+            throw new AwsException("SerializationException", null, 400);
+        }
+        int value = node.intValue();
+        if (value < 0 || value > 100) {
+            throw new AwsException("BadRequestException",
+                    "Warmup Percentage must be between 0 and 100.", 400);
+        }
+    }
+
     // ──────────────────────────── Account ────────────────────────────
 
     @GET
@@ -1840,7 +1929,7 @@ public class SesController {
         AccountSuppressionAttributes suppression = sesService.getAccountSuppressionAttributes(region);
 
         ObjectNode result = objectMapper.createObjectNode();
-        result.put("DedicatedIpAutoWarmupEnabled", false);
+        result.put("DedicatedIpAutoWarmupEnabled", sesService.isAccountDedicatedIpAutoWarmupEnabled(region));
         result.put("EnforcementStatus", "HEALTHY");
         result.put("ProductionAccessEnabled", true);
         result.put("SendingEnabled", sendingEnabled);
@@ -1936,6 +2025,31 @@ public class SesController {
                 "1 validation error detected: Value at '" + path
                         + "' failed to satisfy constraint: Member must satisfy enum value set: [ENABLED, DISABLED]",
                 400);
+    }
+
+    @PUT
+    @Path("/account/dedicated-ips/warmup")
+    public Response putAccountDedicatedIpWarmupAttributes(@Context HttpHeaders headers, String body) {
+        String region = regionResolver.resolveRegion(headers);
+        try {
+            JsonNode request = readOptionBody(body);
+            JsonNode enabledNode = request.path("AutoWarmupEnabled");
+            // AutoWarmupEnabled has a default of false: the SDK omits it when false,
+            // so a missing member is treated as false rather than rejected.
+            boolean enabled;
+            if (enabledNode.isMissingNode() || enabledNode.isNull()) {
+                enabled = false;
+            } else if (enabledNode.isBoolean()) {
+                enabled = enabledNode.booleanValue();
+            } else {
+                throw new AwsException("BadRequestException", "AutoWarmupEnabled must be a boolean.", 400);
+            }
+            sesService.setAccountDedicatedIpAutoWarmup(region, enabled);
+            LOG.infov("SES V2 PutAccountDedicatedIpWarmupAttributes: {0}", enabled);
+            return Response.ok(objectMapper.createObjectNode()).build();
+        } catch (AwsException e) {
+            throw remapV1Exception(e);
+        }
     }
 
     @PUT
