@@ -894,6 +894,54 @@ public class SesService {
         return "dedicatedIpPool::" + region + "::" + name;
     }
 
+    // ──────────────────────── Dedicated IPs (IP-level) ────────────────────────
+    //
+    // SES has no API to create a dedicated IP — they are leased out-of-band
+    // (STANDARD) or auto-provisioned by AWS (MANAGED). Floci does not model that,
+    // so an account has no dedicated IPs: GetDedicatedIps is empty and any
+    // IP-targeted operation reports the IP as not found, matching real AWS for an
+    // account with no leased IPs (verified 2026-06-21).
+
+    private AwsException dedicatedIpNotFound(String ip) {
+        return new AwsException("NotFoundException",
+                "Could not find dedicated IP <" + ip + "> under this account.", 404);
+    }
+
+    public DedicatedIpPool getDedicatedIp(String ip, String region) {
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpInPool(String ip, String destinationPoolName, String region) {
+        // AWS checks the IP before the destination pool.
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpWarmupAttributes(String ip, String region) {
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpPoolScalingAttributes(String poolName, String scalingMode, String region) {
+        String key = dedicatedIpPoolKey(region, poolName);
+        DedicatedIpPool pool = dedicatedIpPoolStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "The requested pool <" + poolName + "> does not exist.", 404));
+        if (scalingMode == null || !SCALING_MODES.contains(scalingMode)) {
+            throw new AwsException("BadRequestException", "The ScalingMode parameter is invalid.", 400);
+        }
+        pool.setScalingMode(scalingMode);
+        dedicatedIpPoolStore.put(key, pool);
+        LOG.infov("Updated ScalingMode on dedicated IP pool {0} in region {1}: {2}",
+                poolName, region, scalingMode);
+    }
+
+    public boolean isAccountDedicatedIpAutoWarmupEnabled(String region) {
+        return accountSettingsStore.get("dedicatedIpAutoWarmup::" + region).orElse(true);
+    }
+
+    public void setAccountDedicatedIpAutoWarmup(String region, boolean enabled) {
+        accountSettingsStore.put("dedicatedIpAutoWarmup::" + region, enabled);
+    }
+
     static void validateConfigurationSetName(String name) {
         if (name == null || name.isBlank()) {
             throw new AwsException("InvalidParameterValue",

@@ -202,6 +202,12 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `GET` | `/v2/email/dedicated-ip-pools` | `ListDedicatedIpPools` |
 | `GET` | `/v2/email/dedicated-ip-pools/{PoolName}` | `GetDedicatedIpPool` |
 | `DELETE` | `/v2/email/dedicated-ip-pools/{PoolName}` | `DeleteDedicatedIpPool` |
+| `PUT` | `/v2/email/dedicated-ip-pools/{PoolName}/scaling` | `PutDedicatedIpPoolScalingAttributes` |
+| `GET` | `/v2/email/dedicated-ips` | `GetDedicatedIps` |
+| `GET` | `/v2/email/dedicated-ips/{IP}` | `GetDedicatedIp` |
+| `PUT` | `/v2/email/dedicated-ips/{IP}/pool` | `PutDedicatedIpInPool` |
+| `PUT` | `/v2/email/dedicated-ips/{IP}/warmup` | `PutDedicatedIpWarmupAttributes` |
+| `PUT` | `/v2/email/account/dedicated-ips/warmup` | `PutAccountDedicatedIpWarmupAttributes` |
 | `PUT` | `/v2/email/suppression/addresses` | `PutSuppressedDestination` |
 | `GET` | `/v2/email/suppression/addresses/{EmailAddress}` | `GetSuppressedDestination` |
 | `DELETE` | `/v2/email/suppression/addresses/{EmailAddress}` | `DeleteSuppressedDestination` |
