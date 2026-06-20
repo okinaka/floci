@@ -71,6 +71,18 @@ class DependencySeederTest {
     }
 
     @Test
+    void sesV1FactorySeedsConfigurationSetNestedAndDomain() {
+        var seeds = DependencySeeder.sesV1().seedsFor(tree("""
+                {"ConfigurationSetName":"cs",
+                 "TrackingOptions":{"CustomRedirectDomain":"d.example.com"}}"""));
+        // The nested ConfigurationSet.Name path is carried verbatim on the Seed;
+        // the runner expands it into {ConfigurationSet:{Name:...}} at send time.
+        assertThat(seeds).containsExactlyInAnyOrder(
+                new Seed("CreateConfigurationSet", "ConfigurationSet.Name", "cs"),
+                new Seed("VerifyDomainIdentity", "Domain", "d.example.com"));
+    }
+
+    @Test
     void ignoresNonTextualTriggerValues() {
         assertThat(SES.seedsFor(tree("""
                 {"CustomRedirectDomain":{"nested":"x"}}"""))).isEmpty();
