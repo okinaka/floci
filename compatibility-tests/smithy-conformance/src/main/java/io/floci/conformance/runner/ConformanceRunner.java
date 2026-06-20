@@ -218,10 +218,9 @@ public final class ConformanceRunner {
             if (op == null) {
                 continue;
             }
-            com.fasterxml.jackson.databind.node.ObjectNode seedInput =
-                    JSON.createObjectNode().put(seed.inputMember(), seed.value());
             GeneratedCase seedCase = new GeneratedCase(
-                    op, "dependency-seed", seedInput, ExpectedOutcome.SUCCESS, null);
+                    op, "dependency-seed", seedInputNode(seed.inputMember(), seed.value()),
+                    ExpectedOutcome.SUCCESS, null);
             try {
                 invoker.send(encoder.encode(seedCase));
             } catch (IOException | RuntimeException ignored) {
@@ -235,6 +234,23 @@ public final class ConformanceRunner {
                 .filter(o -> o.getId().getName().equals(n))
                 .findFirst()
                 .orElse(null));
+    }
+
+    /**
+     * Build a seed operation's input tree. A plain member name yields a flat
+     * {@code {member: value}}; a dotted path (e.g. {@code ConfigurationSet.Name})
+     * yields the nested object the create operation expects.
+     */
+    private static com.fasterxml.jackson.databind.node.ObjectNode seedInputNode(
+            String memberPath, String value) {
+        com.fasterxml.jackson.databind.node.ObjectNode root = JSON.createObjectNode();
+        String[] path = memberPath.split("\\.");
+        com.fasterxml.jackson.databind.node.ObjectNode cur = root;
+        for (int i = 0; i < path.length - 1; i++) {
+            cur = cur.putObject(path[i]);
+        }
+        cur.put(path[path.length - 1], value);
+        return root;
     }
 
     /** Outcome of one scenario step: either a terminal result or a 2xx response to continue with. */
