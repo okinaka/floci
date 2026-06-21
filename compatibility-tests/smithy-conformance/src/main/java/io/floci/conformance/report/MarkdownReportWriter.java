@@ -39,7 +39,8 @@ public final class MarkdownReportWriter implements ReportWriter {
     private static boolean isRealFailure(Verdict v) {
         return switch (v) {
             case FAIL_SHAPE, FAIL_ECHO, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
-                    FAIL_WRONG_ERROR_TYPE, FAIL_5XX, HARNESS_ERROR -> true;
+                    FAIL_WRONG_ERROR_TYPE, FAIL_5XX, FAIL_DELETED_STILL_READABLE,
+                    HARNESS_ERROR -> true;
             default -> false;
         };
     }
