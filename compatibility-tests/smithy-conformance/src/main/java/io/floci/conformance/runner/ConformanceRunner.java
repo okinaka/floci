@@ -9,6 +9,8 @@ import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
 import io.floci.conformance.scenario.LifecycleScenario;
+import io.floci.conformance.scenario.ListAfterCreateGenerator;
+import io.floci.conformance.scenario.ListAfterCreateScenario;
 import io.floci.conformance.scenario.ReadAfterDeleteGenerator;
 import io.floci.conformance.scenario.RoundTripEchoGenerator;
 import io.floci.conformance.scenario.RoundTripScenario;
@@ -105,6 +107,9 @@ public final class ConformanceRunner {
         }
         for (LifecycleScenario s : new ReadAfterDeleteGenerator().generate(svc, model)) {
             results.add(executeReadAfterDelete(s));
+        }
+        for (ListAfterCreateScenario s : new ListAfterCreateGenerator().generate(svc, model)) {
+            results.add(executeListAfterCreate(s));
         }
         return results;
     }
@@ -350,6 +355,38 @@ public final class ConformanceRunner {
             default -> new VariantResult(rv, Verdict.INCONCLUSIVE_VALIDATION, rr.httpStatus(),
                     rawType, "read rejected, not a not-found (" + normalized + ")");
         };
+    }
+
+    /**
+     * Create → list membership check. After creating a resource, the matching
+     * List response must contain the new resource's identifier; if it doesn't,
+     * that's a definite state bug. Setup that can't run stays inconclusive.
+     */
+    private VariantResult executeListAfterCreate(ListAfterCreateScenario s) {
+        JsonNode createInput = NameSalt.apply(s.createInput(), s.label());
+        JsonNode listInput = NameSalt.apply(s.listInput(), s.label());
+        seedDependencies(createInput);
+        String idValue = createInput.path(s.identifierMember()).asText(null);
+
+        StepOutcome create = sendStep(new GeneratedCase(
+                s.createOp(), s.label(), createInput, ExpectedOutcome.SUCCESS, null), "create");
+        if (create.terminal() != null) {
+            return create.terminal();
+        }
+        StepOutcome list = sendStep(new GeneratedCase(
+                s.listOp(), s.label(), listInput, ExpectedOutcome.SUCCESS, null), "list");
+        if (list.terminal() != null) {
+            return list.terminal();
+        }
+        String body = list.resp().body();
+        boolean listed = idValue != null && !idValue.isEmpty()
+                && body != null && body.contains(idValue);
+        if (listed) {
+            return new VariantResult(list.variant(), Verdict.PASS, list.resp().httpStatus(), null, null);
+        }
+        return new VariantResult(list.variant(), Verdict.FAIL_CREATED_NOT_LISTED,
+                list.resp().httpStatus(), null,
+                "created " + s.identifierMember() + "=" + idValue + " not present in list response");
     }
 
     private VariantResult executeScenario(RoundTripScenario s) {
