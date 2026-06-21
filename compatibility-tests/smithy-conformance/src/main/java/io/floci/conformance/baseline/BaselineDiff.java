@@ -134,7 +134,7 @@ public record BaselineDiff(
                     -> BAND_INCONCLUSIVE;
             case NOT_IMPLEMENTED, FAIL_SHAPE, FAIL_ECHO, FAIL_SILENT_PASS, FAIL_4XX_UNROUTED,
                     FAIL_WRONG_ERROR_TYPE, FAIL_5XX, FAIL_DELETED_STILL_READABLE,
-                    HARNESS_ERROR -> BAND_BROKEN;
+                    FAIL_CREATED_NOT_LISTED, HARNESS_ERROR -> BAND_BROKEN;
         };
     }
 
