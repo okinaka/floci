@@ -61,6 +61,13 @@ public enum Verdict {
      * record survived its own delete).
      */
     FAIL_DELETED_STILL_READABLE,
+    /**
+     * Lifecycle invariant violated: a resource was created but does not appear
+     * in the matching List response. Like the delete check this is closed-loop
+     * — no oracle, no live AWS — so a created-but-unlisted resource is a
+     * definite state bug.
+     */
+    FAIL_CREATED_NOT_LISTED,
 
     /** Variant could not be exercised at all (network, build, classifier failure). */
     HARNESS_ERROR
