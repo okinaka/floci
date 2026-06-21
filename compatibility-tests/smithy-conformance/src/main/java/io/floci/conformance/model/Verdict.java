@@ -54,6 +54,13 @@ public enum Verdict {
     FAIL_WRONG_ERROR_TYPE,
     /** Floci returned 5xx (almost always a Floci-side bug). */
     FAIL_5XX,
+    /**
+     * Lifecycle invariant violated: a resource created then deleted is still
+     * readable. This is a closed-loop check — it needs no model oracle and no
+     * live-AWS reference, so a violation is a definite state bug (a ghost
+     * record survived its own delete).
+     */
+    FAIL_DELETED_STILL_READABLE,
 
     /** Variant could not be exercised at all (network, build, classifier failure). */
     HARNESS_ERROR
