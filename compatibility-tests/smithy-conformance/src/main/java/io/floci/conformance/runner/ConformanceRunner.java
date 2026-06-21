@@ -8,6 +8,8 @@ import io.floci.conformance.classify.ErrorClassifier.Category;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
+import io.floci.conformance.scenario.LifecycleScenario;
+import io.floci.conformance.scenario.ReadAfterDeleteGenerator;
 import io.floci.conformance.scenario.RoundTripEchoGenerator;
 import io.floci.conformance.scenario.RoundTripScenario;
 import io.floci.conformance.scenario.SeedAndReadGenerator;
@@ -100,6 +102,9 @@ public final class ConformanceRunner {
         List<VariantResult> results = new ArrayList<>();
         for (RoundTripScenario s : scenarios) {
             results.add(executeScenario(s));
+        }
+        for (LifecycleScenario s : new ReadAfterDeleteGenerator().generate(svc, model)) {
+            results.add(executeReadAfterDelete(s));
         }
         return results;
     }
@@ -278,6 +283,73 @@ public final class ConformanceRunner {
             return new StepOutcome(null, null, classify(variant, resp));
         }
         return new StepOutcome(variant, resp, null);
+    }
+
+    /**
+     * Create → delete → read-back lifecycle check. A read that still succeeds
+     * after the delete is a definite ghost-record bug; a not-found read is the
+     * invariant holding (PASS). Setup steps that can't run leave the case
+     * inconclusive rather than asserting anything.
+     */
+    private VariantResult executeReadAfterDelete(LifecycleScenario s) {
+        JsonNode createInput = NameSalt.apply(s.createInput(), s.label());
+        JsonNode deleteInput = NameSalt.apply(s.deleteInput(), s.label());
+        JsonNode readInput = NameSalt.apply(s.readInput(), s.label());
+        seedDependencies(createInput);
+
+        StepOutcome create = sendStep(new GeneratedCase(
+                s.createOp(), s.label(), createInput, ExpectedOutcome.SUCCESS, null), "create");
+        if (create.terminal() != null) {
+            return create.terminal();
+        }
+        StepOutcome del = sendStep(new GeneratedCase(
+                s.deleteOp(), s.label(), deleteInput, ExpectedOutcome.SUCCESS, null), "delete");
+        if (del.terminal() != null) {
+            return del.terminal();
+        }
+
+        // Read-back: send directly so a 4xx (the desired not-found) isn't terminalized.
+        GeneratedCase readCase = new GeneratedCase(
+                s.readOp(), s.label(), readInput, ExpectedOutcome.CLIENT_ERROR, null);
+        Variant rv;
+        try {
+            rv = encoder.encode(readCase);
+        } catch (RuntimeException e) {
+            return new VariantResult(placeholderVariant(readCase), Verdict.HARNESS_ERROR, -1,
+                    null, "read encode error: " + e.getMessage());
+        }
+        InvocationResponse rr;
+        try {
+            rr = invoker.send(rv);
+        } catch (IOException e) {
+            return new VariantResult(rv, Verdict.HARNESS_ERROR, -1, null,
+                    "read I/O error: " + e.getMessage());
+        }
+
+        if (rr.is2xx()) {
+            return new VariantResult(rv, Verdict.FAIL_DELETED_STILL_READABLE, rr.httpStatus(),
+                    null, "resource still readable after delete");
+        }
+        if (rr.is5xx()) {
+            return new VariantResult(rv, Verdict.FAIL_5XX, rr.httpStatus(),
+                    extractErrorType(rr), truncate(rr.body()));
+        }
+        String rawType = extractErrorType(rr);
+        if (rawType == null) {
+            return new VariantResult(rv, Verdict.FAIL_4XX_UNROUTED, rr.httpStatus(),
+                    null, truncate(rr.body()));
+        }
+        Category cat = errorClassifier.classify(s.readOp(), rr.httpStatus(), rawType);
+        String normalized = ErrorClassifier.normalize(rawType);
+        return switch (cat) {
+            case MISSING -> new VariantResult(rv, Verdict.PASS, rr.httpStatus(), rawType, null);
+            case NOT_IMPLEMENTED -> new VariantResult(rv, Verdict.NOT_IMPLEMENTED, rr.httpStatus(),
+                    rawType, "operation not implemented (" + normalized + ")");
+            case STATE -> new VariantResult(rv, Verdict.INCONCLUSIVE_STATE, rr.httpStatus(),
+                    rawType, "state collision (" + normalized + ")");
+            default -> new VariantResult(rv, Verdict.INCONCLUSIVE_VALIDATION, rr.httpStatus(),
+                    rawType, "read rejected, not a not-found (" + normalized + ")");
+        };
     }
 
     private VariantResult executeScenario(RoundTripScenario s) {
