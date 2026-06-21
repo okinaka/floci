@@ -40,7 +40,7 @@ public final class ListAfterCreateGenerator {
                 continue;
             }
             OperationShape listOp = findListOp(resource, byName);
-            OperationShape getOp = byName.get("Get" + resource);
+            OperationShape getOp = ScenarioSupport.readBackOp(resource, byName);
             if (listOp == null || getOp == null) {
                 continue;
             }

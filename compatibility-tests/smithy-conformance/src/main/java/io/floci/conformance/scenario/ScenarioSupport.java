@@ -9,6 +9,7 @@ import software.amazon.smithy.model.shapes.StructureShape;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,6 +18,16 @@ import java.util.Set;
 final class ScenarioSupport {
 
     private ScenarioSupport() {
+    }
+
+    /**
+     * The single-resource read-back op for a resource: {@code Get<X>} if it
+     * exists, else {@code Describe<X>} (many services name reads {@code Describe}).
+     * Returns {@code null} if neither exists.
+     */
+    static OperationShape readBackOp(String resource, Map<String, OperationShape> byName) {
+        OperationShape get = byName.get("Get" + resource);
+        return get != null ? get : byName.get("Describe" + resource);
     }
 
     /** The op's input as a structure, or {@code null} for Unit / non-struct inputs. */

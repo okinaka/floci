@@ -41,7 +41,7 @@ public final class ReadAfterDeleteGenerator {
                 continue;
             }
             OperationShape deleteOp = byName.get("Delete" + resource);
-            OperationShape readOp = byName.get("Get" + resource);
+            OperationShape readOp = ScenarioSupport.readBackOp(resource, byName);
             if (deleteOp == null || readOp == null) {
                 continue;
             }
