@@ -40,9 +40,16 @@ public final class OneOfPruner {
      * so pruning them is a clean gain.
      */
     private static final Map<String, List<List<String>>> GROUPS = Map.of(
+            // SES v2 event destination.
             "EventDestinationDefinition", List.of(List.of(
                     "KinesisFirehoseDestination", "CloudWatchDestination", "SnsDestination",
-                    "EventBridgeDestination", "PinpointDestination")));
+                    "EventBridgeDestination", "PinpointDestination")),
+            // SES v1 event destination (distinct shape name, note SNSDestination casing).
+            // SNS is listed first because the pruner keeps the first present branch and
+            // an SNS destination is valid with just a TopicARN, whereas a synthesized
+            // CloudWatch destination carries null dimension fields that get rejected.
+            "EventDestination", List.of(List.of(
+                    "SNSDestination", "CloudWatchDestination", "KinesisFirehoseDestination")));
 
     private final Model model;
 
