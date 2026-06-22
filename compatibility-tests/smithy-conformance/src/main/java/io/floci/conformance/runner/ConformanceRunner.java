@@ -18,6 +18,7 @@ import io.floci.conformance.scenario.SeedAndReadGenerator;
 import io.floci.conformance.synth.NameSalt;
 import io.floci.conformance.validate.ShapeValidator;
 import software.amazon.smithy.model.shapes.ServiceShape;
+import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.StructureShape;
 import io.floci.conformance.invoke.InvocationResponse;
 import io.floci.conformance.invoke.Invoker;
@@ -62,6 +63,7 @@ public final class ConformanceRunner {
     private final ShapeValidator shapeValidator;
     private final boolean xmlMode;
     private final DependencySeeder seeder;
+    private final io.floci.conformance.synth.OneOfPruner oneOfPruner;
 
     /** Operations referenced by seeding, resolved lazily by name from the model. */
     private final java.util.Map<String, OperationShape> seedOpCache = new java.util.HashMap<>();
@@ -83,6 +85,7 @@ public final class ConformanceRunner {
         this.xmlMode = XML_PROTOCOLS.contains(encoder.protocol());
         this.shapeValidator = new ShapeValidator(model, xmlMode);
         this.seeder = seeder == null ? DependencySeeder.NONE : seeder;
+        this.oneOfPruner = new io.floci.conformance.synth.OneOfPruner(model);
     }
 
     public List<VariantResult> run(String serviceShapeId) {
@@ -174,6 +177,7 @@ public final class ConformanceRunner {
     }
 
     private VariantResult execute(GeneratedCase generated) {
+        pruneOneOf(generated);
         generated = saltInput(generated);
         seedDependencies(generated.logicalInput());
         Variant variant;
@@ -192,6 +196,19 @@ public final class ConformanceRunner {
                     "I/O error: " + e.getMessage());
         }
         return classify(variant, resp);
+    }
+
+    /**
+     * Reduce mutually-exclusive ("exactly one of") member groups in the input to
+     * a single branch, so an {@code all-members} input isn't rejected for setting
+     * more than one. No-op for inputs with no known one-of groups. Mutates the
+     * case's input tree in place (each generator produces a fresh tree per case).
+     */
+    private void pruneOneOf(GeneratedCase c) {
+        Shape input = model.expectShape(c.operation().getInputShape());
+        if (input instanceof StructureShape struct) {
+            oneOfPruner.prune(c.logicalInput(), struct);
+        }
     }
 
     /**
