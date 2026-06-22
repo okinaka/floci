@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OneOfPrunerTest {
 
     private static final Model V2 = SmithyModelLoader.loadSesV2();
+    private static final Model V1 = SmithyModelLoader.loadSesV1();
     private static final OneOfPruner PRUNER = new OneOfPruner(V2);
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -52,6 +53,24 @@ class OneOfPrunerTest {
                   "Enabled":true,"SnsDestination":{"TopicArn":"t"}}}""");
         PRUNER.prune(in, input("CreateConfigurationSetEventDestination"));
         assertThat(in.get("EventDestination").has("SnsDestination")).isTrue();
+    }
+
+    @Test
+    void keepsSnsBranchForSesV1EventDestination() {
+        // SES v1: SNS is preferred (first) over a synthesized CloudWatch destination.
+        OneOfPruner v1Pruner = new OneOfPruner(V1);
+        var in = tree("""
+                {"ConfigurationSetName":"cs","EventDestination":{
+                  "Name":"ed",
+                  "CloudWatchDestination":{"DimensionConfigurations":[]},
+                  "SNSDestination":{"TopicARN":"arn:aws:sns:us-east-1:1:t"}}}""");
+        StructureShape input = V1.expectShape(V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#CreateConfigurationSetEventDestination"))
+                .asOperationShape().orElseThrow().getInputShape(), StructureShape.class);
+        v1Pruner.prune(in, input);
+        var ed = in.get("EventDestination");
+        assertThat(ed.has("SNSDestination")).isTrue();
+        assertThat(ed.has("CloudWatchDestination")).isFalse();
     }
 
     @Test
