@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-20T23:37:26.069737Z"
+    "capturedAt" : "2026-06-22T23:50:36.458015Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -40,17 +40,17 @@
     "CreateConfigurationSetEventDestination" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "negative.missing-required.EventDestination" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "PASS",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "PASS",
       "seed-and-read.CreateConfigurationSetEventDestination_to_DescribeConfigurationSet" : "INCONCLUSIVE_VALIDATION"
     },
@@ -76,6 +76,7 @@
       "identifier-fanout.short.TemplateName" : "NOT_IMPLEMENTED",
       "identifier-fanout.wrong-account.TemplateName" : "NOT_IMPLEMENTED",
       "identifier-fanout.wrong-region.TemplateName" : "NOT_IMPLEMENTED",
+      "list-after-create.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED",
       "negative.missing-required.FailureRedirectionURL" : "NOT_IMPLEMENTED",
       "negative.missing-required.FromEmailAddress" : "NOT_IMPLEMENTED",
       "negative.missing-required.SuccessRedirectionURL" : "NOT_IMPLEMENTED",
@@ -89,6 +90,7 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "read-after-delete.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED",
       "round-trip-echo.CustomVerificationEmailTemplate" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateCustomVerificationEmailTemplate_to_GetTemplate" : "NOT_IMPLEMENTED"
     },
@@ -120,6 +122,7 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "read-after-delete.ReceiptRule" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateReceiptRule_to_DescribeReceiptRule" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateReceiptRule_to_DescribeReceiptRuleSet" : "NOT_IMPLEMENTED"
     },
@@ -129,6 +132,7 @@
       "identifier-fanout.short.RuleSetName" : "NOT_IMPLEMENTED",
       "identifier-fanout.wrong-account.RuleSetName" : "NOT_IMPLEMENTED",
       "identifier-fanout.wrong-region.RuleSetName" : "NOT_IMPLEMENTED",
+      "list-after-create.ReceiptRuleSet" : "NOT_IMPLEMENTED",
       "model-examples.1.CreateReceiptRuleSet" : "NOT_IMPLEMENTED",
       "negative.missing-required.RuleSetName" : "NOT_IMPLEMENTED",
       "optionals.all-members" : "NOT_IMPLEMENTED",
@@ -138,6 +142,7 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "read-after-delete.ReceiptRuleSet" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateReceiptRuleSet_to_DescribeReceiptRule" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateReceiptRuleSet_to_DescribeReceiptRuleSet" : "NOT_IMPLEMENTED"
     },
@@ -1016,17 +1021,17 @@
     "UpdateConfigurationSetEventDestination" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "negative.missing-required.EventDestination" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
       "property-based.seed-4" : "PASS"
     },
     "UpdateConfigurationSetReputationMetricsEnabled" : {
