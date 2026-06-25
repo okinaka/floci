@@ -370,7 +370,8 @@ public class AwsQueryController {
             "CreateConfigurationSetTrackingOptions",
             "UpdateConfigurationSetTrackingOptions",
             "DeleteConfigurationSetTrackingOptions",
-            "UpdateConfigurationSetReputationMetricsEnabled"
+            "UpdateConfigurationSetReputationMetricsEnabled",
+            "PutConfigurationSetDeliveryOptions"
     );
 
     private static final Set<String> COGNITO_ACTIONS = Set.of(
