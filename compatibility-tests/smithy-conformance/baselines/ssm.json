@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ssm#AmazonSSM",
     "modelVersion" : "2014-11-06",
-    "capturedAt" : "2026-06-19T11:14:10.429341Z"
+    "capturedAt" : "2026-06-25T06:01:32.193541Z"
   },
   "cases" : {
     "AddTagsToResource" : {
@@ -204,6 +204,7 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "read-after-delete.Association" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateAssociation_to_DescribeAssociation" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateAssociation_to_DescribeDocument" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateAssociation_to_DescribeDocumentPermission" : "NOT_IMPLEMENTED",
@@ -302,6 +303,7 @@
       "property-based.seed-2" : "NOT_IMPLEMENTED",
       "property-based.seed-3" : "NOT_IMPLEMENTED",
       "property-based.seed-4" : "NOT_IMPLEMENTED",
+      "read-after-delete.Document" : "NOT_IMPLEMENTED",
       "round-trip-echo.Document" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateDocument_to_DescribeAssociation" : "NOT_IMPLEMENTED",
       "seed-and-read.CreateDocument_to_DescribeDocument" : "NOT_IMPLEMENTED",
@@ -2069,6 +2071,7 @@
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
+      "read-after-delete.Parameter" : "PASS",
       "seed-and-read.PutParameter_to_GetParameter" : "PASS"
     },
     "GetParameterHistory" : {
@@ -3098,7 +3101,7 @@
       "boundary.range.max.TimeoutSeconds" : "PASS",
       "boundary.range.min.TimeoutSeconds" : "PASS",
       "boundary.range.over.max.TimeoutSeconds" : "FAIL_SILENT_PASS",
-      "boundary.range.under.min.TimeoutSeconds" : "FAIL_SILENT_PASS",
+      "boundary.range.under.min.TimeoutSeconds" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.DocumentHashType.Sha1" : "PASS",
       "enum-exhaust.DocumentHashType.Sha256" : "PASS",
