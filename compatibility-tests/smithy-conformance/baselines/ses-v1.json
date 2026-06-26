@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-22T23:50:36.458015Z"
+    "capturedAt" : "2026-06-26T08:18:16.721835Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -368,7 +368,8 @@
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
-      "seed-and-read.CreateConfigurationSetTrackingOptions_to_DescribeConfigurationSet" : "FAIL_ECHO"
+      "seed-and-read.CreateConfigurationSetTrackingOptions_to_DescribeConfigurationSet" : "FAIL_ECHO",
+      "seed-and-read.PutConfigurationSetDeliveryOptions_to_DescribeConfigurationSet" : "FAIL_ECHO"
     },
     "DescribeReceiptRule" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -633,20 +634,19 @@
       "property-based.seed-4" : "PASS"
     },
     "PutConfigurationSetDeliveryOptions" : {
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "identifier-fanout.arn.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "identifier-fanout.short.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "identifier-fanout.wrong-account.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "identifier-fanout.wrong-region.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "negative.missing-required.ConfigurationSetName" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED",
-      "property-based.seed-0" : "NOT_IMPLEMENTED",
-      "property-based.seed-1" : "NOT_IMPLEMENTED",
-      "property-based.seed-2" : "NOT_IMPLEMENTED",
-      "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED",
-      "seed-and-read.PutConfigurationSetDeliveryOptions_to_DescribeConfigurationSet" : "NOT_IMPLEMENTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ConfigurationSetName" : "PASS",
+      "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
+      "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
+      "negative.missing-required.ConfigurationSetName" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "PutIdentityPolicy" : {
       "boundary.length.max.PolicyName" : "NOT_IMPLEMENTED",
