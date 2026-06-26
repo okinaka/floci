@@ -8,6 +8,8 @@ import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.invoke.RestXmlInvoker;
 import io.floci.conformance.invoke.AwsJsonInvoker;
+import io.floci.conformance.invoke.RpcV2CborInvoker;
+import io.floci.conformance.encode.RpcV2CborEncoder;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.JsonReportWriter;
 import io.floci.conformance.report.MarkdownReportWriter;
@@ -151,6 +153,26 @@ class ReportingRunTest {
                 "com.amazonaws.dynamodb#DynamoDB_20120810", "2012-08-10", Instant.now().toString());
 
         writeReports("conformance-dynamodb", meta, results);
+    }
+
+    @Test
+    void cloudwatch_reports() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadCloudWatch();
+        ConformanceRunner runner = new ConformanceRunner(
+                model,
+                new RpcV2CborInvoker(BASE_URL, "GraniteServiceVersion20100801", "monitoring"),
+                new RpcV2CborEncoder(),
+                AllGenerators.ALL);
+
+        List<VariantResult> results = new java.util.ArrayList<>(
+                runner.run("com.amazonaws.cloudwatch#GraniteServiceVersion20100801"));
+        results.addAll(runner.runRoundTrip("com.amazonaws.cloudwatch#GraniteServiceVersion20100801"));
+        ReportMeta meta = new ReportMeta(
+                "com.amazonaws.cloudwatch#GraniteServiceVersion20100801", "2010-08-01",
+                Instant.now().toString());
+
+        writeReports("conformance-cloudwatch", meta, results);
     }
 
     private static void writeReports(String stem, ReportMeta meta, List<VariantResult> results)
