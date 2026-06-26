@@ -43,6 +43,11 @@ public final class SmithyModelLoader {
         return loadFromClasspath("models/dynamodb.json");
     }
 
+    /** CloudWatch (Smithy RPC v2 CBOR protocol, alongside awsQuery / awsJson1_0). */
+    public static Model loadCloudWatch() {
+        return loadFromClasspath("models/cloudwatch.json");
+    }
+
     public static Model loadFromClasspath(String resourcePath) {
         URL url = Thread.currentThread().getContextClassLoader().getResource(resourcePath);
         if (url == null) {
