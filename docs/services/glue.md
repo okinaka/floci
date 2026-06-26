@@ -12,7 +12,7 @@ Floci emulates the AWS Glue Data Catalog and Glue Schema Registry, allowing you 
 | Area | Actions |
 |---|---|
 | Databases | `CreateDatabase` · `GetDatabase` · `GetDatabases` · `DeleteDatabase` |
-| Tables | `CreateTable` · `GetTable` · `GetTables` · `DeleteTable` |
+| Tables | `CreateTable` · `GetTable` · `GetTables` · `UpdateTable` · `DeleteTable` |
 | Partitions | `CreatePartition` · `GetPartitions` |
 | User-defined functions | `CreateUserDefinedFunction` · `GetUserDefinedFunction` · `GetUserDefinedFunctions` · `UpdateUserDefinedFunction` · `DeleteUserDefinedFunction` |
 
@@ -97,6 +97,12 @@ aws glue create-table \
   }' \
   --endpoint-url $AWS_ENDPOINT_URL
 ```
+
+## Iceberg Tables (catalog-only)
+
+`CreateTable` accepts `OpenTableFormatInput` and `UpdateTable` accepts `UpdateOpenTableFormatInput` for Iceberg tables. Columns are derived from the Iceberg schema and the table is marked `table_type=ICEBERG`.
+
+This is **catalog-only**: no Iceberg `metadata.json`, manifests, or data files are written to S3 (`metadata_location` is a placeholder), so reading actual Iceberg data is not supported yet.
 
 ## Schema Registry Example
 
