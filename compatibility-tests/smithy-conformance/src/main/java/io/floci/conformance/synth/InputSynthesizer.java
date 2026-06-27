@@ -14,6 +14,7 @@ import software.amazon.smithy.model.shapes.ShapeId;
 import software.amazon.smithy.model.shapes.StructureShape;
 import software.amazon.smithy.model.traits.RangeTrait;
 import software.amazon.smithy.model.traits.RequiredTrait;
+import software.amazon.smithy.model.traits.TimestampFormatTrait;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -88,7 +89,7 @@ public final class InputSynthesizer {
             case DOUBLE -> NODES.numberNode(clampDouble(shape, owner, 1.0d));
             case BIG_INTEGER, BIG_DECIMAL -> NODES.numberNode((int) clampLong(shape, owner, 1));
             case BOOLEAN -> NODES.booleanNode(false);
-            case TIMESTAMP -> NODES.numberNode(1577836800L); // 2020-01-01T00:00:00Z epoch
+            case TIMESTAMP -> timestampValue(shape, owner);
             case DOCUMENT -> NODES.objectNode();
             case UNION -> buildFirstUnionBranch((software.amazon.smithy.model.shapes.UnionShape) shape, depth, visiting);
             default -> NODES.nullNode();
@@ -137,6 +138,35 @@ public final class InputSynthesizer {
             return owner.expectTrait(RangeTrait.class);
         }
         return shape == null ? null : shape.getTrait(RangeTrait.class).orElse(null);
+    }
+
+    /** Epoch seconds for 2020-01-01T00:00:00Z; the textual forms below are the same instant. */
+    private static final long EPOCH_2020 = 1577836800L;
+
+    /**
+     * Renders a timestamp in the format the member's {@code @timestampFormat}
+     * requires, so a value that must be ISO-8601 ({@code date-time}) on the wire
+     * isn't sent as a bare epoch number (which a strict server rejects — e.g.
+     * S3 {@code PutObjectRetention}'s RetainUntilDate). Member-level format wins
+     * over the target shape's; absent a format the value stays an epoch number,
+     * matching the body default of the JSON protocols.
+     */
+    private static JsonNode timestampValue(Shape shape, MemberShape owner) {
+        return switch (timestampFormat(shape, owner)) {
+            case "date-time" -> NODES.textNode("2020-01-01T00:00:00Z");
+            case "http-date" -> NODES.textNode("Wed, 01 Jan 2020 00:00:00 GMT");
+            default -> NODES.numberNode(EPOCH_2020); // epoch-seconds (explicit or no format)
+        };
+    }
+
+    private static String timestampFormat(Shape shape, MemberShape owner) {
+        if (owner != null && owner.hasTrait(TimestampFormatTrait.class)) {
+            return owner.expectTrait(TimestampFormatTrait.class).getValue();
+        }
+        if (shape != null && shape.hasTrait(TimestampFormatTrait.class)) {
+            return shape.expectTrait(TimestampFormatTrait.class).getValue();
+        }
+        return "epoch-seconds";
     }
 
     private JsonNode buildStruct(StructureShape struct, int depth, Set<ShapeId> visiting) {
