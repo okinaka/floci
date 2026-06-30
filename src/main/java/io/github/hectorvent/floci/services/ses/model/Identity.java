@@ -47,6 +47,9 @@ public class Identity {
     @JsonProperty("MailFromDomainStatus")
     private String mailFromDomainStatus = "Pending";
 
+    @JsonProperty("ConfigurationSetName")
+    private String configurationSetName;
+
     @JsonProperty("HeadersInNotificationsEnabled")
     private Map<String, Boolean> headersInNotificationsEnabled = new HashMap<>();
 
@@ -100,6 +103,9 @@ public class Identity {
 
     public String getMailFromDomainStatus() { return mailFromDomainStatus; }
     public void setMailFromDomainStatus(String mailFromDomainStatus) { this.mailFromDomainStatus = mailFromDomainStatus; }
+
+    public String getConfigurationSetName() { return configurationSetName; }
+    public void setConfigurationSetName(String configurationSetName) { this.configurationSetName = configurationSetName; }
 
     public Map<String, Boolean> getHeadersInNotificationsEnabled() { return headersInNotificationsEnabled; }
     public void setHeadersInNotificationsEnabled(Map<String, Boolean> headersInNotificationsEnabled) { this.headersInNotificationsEnabled = headersInNotificationsEnabled; }
