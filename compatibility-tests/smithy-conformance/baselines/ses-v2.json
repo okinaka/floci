@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-06-22T23:50:36.962979Z"
+    "capturedAt" : "2026-07-03T09:34:35.927583Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -39,21 +39,21 @@
     "CreateConfigurationSet" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_STATE",
+      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
-      "list-after-create.ConfigurationSet" : "INCONCLUSIVE_STATE",
+      "list-after-create.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.ConfigurationSetName" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_STATE",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "FAIL_5XX",
       "property-based.seed-1" : "INCONCLUSIVE_STATE",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
-      "property-based.seed-3" : "INCONCLUSIVE_STATE",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_STATE",
-      "read-after-delete.ConfigurationSet" : "INCONCLUSIVE_STATE",
-      "round-trip-echo.ConfigurationSet" : "INCONCLUSIVE_STATE",
-      "seed-and-read.CreateConfigurationSet_to_GetConfigurationSetEventDestinations" : "INCONCLUSIVE_STATE"
+      "read-after-delete.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
+      "round-trip-echo.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateConfigurationSet_to_GetConfigurationSetEventDestinations" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateConfigurationSetEventDestination" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -99,24 +99,24 @@
       "seed-and-read.CreateContact_to_ListContacts" : "FAIL_4XX_UNROUTED"
     },
     "CreateContactList" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.arn.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.short.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-account.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-region.ContactListName" : "FAIL_4XX_UNROUTED",
-      "list-after-create.ContactList" : "FAIL_4XX_UNROUTED",
-      "negative.missing-required.ContactListName" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
-      "read-after-delete.ContactList" : "FAIL_4XX_UNROUTED",
-      "round-trip-echo.ContactList" : "FAIL_4XX_UNROUTED",
-      "seed-and-read.CreateContactList_to_GetContact" : "FAIL_4XX_UNROUTED",
-      "seed-and-read.CreateContactList_to_ListContacts" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.wrong-account.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.wrong-region.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "list-after-create.ContactList" : "INCONCLUSIVE_VALIDATION",
+      "negative.missing-required.ContactListName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
+      "read-after-delete.ContactList" : "INCONCLUSIVE_VALIDATION",
+      "round-trip-echo.ContactList" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateContactList_to_GetContact" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateContactList_to_ListContacts" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -390,18 +390,18 @@
       "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "DeleteContactList" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.arn.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.short.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-account.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-region.ContactListName" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.wrong-account.ContactListName" : "PASS",
+      "identifier-fanout.wrong-region.ContactListName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.required-only" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
     },
     "DeleteCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -598,7 +598,6 @@
       "seed-and-read.PutConfigurationSetReputationOptions_to_GetConfigurationSet" : "PASS",
       "seed-and-read.PutConfigurationSetSendingOptions_to_GetConfigurationSet" : "PASS",
       "seed-and-read.PutConfigurationSetSuppressionOptions_to_GetConfigurationSet" : "PASS",
-      "seed-and-read.PutConfigurationSetTrackingOptions_to_GetConfigurationSet" : "PASS",
       "seed-and-read.PutConfigurationSetVdmOptions_to_GetConfigurationSet" : "PASS"
     },
     "GetConfigurationSetEventDestinations" : {
@@ -620,7 +619,6 @@
       "seed-and-read.PutConfigurationSetReputationOptions_to_GetConfigurationSetEventDestinations" : "PASS",
       "seed-and-read.PutConfigurationSetSendingOptions_to_GetConfigurationSetEventDestinations" : "PASS",
       "seed-and-read.PutConfigurationSetSuppressionOptions_to_GetConfigurationSetEventDestinations" : "PASS",
-      "seed-and-read.PutConfigurationSetTrackingOptions_to_GetConfigurationSetEventDestinations" : "PASS",
       "seed-and-read.PutConfigurationSetVdmOptions_to_GetConfigurationSetEventDestinations" : "PASS"
     },
     "GetContact" : {
@@ -639,18 +637,18 @@
       "seed-and-read.PutSuppressedDestination_to_GetContact" : "FAIL_4XX_UNROUTED"
     },
     "GetContactList" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.arn.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.short.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-account.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-region.ContactListName" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.wrong-account.ContactListName" : "PASS",
+      "identifier-fanout.wrong-region.ContactListName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.required-only" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
     },
     "GetCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
@@ -945,14 +943,14 @@
       "property-based.seed-4" : "PASS"
     },
     "ListContactLists" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ListContacts" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -1319,16 +1317,16 @@
       "property-based.seed-4" : "PASS"
     },
     "PutConfigurationSetSendingOptions" : {
-      "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
+      "empty.passthrough" : "PASS",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "optionals.all-members" : "PASS",
-      "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
     },
@@ -1351,21 +1349,23 @@
     },
     "PutConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "PASS",
-      "enum-exhaust.HttpsPolicy.OPTIONAL" : "PASS",
-      "enum-exhaust.HttpsPolicy.REQUIRE" : "PASS",
-      "enum-exhaust.HttpsPolicy.REQUIRE_OPEN_ONLY" : "PASS",
+      "enum-exhaust.HttpsPolicy.OPTIONAL" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.HttpsPolicy.REQUIRE" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.HttpsPolicy.REQUIRE_OPEN_ONLY" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "PASS",
+      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "negative.invalid-enum.HttpsPolicy" : "PASS",
-      "optionals.all-members" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "PASS",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "PASS",
-      "property-based.seed-4" : "PASS"
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutConfigurationSetTrackingOptions_to_GetConfigurationSet" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutConfigurationSetTrackingOptions_to_GetConfigurationSetEventDestinations" : "INCONCLUSIVE_VALIDATION"
     },
     "PutConfigurationSetVdmOptions" : {
       "empty.passthrough" : "PASS",
@@ -1795,18 +1795,18 @@
       "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "UpdateContactList" : {
-      "empty.passthrough" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.arn.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.short.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-account.ContactListName" : "FAIL_4XX_UNROUTED",
-      "identifier-fanout.wrong-region.ContactListName" : "FAIL_4XX_UNROUTED",
-      "optionals.all-members" : "FAIL_4XX_UNROUTED",
-      "optionals.required-only" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.wrong-account.ContactListName" : "PASS",
+      "identifier-fanout.wrong-region.ContactListName" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.required-only" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "FAIL_4XX_UNROUTED",
