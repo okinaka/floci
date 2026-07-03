@@ -8,12 +8,14 @@ import io.floci.conformance.encode.QueryFormEncoder;
 import io.floci.conformance.encode.RestJsonEncoder;
 import io.floci.conformance.encode.RestXmlEncoder;
 import io.floci.conformance.encode.AwsJsonEncoder;
+import io.floci.conformance.encode.RpcV2CborEncoder;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.invoke.Invoker;
 import io.floci.conformance.invoke.QueryInvoker;
 import io.floci.conformance.invoke.RestJsonInvoker;
 import io.floci.conformance.invoke.RestXmlInvoker;
 import io.floci.conformance.invoke.AwsJsonInvoker;
+import io.floci.conformance.invoke.RpcV2CborInvoker;
 import io.floci.conformance.model.VariantResult;
 import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
@@ -121,6 +123,18 @@ class BaselineGateTest {
                 new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
                         AwsJsonInvoker.Flavor.AWS_JSON_1_0),
                 AwsJsonEncoder.json10(),
+                DependencySeeder.NONE);
+    }
+
+    @Test
+    void gate_cloudwatch() throws Exception {
+        assumeFloci();
+        Model model = SmithyModelLoader.loadCloudWatch();
+        runGate("cloudwatch",
+                "com.amazonaws.cloudwatch#GraniteServiceVersion20100801", "2010-08-01",
+                model,
+                new RpcV2CborInvoker(BASE_URL, "GraniteServiceVersion20100801", "monitoring"),
+                new RpcV2CborEncoder(),
                 DependencySeeder.NONE);
     }
 
