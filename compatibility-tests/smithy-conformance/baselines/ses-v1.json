@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-06-26T08:18:16.721835Z"
+    "capturedAt" : "2026-07-03T09:34:35.261297Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -57,18 +57,19 @@
     "CreateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "PASS",
+      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "negative.missing-required.TrackingOptions" : "PASS",
-      "optionals.all-members" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "PASS",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateConfigurationSetTrackingOptions_to_DescribeConfigurationSet" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateCustomVerificationEmailTemplate" : {
       "empty.passthrough" : "NOT_IMPLEMENTED",
@@ -368,7 +369,6 @@
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
-      "seed-and-read.CreateConfigurationSetTrackingOptions_to_DescribeConfigurationSet" : "FAIL_ECHO",
       "seed-and-read.PutConfigurationSetDeliveryOptions_to_DescribeConfigurationSet" : "FAIL_ECHO"
     },
     "DescribeReceiptRule" : {
@@ -820,7 +820,7 @@
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-3" : "PASS",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "SendTemplatedEmail" : {
@@ -1071,17 +1071,17 @@
     "UpdateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ConfigurationSetName" : "PASS",
+      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.ConfigurationSetName" : "PASS",
       "identifier-fanout.wrong-region.ConfigurationSetName" : "PASS",
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "negative.missing-required.TrackingOptions" : "PASS",
-      "optionals.all-members" : "PASS",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateCustomVerificationEmailTemplate" : {
