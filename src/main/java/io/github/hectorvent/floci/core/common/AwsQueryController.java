@@ -371,6 +371,7 @@ public class AwsQueryController {
             "SetIdentityHeadersInNotificationsEnabled",
             "SetIdentityMailFromDomain", "GetIdentityMailFromDomainAttributes",
             "GetIdentityDkimAttributes",
+            "PutIdentityPolicy", "GetIdentityPolicies", "ListIdentityPolicies", "DeleteIdentityPolicy",
             "CreateTemplate", "UpdateTemplate", "GetTemplate", "DeleteTemplate",
             "ListTemplates", "SendTemplatedEmail", "SendBulkTemplatedEmail",
             "TestRenderTemplate",
