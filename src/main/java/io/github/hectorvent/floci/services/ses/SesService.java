@@ -3,7 +3,6 @@ package io.github.hectorvent.floci.services.ses;
 import io.github.hectorvent.floci.config.EmulatorConfig;
 import io.github.hectorvent.floci.core.common.AwsArnUtils;
 import io.github.hectorvent.floci.core.common.AwsException;
-import io.github.hectorvent.floci.core.storage.InMemoryStorage;
 import io.github.hectorvent.floci.core.storage.StorageBackend;
 import io.github.hectorvent.floci.core.storage.StorageFactory;
 import io.github.hectorvent.floci.services.route53.Route53Service;
@@ -151,11 +150,12 @@ public class SesService {
                StorageBackend<String, DedicatedIpPool> dedicatedIpPoolStore,
                StorageBackend<String, ContactList> contactListStore,
                StorageBackend<String, Contact> contactStore,
+               StorageBackend<String, String> policyStore,
                SmtpRelay smtpRelay,
                ObjectMapper objectMapper,
                Clock clock) {
         this(identityStore, emailStore, accountSettingsStore, templateStore, configSetStore, suppressionStore,
-                accountSuppressionStore, dedicatedIpPoolStore, contactListStore, contactStore, smtpRelay,
+                accountSuppressionStore, dedicatedIpPoolStore, contactListStore, contactStore, policyStore, smtpRelay,
                 objectMapper, null, clock);
     }
 
@@ -169,6 +169,7 @@ public class SesService {
                StorageBackend<String, DedicatedIpPool> dedicatedIpPoolStore,
                StorageBackend<String, ContactList> contactListStore,
                StorageBackend<String, Contact> contactStore,
+               StorageBackend<String, String> policyStore,
                SmtpRelay smtpRelay,
                ObjectMapper objectMapper,
                Route53Service route53Service,
@@ -183,7 +184,7 @@ public class SesService {
         this.dedicatedIpPoolStore = dedicatedIpPoolStore;
         this.contactListStore = contactListStore;
         this.contactStore = contactStore;
-        this.policyStore = new InMemoryStorage<>();
+        this.policyStore = policyStore;
         this.smtpRelay = smtpRelay;
         this.objectMapper = objectMapper;
         this.eventPublisher = null;
