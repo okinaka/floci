@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ssm#AmazonSSM",
     "modelVersion" : "2014-11-06",
-    "capturedAt" : "2026-07-03T09:34:32.925896Z"
+    "capturedAt" : "2026-07-08T01:33:03.352634Z"
   },
   "cases" : {
     "AddTagsToResource" : {
@@ -1417,21 +1417,21 @@
       "property-based.seed-4" : "NOT_IMPLEMENTED"
     },
     "DescribeMaintenanceWindows" : {
-      "boundary.length.max.Filters" : "NOT_IMPLEMENTED",
-      "boundary.length.min.Filters" : "NOT_IMPLEMENTED",
-      "boundary.length.over.max.Filters" : "NOT_IMPLEMENTED",
-      "boundary.range.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.min.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.over.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.under.min.MaxResults" : "NOT_IMPLEMENTED",
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED",
-      "property-based.seed-0" : "NOT_IMPLEMENTED",
-      "property-based.seed-1" : "NOT_IMPLEMENTED",
-      "property-based.seed-2" : "NOT_IMPLEMENTED",
-      "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "boundary.length.max.Filters" : "PASS",
+      "boundary.length.min.Filters" : "PASS",
+      "boundary.length.over.max.Filters" : "FAIL_SILENT_PASS",
+      "boundary.range.max.MaxResults" : "PASS",
+      "boundary.range.min.MaxResults" : "PASS",
+      "boundary.range.over.max.MaxResults" : "FAIL_SILENT_PASS",
+      "boundary.range.under.min.MaxResults" : "FAIL_SILENT_PASS",
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "DescribeMaintenanceWindowsForTarget" : {
       "boundary.length.max.Targets" : "NOT_IMPLEMENTED",
@@ -2268,20 +2268,20 @@
       "property-based.seed-4" : "NOT_IMPLEMENTED"
     },
     "ListAssociations" : {
-      "boundary.length.min.AssociationFilterList" : "NOT_IMPLEMENTED",
-      "boundary.length.under.min.AssociationFilterList" : "NOT_IMPLEMENTED",
-      "boundary.range.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.min.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.over.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.under.min.MaxResults" : "NOT_IMPLEMENTED",
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED",
-      "property-based.seed-0" : "NOT_IMPLEMENTED",
-      "property-based.seed-1" : "NOT_IMPLEMENTED",
-      "property-based.seed-2" : "NOT_IMPLEMENTED",
-      "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "boundary.length.min.AssociationFilterList" : "PASS",
+      "boundary.length.under.min.AssociationFilterList" : "FAIL_SILENT_PASS",
+      "boundary.range.max.MaxResults" : "PASS",
+      "boundary.range.min.MaxResults" : "PASS",
+      "boundary.range.over.max.MaxResults" : "FAIL_SILENT_PASS",
+      "boundary.range.under.min.MaxResults" : "FAIL_SILENT_PASS",
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ListCommandInvocations" : {
       "boundary.length.max.CommandId" : "PASS",
@@ -2419,23 +2419,23 @@
       "seed-and-read.PutParameter_to_ListDocumentVersions" : "NOT_IMPLEMENTED"
     },
     "ListDocuments" : {
-      "boundary.length.max.Filters" : "NOT_IMPLEMENTED",
-      "boundary.length.min.DocumentFilterList" : "NOT_IMPLEMENTED",
-      "boundary.length.min.Filters" : "NOT_IMPLEMENTED",
-      "boundary.length.over.max.Filters" : "NOT_IMPLEMENTED",
-      "boundary.length.under.min.DocumentFilterList" : "NOT_IMPLEMENTED",
-      "boundary.range.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.min.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.over.max.MaxResults" : "NOT_IMPLEMENTED",
-      "boundary.range.under.min.MaxResults" : "NOT_IMPLEMENTED",
-      "empty.passthrough" : "NOT_IMPLEMENTED",
-      "optionals.all-members" : "NOT_IMPLEMENTED",
-      "optionals.required-only" : "NOT_IMPLEMENTED",
-      "property-based.seed-0" : "NOT_IMPLEMENTED",
-      "property-based.seed-1" : "NOT_IMPLEMENTED",
-      "property-based.seed-2" : "NOT_IMPLEMENTED",
-      "property-based.seed-3" : "NOT_IMPLEMENTED",
-      "property-based.seed-4" : "NOT_IMPLEMENTED"
+      "boundary.length.max.Filters" : "PASS",
+      "boundary.length.min.DocumentFilterList" : "PASS",
+      "boundary.length.min.Filters" : "PASS",
+      "boundary.length.over.max.Filters" : "FAIL_SILENT_PASS",
+      "boundary.length.under.min.DocumentFilterList" : "FAIL_SILENT_PASS",
+      "boundary.range.max.MaxResults" : "PASS",
+      "boundary.range.min.MaxResults" : "PASS",
+      "boundary.range.over.max.MaxResults" : "FAIL_SILENT_PASS",
+      "boundary.range.under.min.MaxResults" : "FAIL_SILENT_PASS",
+      "empty.passthrough" : "PASS",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ListInventoryEntries" : {
       "boundary.length.max.Filters" : "NOT_IMPLEMENTED",

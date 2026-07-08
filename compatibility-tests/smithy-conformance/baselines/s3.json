@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.s3#AmazonS3",
     "modelVersion" : "2006-03-01",
-    "capturedAt" : "2026-07-03T09:34:34.683195Z"
+    "capturedAt" : "2026-07-08T01:33:05.191454Z"
   },
   "cases" : {
     "AbortMultipartUpload" : {
@@ -440,7 +440,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -455,7 +455,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -466,7 +466,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -476,7 +476,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -491,7 +491,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -506,7 +506,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -517,7 +517,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -527,7 +527,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -537,7 +537,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -552,7 +552,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -562,7 +562,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -573,7 +573,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -584,7 +584,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "INCONCLUSIVE_STATE",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -595,7 +595,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -606,7 +606,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -625,7 +625,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "PASS"
@@ -642,7 +642,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "INCONCLUSIVE_MISSING"
@@ -668,7 +668,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "FAIL_SHAPE",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -678,7 +678,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -1155,7 +1155,7 @@
       "optionals.all-members" : "INCONCLUSIVE_MISSING",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_STATE",
       "property-based.seed-4" : "INCONCLUSIVE_MISSING",
@@ -1181,7 +1181,7 @@
       "optionals.all-members" : "INCONCLUSIVE_MISSING",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_MISSING",
       "property-based.seed-4" : "INCONCLUSIVE_MISSING",
@@ -1302,7 +1302,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
@@ -1324,7 +1324,7 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
@@ -3051,7 +3051,7 @@
       "optionals.all-members" : "INCONCLUSIVE_STATE",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_STATE",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_STATE",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_STATE"
@@ -3097,7 +3097,7 @@
       "optionals.all-members" : "FAIL_SHAPE",
       "optionals.required-only" : "FAIL_SHAPE",
       "property-based.seed-0" : "FAIL_SHAPE",
-      "property-based.seed-1" : "FAIL_SHAPE",
+      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "FAIL_SHAPE",
       "property-based.seed-3" : "FAIL_SHAPE",
       "property-based.seed-4" : "FAIL_SHAPE"
@@ -3152,25 +3152,25 @@
       "enum-exhaust.ChecksumAlgorithm.CRC32" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC32C" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.CRC64NVME" : "PASS",
-      "enum-exhaust.ChecksumAlgorithm.MD5" : "PASS",
+      "enum-exhaust.ChecksumAlgorithm.MD5" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.ChecksumAlgorithm.SHA1" : "PASS",
       "enum-exhaust.ChecksumAlgorithm.SHA256" : "PASS",
-      "enum-exhaust.ChecksumAlgorithm.SHA512" : "PASS",
-      "enum-exhaust.ChecksumAlgorithm.XXHASH128" : "PASS",
-      "enum-exhaust.ChecksumAlgorithm.XXHASH3" : "PASS",
-      "enum-exhaust.ChecksumAlgorithm.XXHASH64" : "PASS",
+      "enum-exhaust.ChecksumAlgorithm.SHA512" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.ChecksumAlgorithm.XXHASH128" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.ChecksumAlgorithm.XXHASH3" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.ChecksumAlgorithm.XXHASH64" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.RequestPayer.requester" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.arn.VersionId" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.short.VersionId" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.wrong-account.VersionId" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.wrong-region.VersionId" : "INCONCLUSIVE_MISSING",
-      "negative.invalid-enum.ChecksumAlgorithm" : "FAIL_SILENT_PASS",
+      "negative.invalid-enum.ChecksumAlgorithm" : "PASS",
       "negative.invalid-enum.RequestPayer" : "INCONCLUSIVE_MISSING",
       "negative.missing-required.ObjectEncryption" : "INCONCLUSIVE_MISSING",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
