@@ -174,9 +174,27 @@ public class EcsContainerManager {
                         // EFS volume: a shared local Docker named volume, so every task
                         // container that mounts the same EFS file system shares persistent
                         // storage — the local stand-in for an EFS mount (Docker cannot mount
-                        // a real EFS file system).
+                        // a real EFS file system). Initialise the volume root's POSIX ownership
+                        // to emulate the EFS access point's RootDirectory.CreationInfo, so a
+                        // non-root task image USER can write to it (no-op unless configured).
+                        var efsCfg = config.storage().efs();
+                        lifecycleManager.ensureSharedVolume(efsVolumeName(efs.fileSystemId()),
+                                efsCfg.ownerUid(), efsCfg.ownerGid(), efsCfg.rootPermissions(),
+                                efsCfg.initImage());
                         specBuilder.withNamedVolume(efsVolumeName(efs.fileSystemId()),
                                 mp.containerPath(), mp.readOnly());
+                        // Emulate the access point's PosixUser: run the container under the
+                        // configured uid[:gid] and/or add the supplementary group, so a non-root
+                        // image can read/write the shared volume owned by ownerUid/ownerGid.
+                        efsCfg.mountUser().ifPresent(u -> {
+                            // Validate the access point PosixUser format before applying it.
+                            if (!u.matches("^\\d+(:\\d+)?$")) {
+                                throw new IllegalArgumentException(
+                                        "floci.storage.efs.mount-user must be \"uid\" or \"uid:gid\": " + u);
+                            }
+                            specBuilder.withUser(u);
+                        });
+                        efsCfg.mountGroupAdd().ifPresent(gid -> specBuilder.withGroupAdd(String.valueOf(gid)));
                     } else {
                         LOG.warnv("Skipping mountPoint with unresolved volume {0} on container {1}",
                                 mp.sourceVolume(), def.getName());
