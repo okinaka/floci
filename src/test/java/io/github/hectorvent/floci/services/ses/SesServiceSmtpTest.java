@@ -65,7 +65,7 @@ class SesServiceSmtpTest {
                 List.of("cc@example.com"),
                 List.of("bcc@example.com"),
                 List.of("reply@example.com"),
-                "Subject", "text body", "<p>html</p>");
+                "Subject", "text body", "<p>html</p>", List.of());
     }
 
     @Test
@@ -76,7 +76,7 @@ class SesServiceSmtpTest {
 
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty());
-        verify(smtpRelay).relay(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(smtpRelay).relay(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -111,7 +111,7 @@ class SesServiceSmtpTest {
                 "from@example.com",
                 List.of("to@example.com"),
                 null, null, null,
-                "Subject", null, "<p>html only</p>");
+                "Subject", null, "<p>html only</p>", List.of());
     }
 
     @Test
@@ -128,7 +128,7 @@ class SesServiceSmtpTest {
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty(),
                 "stored SentEmail should still record the original recipient list");
-        verify(smtpRelay, never()).relay(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(smtpRelay, never()).relay(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -148,7 +148,7 @@ class SesServiceSmtpTest {
                 List.of("cc-keep@example.com"),
                 null,
                 null,
-                "Subject", "text body", null);
+                "Subject", "text body", null, List.of());
     }
 
     @Test
@@ -197,7 +197,7 @@ class SesServiceSmtpTest {
                 "from@example.com",
                 List.of("to@example.com"),
                 null, null, null,
-                "Subject", "text body", null);
+                "Subject", "text body", null, List.of());
     }
 
     @Test
@@ -217,7 +217,7 @@ class SesServiceSmtpTest {
                 "from@example.com",
                 List.of("complainer@example.com"),
                 null, null, null,
-                "Subject", "text body", null);
+                "Subject", "text body", null, List.of());
     }
 
     @Test
@@ -232,7 +232,7 @@ class SesServiceSmtpTest {
                 List.of("to@example.com"), null, null, null,
                 "Subject", "text body", null, "cs-default", List.of(), List.of(), null, "us-east-1");
 
-        verify(smtpRelay, never()).relay(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(smtpRelay, never()).relay(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
