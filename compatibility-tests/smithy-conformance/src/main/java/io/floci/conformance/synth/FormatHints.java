@@ -33,6 +33,7 @@ public final class FormatHints {
     private static final String URL = "https://example.com/cov-probe";
     private static final String S3_BUCKET = "cov-probe-bucket";
     private static final String MEDIA_TYPE = "application/cov-probe";
+    private static final String NUMERIC_MARKER = "1";
 
     private FormatHints() {
     }
@@ -114,6 +115,13 @@ public final class FormatHints {
         // cov-probe marker inside a valid media type.
         if (containsAny(lower, "contenttype") || equalsIgnoreCase(n, "MediaType")) {
             return MEDIA_TYPE;
+        }
+
+        // PartNumberMarker is modeled as a plain string but is an integer
+        // pagination marker on the wire; a non-numeric value is rejected before
+        // the endpoint runs.
+        if (containsAny(lower, "partnumbermarker")) {
+            return NUMERIC_MARKER;
         }
 
         return DEFAULT;
