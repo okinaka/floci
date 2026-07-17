@@ -96,7 +96,8 @@ public final class PropertyBasedGenerator implements Generator {
             case FLOAT -> NODES.numberNode(rng.nextFloat() * 100);
             case DOUBLE -> NODES.numberNode(rng.nextDouble() * 100);
             case BIG_INTEGER, BIG_DECIMAL -> NODES.numberNode(randomInt(shape, owner, rng));
-            case TIMESTAMP -> NODES.numberNode(1577836800L + rng.nextInt(86400 * 365));
+            case TIMESTAMP -> io.floci.conformance.synth.InputSynthesizer.timestampNode(
+                    1577836800L + rng.nextInt(86400 * 365), shape, owner);
             case DOCUMENT -> NODES.objectNode();
             default -> NODES.nullNode();
         };
