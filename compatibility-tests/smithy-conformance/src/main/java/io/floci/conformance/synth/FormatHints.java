@@ -32,6 +32,7 @@ public final class FormatHints {
     private static final String ARN_FIREHOSE = "arn:aws:firehose:us-east-1:123456789012:deliverystream/cov-probe";
     private static final String URL = "https://example.com/cov-probe";
     private static final String S3_BUCKET = "cov-probe-bucket";
+    private static final String MEDIA_TYPE = "application/cov-probe";
 
     private FormatHints() {
     }
@@ -106,6 +107,13 @@ public final class FormatHints {
         if (equalsIgnoreCase(n, "EmailIdentity") || equalsIgnoreCase(n, "Identity")
                 || equalsIgnoreCase(n, "Identities")) {
             return EMAIL;
+        }
+
+        // Content-Type / media-type headers must parse as type/subtype or strict
+        // servers (RESTEasy) reject them before the endpoint runs. Keep the
+        // cov-probe marker inside a valid media type.
+        if (containsAny(lower, "contenttype") || equalsIgnoreCase(n, "MediaType")) {
+            return MEDIA_TYPE;
         }
 
         return DEFAULT;

@@ -54,6 +54,16 @@ class FormatHintsTest {
     }
 
     @Test
+    void content_type_members_get_valid_media_type() {
+        // Must parse as type/subtype or strict servers (RESTEasy) reject the
+        // request with a 400 before the endpoint runs.
+        assertThat(FormatHints.stringForName("ContentType")).matches("[^/]+/[^/]+");
+        assertThat(FormatHints.stringForName("ResponseContentType")).matches("[^/]+/[^/]+");
+        assertThat(FormatHints.stringForName("AttachmentContentType")).matches("[^/]+/[^/]+");
+        assertThat(FormatHints.stringForName("MediaType")).matches("[^/]+/[^/]+");
+    }
+
+    @Test
     void name_member_falls_back_to_default() {
         assertThat(FormatHints.stringForName("PolicyName")).isEqualTo(FormatHints.DEFAULT);
         assertThat(FormatHints.stringForName("RuleSetName")).isEqualTo(FormatHints.DEFAULT);
