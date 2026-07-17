@@ -64,6 +64,12 @@ class FormatHintsTest {
     }
 
     @Test
+    void part_number_marker_gets_numeric_value() {
+        // Modeled as a plain string but must be an integer on the wire.
+        assertThat(FormatHints.stringForName("PartNumberMarker")).matches("\\d+");
+    }
+
+    @Test
     void name_member_falls_back_to_default() {
         assertThat(FormatHints.stringForName("PolicyName")).isEqualTo(FormatHints.DEFAULT);
         assertThat(FormatHints.stringForName("RuleSetName")).isEqualTo(FormatHints.DEFAULT);

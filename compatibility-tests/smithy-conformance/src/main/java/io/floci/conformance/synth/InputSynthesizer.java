@@ -152,10 +152,25 @@ public final class InputSynthesizer {
      * matching the body default of the JSON protocols.
      */
     private static JsonNode timestampValue(Shape shape, MemberShape owner) {
+        return timestampNode(EPOCH_2020, shape, owner);
+    }
+
+    /**
+     * Renders {@code epochSeconds} as the JSON node the member's
+     * {@code @timestampFormat} requires — ISO-8601 text for {@code date-time},
+     * an RFC 1123 string for {@code http-date}, otherwise a bare epoch number.
+     * Shared with generators that mint their own timestamps so header/query
+     * bindings that must be ISO-8601 on the wire aren't sent as raw epochs.
+     */
+    public static JsonNode timestampNode(long epochSeconds, Shape shape, MemberShape owner) {
+        java.time.Instant t = java.time.Instant.ofEpochSecond(epochSeconds);
         return switch (timestampFormat(shape, owner)) {
-            case "date-time" -> NODES.textNode("2020-01-01T00:00:00Z");
-            case "http-date" -> NODES.textNode("Wed, 01 Jan 2020 00:00:00 GMT");
-            default -> NODES.numberNode(EPOCH_2020); // epoch-seconds (explicit or no format)
+            case "date-time" -> NODES.textNode(
+                    java.time.format.DateTimeFormatter.ISO_INSTANT.format(t));
+            case "http-date" -> NODES.textNode(
+                    java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                            t.atOffset(java.time.ZoneOffset.UTC)));
+            default -> NODES.numberNode(epochSeconds); // epoch-seconds (explicit or no format)
         };
     }
 
