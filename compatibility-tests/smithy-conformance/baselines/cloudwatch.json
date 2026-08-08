@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.cloudwatch#GraniteServiceVersion20100801",
     "modelVersion" : "2010-08-01",
-    "capturedAt" : "2026-07-17T11:40:17.787730Z"
+    "capturedAt" : "2026-08-08T09:12:37.183347Z"
   },
   "cases" : {
     "AssociateDatasetKmsKey" : {
