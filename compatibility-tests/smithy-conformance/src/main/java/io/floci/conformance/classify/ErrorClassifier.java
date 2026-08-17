@@ -151,18 +151,31 @@ public final class ErrorClassifier {
         return shapeName != null && matchesAny(normalize(shapeName), MISSING_PATTERNS);
     }
 
-    /** Whether {@code name} matches any error shape declared on the op. */
+    /**
+     * Whether {@code name} matches any error shape declared on the op.
+     * Query-protocol services publish wire codes without the {@code Exception}
+     * suffix their Smithy shape names carry (the {@code awsQueryError} trait's
+     * code, e.g. shape {@code FromEmailAddressNotVerifiedException} → code
+     * {@code FromEmailAddressNotVerified}), so the suffix is ignored on both
+     * sides.
+     */
     public boolean isDeclaredByOp(OperationShape op, String rawType) {
         if (rawType == null) {
             return false;
         }
-        String name = normalize(rawType);
+        String name = stripExceptionSuffix(normalize(rawType));
         for (ShapeId errId : op.getErrors()) {
-            if (errId.getName().equals(name)) {
+            if (stripExceptionSuffix(errId.getName()).equals(name)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static String stripExceptionSuffix(String name) {
+        return name.endsWith("Exception")
+                ? name.substring(0, name.length() - "Exception".length())
+                : name;
     }
 
     /**
