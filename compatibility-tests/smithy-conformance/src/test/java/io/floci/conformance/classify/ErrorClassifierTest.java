@@ -86,6 +86,22 @@ class ErrorClassifierTest {
     }
 
     @Test
+    void declared_error_matches_wire_code_without_Exception_suffix() {
+        // Shape FromEmailAddressNotVerifiedException carries awsQueryError code
+        // FromEmailAddressNotVerified — the wire form must still count as declared.
+        OperationShape createTemplate = SES_V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#CreateCustomVerificationEmailTemplate"),
+                OperationShape.class);
+        assertThat(classifier.classify(createTemplate, 400, "FromEmailAddressNotVerified"))
+                .isEqualTo(Category.DECLARED_BY_OP);
+
+        OperationShape deleteRuleSet = SES_V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#DeleteReceiptRuleSet"), OperationShape.class);
+        assertThat(classifier.classify(deleteRuleSet, 400, "CannotDelete"))
+                .isEqualTo(Category.DECLARED_BY_OP);
+    }
+
+    @Test
     void unknown_falls_through_to_OTHER() {
         assertThat(classifier.classify(SEND_EMAIL, 400, "WeirdMadeUpError"))
                 .isEqualTo(Category.OTHER);
