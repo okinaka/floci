@@ -34,6 +34,17 @@ public final class FormatHints {
     private static final String S3_BUCKET = "cov-probe-bucket";
     private static final String MEDIA_TYPE = "application/cov-probe";
     private static final String NUMERIC_MARKER = "1";
+    // S3 SSE-C: servers validate the triple as a set — algorithm must be
+    // AES256, the key must be base64 of exactly 32 bytes, and the MD5 must be
+    // base64(MD5(key bytes)). All three derive from the fixed key
+    // "cov-probe-sse-c-0123456789abcdef" so every op sends the same matching
+    // set and read-after-write cases can unlock what an earlier write stored.
+    private static final String SSE_C_ALGORITHM = "AES256";
+    private static final String SSE_C_KEY = "Y292LXByb2JlLXNzZS1jLTAxMjM0NTY3ODlhYmNkZWY=";
+    private static final String SSE_C_KEY_MD5 = "GpzWiFdbVZMV6RGLbbJL9A==";
+    // S3's x-amz-tagging header is a URL query string; a bare token is rejected
+    // as "missing '=' in pair".
+    private static final String TAGGING = "cov-probe=x";
 
     private FormatHints() {
     }
@@ -122,6 +133,22 @@ public final class FormatHints {
         // the endpoint runs.
         if (containsAny(lower, "partnumbermarker")) {
             return NUMERIC_MARKER;
+        }
+
+        // S3 x-amz-tagging: URL-encoded key=value pairs.
+        if (equalsIgnoreCase(n, "Tagging")) {
+            return TAGGING;
+        }
+
+        // S3 SSE-C headers ([CopySource]SSECustomerAlgorithm/Key/KeyMD5).
+        if (lower.contains("ssecustomer")) {
+            if (lower.contains("algorithm")) {
+                return SSE_C_ALGORITHM;
+            }
+            if (lower.endsWith("md5")) {
+                return SSE_C_KEY_MD5;
+            }
+            return SSE_C_KEY;
         }
 
         return DEFAULT;

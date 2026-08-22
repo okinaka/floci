@@ -28,10 +28,23 @@ import java.util.Map;
  */
 public final class OneOfPruner {
 
+    private static final String SSE_C_ALGORITHM = "SSECustomerAlgorithm";
+    private static final String SSE_C_KEY = "SSECustomerKey";
+    private static final String SSE_C_KEY_MD5 = "SSECustomerKeyMD5";
+
+    private static final List<String> SSE_C_SET =
+            List.of(SSE_C_ALGORITHM, SSE_C_KEY, SSE_C_KEY_MD5);
+    private static final List<String> COPY_SOURCE_SSE_C_SET = List.of(
+            "CopySourceSSECustomerAlgorithm", "CopySourceSSECustomerKey",
+            "CopySourceSSECustomerKeyMD5");
+
     /**
-     * Structure local name → groups of members of which at most one may be set.
+     * Structure local name → groups of mutually-exclusive branches. Each branch
+     * is a list of member names that travel together; when members of more than
+     * one branch are present, the first branch with any member present is kept
+     * and every member of the later branches is removed.
      *
-     * <p>Only {@code EventDestinationDefinition} is pruned. Pruning the
+     * <p>Only measured net-gain groups are listed. Pruning the
      * {@code EmailContent}/{@code Template} one-of was measured to net-lose PASS:
      * it fixed the positive Send* cases but stripped a one-of rejection that was
      * coincidentally satisfying the CLIENT_ERROR expectation of many negative
@@ -39,17 +52,52 @@ public final class OneOfPruner {
      * back into inconclusive. The event-destination ops have no such negatives,
      * so pruning them is a clean gain.
      */
-    private static final Map<String, List<List<String>>> GROUPS = Map.of(
+    private static final Map<String, List<List<List<String>>>> GROUPS = Map.of(
             // SES v2 event destination.
             "EventDestinationDefinition", List.of(List.of(
-                    "KinesisFirehoseDestination", "CloudWatchDestination", "SnsDestination",
-                    "EventBridgeDestination", "PinpointDestination")),
+                    List.of("KinesisFirehoseDestination"), List.of("CloudWatchDestination"),
+                    List.of("SnsDestination"), List.of("EventBridgeDestination"),
+                    List.of("PinpointDestination"))),
             // SES v1 event destination (distinct shape name, note SNSDestination casing).
             // SNS is listed first because the pruner keeps the first present branch and
             // an SNS destination is valid with just a TopicARN, whereas a synthesized
             // CloudWatch destination carries null dimension fields that get rejected.
             "EventDestination", List.of(List.of(
-                    "SNSDestination", "CloudWatchDestination", "KinesisFirehoseDestination")));
+                    List.of("SNSDestination"), List.of("CloudWatchDestination"),
+                    List.of("KinesisFirehoseDestination"))),
+            // S3 write ops: SSE-S3/KMS and SSE-C are mutually exclusive encryption
+            // families ("SSE-C cannot be combined with x-amz-server-side-encryption").
+            // ServerSideEncryption is kept so enum-exhaust over it stays meaningful;
+            // the SSE-C write path is still exercised by shapes without a
+            // ServerSideEncryption member (UploadPart, GetObject, ...).
+            "PutObjectRequest", List.of(List.of(
+                    List.of("ServerSideEncryption"), SSE_C_SET)),
+            "CreateMultipartUploadRequest", List.of(List.of(
+                    List.of("ServerSideEncryption"), SSE_C_SET)),
+            "CopyObjectRequest", List.of(List.of(
+                    List.of("ServerSideEncryption"), SSE_C_SET)));
+
+    /**
+     * Structure local name → member sets that are only valid complete ("SSE-C
+     * requests require algorithm, key, and key MD5 headers"). When some but not
+     * all members of a set are present — e.g. a property-based subset, or a
+     * branch group above never fired — the partial set is removed entirely.
+     */
+    private static final Map<String, List<List<String>>> ALL_OR_NONE = Map.ofEntries(
+            Map.entry("PutObjectRequest", List.of(SSE_C_SET)),
+            Map.entry("CreateMultipartUploadRequest", List.of(SSE_C_SET)),
+            Map.entry("CompleteMultipartUploadRequest", List.of(SSE_C_SET)),
+            Map.entry("UploadPartRequest", List.of(SSE_C_SET)),
+            Map.entry("GetObjectRequest", List.of(SSE_C_SET)),
+            Map.entry("HeadObjectRequest", List.of(SSE_C_SET)),
+            Map.entry("GetObjectAttributesRequest", List.of(SSE_C_SET)),
+            Map.entry("ListPartsRequest", List.of(SSE_C_SET)),
+            Map.entry("SelectObjectContentRequest", List.of(SSE_C_SET)),
+            Map.entry("CopyObjectRequest", List.of(SSE_C_SET, COPY_SOURCE_SSE_C_SET)),
+            Map.entry("UploadPartCopyRequest", List.of(SSE_C_SET, COPY_SOURCE_SSE_C_SET)),
+            // Models only two of the three SSE-C members, so the set can never be
+            // complete and is always stripped.
+            Map.entry("WriteGetObjectResponseRequest", List.of(SSE_C_SET)));
 
     private final Model model;
 
@@ -70,18 +118,28 @@ public final class OneOfPruner {
             return;
         }
         ObjectNode obj = (ObjectNode) node;
-        for (List<String> group : GROUPS.getOrDefault(struct.getId().getName(), List.of())) {
+        String structName = struct.getId().getName();
+        for (List<List<String>> group : GROUPS.getOrDefault(structName, List.of())) {
             boolean kept = false;
-            for (String member : group) {
-                JsonNode v = obj.get(member);
-                if (v == null || v.isNull()) {
+            for (List<String> branch : group) {
+                boolean present = branch.stream()
+                        .anyMatch(m -> obj.get(m) != null && !obj.get(m).isNull());
+                if (!present) {
                     continue;
                 }
                 if (kept) {
-                    obj.remove(member);
+                    branch.forEach(obj::remove);
                 } else {
                     kept = true;
                 }
+            }
+        }
+        for (List<String> set : ALL_OR_NONE.getOrDefault(structName, List.of())) {
+            long present = set.stream()
+                    .filter(m -> obj.get(m) != null && !obj.get(m).isNull())
+                    .count();
+            if (present > 0 && present < set.size()) {
+                set.forEach(obj::remove);
             }
         }
         for (Map.Entry<String, MemberShape> e : struct.getAllMembers().entrySet()) {

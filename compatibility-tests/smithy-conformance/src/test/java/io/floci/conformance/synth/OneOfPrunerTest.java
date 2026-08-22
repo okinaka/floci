@@ -84,4 +84,62 @@ class OneOfPrunerTest {
         assertThat(content.has("Simple")).isTrue();
         assertThat(content.has("Raw")).isTrue();
     }
+
+    private static final Model S3 = SmithyModelLoader.loadS3();
+    private static final OneOfPruner S3_PRUNER = new OneOfPruner(S3);
+
+    private static StructureShape s3Input(String op) {
+        return S3.expectShape(S3.expectShape(
+                ShapeId.from("com.amazonaws.s3#" + op)).asOperationShape().orElseThrow()
+                .getInputShape(), StructureShape.class);
+    }
+
+    @Test
+    void sseBranchWinsOverSseCustomerTriple() {
+        // SSE-S3 and SSE-C are exclusive; the full SSE-C triple is dropped as one branch.
+        var in = tree("""
+                {"Bucket":"b","Key":"k","ServerSideEncryption":"AES256",
+                 "SSECustomerAlgorithm":"AES256","SSECustomerKey":"kk","SSECustomerKeyMD5":"mm"}""");
+        S3_PRUNER.prune(in, s3Input("CreateMultipartUpload"));
+        assertThat(in.has("ServerSideEncryption")).isTrue();
+        assertThat(in.has("SSECustomerAlgorithm")).isFalse();
+        assertThat(in.has("SSECustomerKey")).isFalse();
+        assertThat(in.has("SSECustomerKeyMD5")).isFalse();
+    }
+
+    @Test
+    void completeSseCustomerTripleAloneSurvives() {
+        var in = tree("""
+                {"Bucket":"b","Key":"k",
+                 "SSECustomerAlgorithm":"AES256","SSECustomerKey":"kk","SSECustomerKeyMD5":"mm"}""");
+        S3_PRUNER.prune(in, s3Input("CreateMultipartUpload"));
+        assertThat(in.has("SSECustomerAlgorithm")).isTrue();
+        assertThat(in.has("SSECustomerKey")).isTrue();
+        assertThat(in.has("SSECustomerKeyMD5")).isTrue();
+    }
+
+    @Test
+    void partialSseCustomerTripleIsDroppedEntirely() {
+        // "SSE-C requests require algorithm, key, and key MD5 headers."
+        var in = tree("""
+                {"Bucket":"b","Key":"k","SSECustomerAlgorithm":"AES256","SSECustomerKey":"kk"}""");
+        S3_PRUNER.prune(in, s3Input("GetObject"));
+        assertThat(in.has("SSECustomerAlgorithm")).isFalse();
+        assertThat(in.has("SSECustomerKey")).isFalse();
+    }
+
+    @Test
+    void copySourceTripleIsIndependentOfTargetTriple() {
+        var in = tree("""
+                {"Bucket":"b","Key":"k","CopySource":"s/x",
+                 "ServerSideEncryption":"AES256",
+                 "SSECustomerAlgorithm":"AES256","SSECustomerKey":"kk","SSECustomerKeyMD5":"mm",
+                 "CopySourceSSECustomerAlgorithm":"AES256","CopySourceSSECustomerKey":"kk",
+                 "CopySourceSSECustomerKeyMD5":"mm"}""");
+        S3_PRUNER.prune(in, s3Input("CopyObject"));
+        assertThat(in.has("SSECustomerAlgorithm")).isFalse();          // lost to SSE branch
+        assertThat(in.has("CopySourceSSECustomerAlgorithm")).isTrue(); // read-side set kept whole
+        assertThat(in.has("CopySourceSSECustomerKey")).isTrue();
+        assertThat(in.has("CopySourceSSECustomerKeyMD5")).isTrue();
+    }
 }
