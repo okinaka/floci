@@ -209,6 +209,10 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `PUT` | `/v2/email/account/sending` | `PutAccountSendingAttributes` |
 | `PUT` | `/v2/email/account/suppression` | `PutAccountSuppressionAttributes` |
 | `PUT` | `/v2/email/account/vdm` | `PutAccountVdmAttributes` |
+| `POST` | `/v2/email/tenants` | `CreateTenant` |
+| `POST` | `/v2/email/tenants/get` | `GetTenant` |
+| `POST` | `/v2/email/tenants/list` | `ListTenants` |
+| `POST` | `/v2/email/tenants/delete` | `DeleteTenant` |
 | `POST` | `/v2/email/templates` | `CreateEmailTemplate` |
 | `GET` | `/v2/email/templates` | `ListEmailTemplates` |
 | `GET` | `/v2/email/templates/{templateName}` | `GetEmailTemplate` |
@@ -274,6 +278,8 @@ Floci recognises the AWS [mailbox simulator addresses](https://docs.aws.amazon.c
 A successful send without a simulator-address recipient emits only the `Send` event.
 
 Account-level VDM (Virtual Deliverability Manager) attributes are stored per region. `PutAccountVdmAttributes` sets `VdmEnabled` (opt-in, defaults `DISABLED`) plus the optional `DashboardAttributes.EngagementMetrics` and `GuardianAttributes.OptimizedSharedDelivery`. `GetAccount` omits `VdmAttributes` until VDM has been configured for the region, then returns `VdmEnabled`, adding the `DashboardAttributes`/`GuardianAttributes` sub-objects only while `VdmEnabled` is `ENABLED`. Floci stores the settings but does not run VDM analytics.
+
+Tenants (multi-tenancy) are stored per region. `CreateTenant` requires a `TenantName` (1–64 chars, `[A-Za-z0-9_-]`) and accepts optional `Tags`; it returns the tenant with a generated `TenantId` (`tn-` + 30 hex), a `TenantArn` (`arn:aws:ses:<region>:<account>:tenant/<name>/<id>`), a `CreatedTimestamp`, and `SendingStatus` `ENABLED`. The operations use RPC-style POST subpaths (`/tenants/get`, `/tenants/list`, `/tenants/delete`); `ListTenants` returns the `TenantInfo` subset (no `Tags`/`SendingStatus`) and currently returns every tenant in a single page — `PageSize`/`NextToken` pagination is not yet implemented. A duplicate name is `AlreadyExistsException`; an unknown tenant on get/delete is `NotFoundException`. Resource associations, tenant suppression, and tenant-scoped sending are not yet implemented.
 
 Suppression list entries are stored per region with `Reason` ∈ {`BOUNCE`, `COMPLAINT`}. At send time, a recipient is suppressed when it appears on the suppression list AND its stored `Reason` is contained in the **effective** `SuppressedReasons` for the send. The effective list is the configuration set's `SuppressionOptions.SuppressedReasons` (set via `PutConfigurationSetSuppressionOptions`) when present — an **empty list is preserved as an explicit "no suppression filtering for this configuration set"** — otherwise it falls back to the account-level `AccountSuppressionAttributes.SuppressedReasons` (set via `PutAccountSuppressionAttributes`, default `[BOUNCE, COMPLAINT]`). Following the AWS V2 contract, there is no dedicated `GetConfigurationSetSuppressionOptions` action; once set, the block is read back through `GetConfigurationSet`'s response (the field is omitted when the configuration set has no override).
 

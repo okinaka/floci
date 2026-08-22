@@ -16,6 +16,7 @@ import io.github.hectorvent.floci.services.ses.model.ListManagementOptions;
 import io.github.hectorvent.floci.services.ses.model.MessageHeader;
 import io.github.hectorvent.floci.services.ses.model.ReceiptRuleSet;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
+import io.github.hectorvent.floci.services.ses.model.Tenant;
 import io.github.hectorvent.floci.services.ses.model.SuppressedDestination;
 import io.github.hectorvent.floci.services.ses.model.Topic;
 import io.github.hectorvent.floci.services.ses.model.TopicPreference;
@@ -70,6 +71,7 @@ class SesServiceListManagementTest {
                 new SesPolicyService(new InMemoryStorage<String, String>(), new ObjectMapper()),
                 new SesReceiptRuleService(new InMemoryStorage<String, ReceiptRuleSet>(), Clock.systemUTC()),
                 new SesCvetService(new InMemoryStorage<String, CustomVerificationEmailTemplate>()),
+                new SesTenantService(new InMemoryStorage<String, Tenant>(), Clock.systemUTC()),
                 smtpRelay,
                 new ObjectMapper(),
                 Clock.systemUTC());
