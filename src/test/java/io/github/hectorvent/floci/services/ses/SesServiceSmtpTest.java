@@ -13,6 +13,7 @@ import io.github.hectorvent.floci.services.ses.model.DedicatedIpPool;
 import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.Identity;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
+import io.github.hectorvent.floci.services.ses.model.Tenant;
 import io.github.hectorvent.floci.services.ses.model.SuppressedDestination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ class SesServiceSmtpTest {
                 new SesPolicyService(new InMemoryStorage<String, String>(), new ObjectMapper()),
                 new SesReceiptRuleService(new InMemoryStorage<String, ReceiptRuleSet>(), Clock.systemUTC()),
                 new SesCvetService(new InMemoryStorage<String, CustomVerificationEmailTemplate>()),
+                new SesTenantService(new InMemoryStorage<String, Tenant>(), Clock.systemUTC()),
                 smtpRelay,
                 new ObjectMapper(),
                 Clock.systemUTC());
