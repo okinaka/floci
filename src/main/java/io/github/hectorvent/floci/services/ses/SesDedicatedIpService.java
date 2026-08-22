@@ -85,6 +85,55 @@ public class SesDedicatedIpService {
         LOG.infov("Deleted SES dedicated IP pool: {0} in region {1}", poolName, region);
     }
 
+    // ──────────────────────── Dedicated IPs (IP-level) ────────────────────────
+    //
+    // SES has no API to create a dedicated IP — they are leased out-of-band
+    // (STANDARD) or auto-provisioned by AWS (MANAGED). Floci does not model that,
+    // so an account has no dedicated IPs: GetDedicatedIps is empty and any
+    // IP-targeted operation reports the IP as not found, matching real AWS for an
+    // account with no leased IPs (verified 2026-06-21).
+
+    private AwsException dedicatedIpNotFound(String ip) {
+        return new AwsException("NotFoundException",
+                "Could not find dedicated IP <" + ip + "> under this account.", 404);
+    }
+
+    public DedicatedIpPool getDedicatedIp(String ip, String region) {
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpInPool(String ip, String destinationPoolName, String region) {
+        // AWS validates the required DestinationPoolName before it checks the IP.
+        if (destinationPoolName == null || destinationPoolName.isBlank()) {
+            throw new AwsException("BadRequestException", "Pool name can't be blank.", 400);
+        }
+        // AWS checks the IP before the destination pool.
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpWarmupAttributes(String ip, String region) {
+        throw dedicatedIpNotFound(ip);
+    }
+
+    public void putDedicatedIpPoolScalingAttributes(String poolName, String scalingMode, String region) {
+        // AWS validates ScalingMode before it checks that the pool exists.
+        if (scalingMode == null || !SCALING_MODES.contains(scalingMode)) {
+            throw new AwsException("BadRequestException", "The ScalingMode parameter is invalid.", 400);
+        }
+        String key = dedicatedIpPoolKey(region, poolName);
+        DedicatedIpPool pool = dedicatedIpPoolStore.get(key)
+                .orElseThrow(() -> new AwsException("NotFoundException",
+                        "The requested pool <" + poolName + "> does not exist.", 404));
+        // AWS rejects downgrading a MANAGED pool back to STANDARD.
+        if ("MANAGED".equals(pool.getScalingMode()) && "STANDARD".equals(scalingMode)) {
+            throw new AwsException("BadRequestException", "The ScalingMode parameter is invalid.", 400);
+        }
+        pool.setScalingMode(scalingMode);
+        dedicatedIpPoolStore.put(key, pool);
+        LOG.infov("Updated ScalingMode on dedicated IP pool {0} in region {1}: {2}",
+                poolName, region, scalingMode);
+    }
+
     private static String dedicatedIpPoolKey(String region, String name) {
         return "dedicatedIpPool::" + region + "::" + name;
     }

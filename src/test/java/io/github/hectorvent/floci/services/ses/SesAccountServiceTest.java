@@ -54,4 +54,13 @@ class SesAccountServiceTest {
         assertTrue(vdm.engagementMetrics());
         assertFalse(vdm.optimizedSharedDelivery());
     }
+
+    @Test
+    void dedicatedIpAutoWarmup_defaultsTrue_thenRoundTrips() {
+        assertTrue(service.isDedicatedIpAutoWarmupEnabled(REGION));
+
+        service.setDedicatedIpAutoWarmup(REGION, false);
+        assertFalse(service.isDedicatedIpAutoWarmupEnabled(REGION));
+        assertTrue(service.isDedicatedIpAutoWarmupEnabled("eu-west-1"));
+    }
 }

@@ -240,6 +240,12 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `GET` | `/v2/email/dedicated-ip-pools` | `ListDedicatedIpPools` |
 | `GET` | `/v2/email/dedicated-ip-pools/{PoolName}` | `GetDedicatedIpPool` |
 | `DELETE` | `/v2/email/dedicated-ip-pools/{PoolName}` | `DeleteDedicatedIpPool` |
+| `PUT` | `/v2/email/dedicated-ip-pools/{PoolName}/scaling` | `PutDedicatedIpPoolScalingAttributes` |
+| `GET` | `/v2/email/dedicated-ips` | `GetDedicatedIps` |
+| `GET` | `/v2/email/dedicated-ips/{IP}` | `GetDedicatedIp` |
+| `PUT` | `/v2/email/dedicated-ips/{IP}/pool` | `PutDedicatedIpInPool` |
+| `PUT` | `/v2/email/dedicated-ips/{IP}/warmup` | `PutDedicatedIpWarmupAttributes` |
+| `PUT` | `/v2/email/account/dedicated-ips/warmup` | `PutAccountDedicatedIpWarmupAttributes` |
 | `POST` | `/v2/email/contact-lists` | `CreateContactList` |
 | `GET` | `/v2/email/contact-lists` | `ListContactLists` |
 | `GET` | `/v2/email/contact-lists/{ContactListName}` | `GetContactList` |
@@ -257,6 +263,8 @@ Alongside the classic Query API, Floci implements a subset of the SES v2 REST JS
 | `POST` | `/v2/email/tags` | `TagResource` |
 | `DELETE` | `/v2/email/tags?ResourceArn=...&TagKeys=...` | `UntagResource` |
 | `GET` | `/v2/email/tags?ResourceArn=...` | `ListTagsForResource` |
+
+Floci does not model leased dedicated IP addresses, so an account has none: `GetDedicatedIps` returns an empty list and `GetDedicatedIp` / `PutDedicatedIpInPool` / `PutDedicatedIpWarmupAttributes` report the IP as `NotFoundException`, matching real AWS for an account with no leased IPs. Matching AWS, required request members are validated before that lookup — a missing `ScalingMode` / `DestinationPoolName` / `WarmupPercentage` (or a `WarmupPercentage` outside 0–100) is a `BadRequestException`, not `NotFoundException`. `PutDedicatedIpPoolScalingAttributes` sets a pool's scaling mode but rejects downgrading a `MANAGED` pool back to `STANDARD`. `PutAccountDedicatedIpWarmupAttributes` stores the account-level auto-warmup flag surfaced by `GetAccount.DedicatedIpAutoWarmupEnabled` (default `true`).
 
 Configuration set event destinations are stored as configuration. The target is not validated for existence; missing targets cause Floci to log a warning and skip that destination. Each event destination must specify exactly one destination type and at least one matching event type. A CloudWatch destination requires a non-empty dimension configuration list, and a Pinpoint destination requires an application ARN.
 

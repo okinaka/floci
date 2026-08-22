@@ -1788,6 +1788,34 @@ public class SesService {
 
 
 
+    // Dedicated IPs (IP-level) and pool scaling live in SesDedicatedIpService; the facade forwards.
+
+    public DedicatedIpPool getDedicatedIp(String ip, String region) {
+        return dedicatedIpService.getDedicatedIp(ip, region);
+    }
+
+    public void putDedicatedIpInPool(String ip, String destinationPoolName, String region) {
+        dedicatedIpService.putDedicatedIpInPool(ip, destinationPoolName, region);
+    }
+
+    public void putDedicatedIpWarmupAttributes(String ip, String region) {
+        dedicatedIpService.putDedicatedIpWarmupAttributes(ip, region);
+    }
+
+    public void putDedicatedIpPoolScalingAttributes(String poolName, String scalingMode, String region) {
+        dedicatedIpService.putDedicatedIpPoolScalingAttributes(poolName, scalingMode, region);
+    }
+
+    // Dedicated-IP auto-warmup is an account-level setting owned by SesAccountService.
+
+    public boolean isAccountDedicatedIpAutoWarmupEnabled(String region) {
+        return accountService.isDedicatedIpAutoWarmupEnabled(region);
+    }
+
+    public void setAccountDedicatedIpAutoWarmup(String region, boolean enabled) {
+        accountService.setDedicatedIpAutoWarmup(region, enabled);
+    }
+
     static void validateConfigurationSetName(String name) {
         if (name == null || name.isBlank()) {
             throw new AwsException("InvalidParameterValue",
