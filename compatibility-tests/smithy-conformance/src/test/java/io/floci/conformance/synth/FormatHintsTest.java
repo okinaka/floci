@@ -80,4 +80,27 @@ class FormatHintsTest {
     void null_owner_returns_default() {
         assertThat(FormatHints.stringFor(null)).isEqualTo(FormatHints.DEFAULT);
     }
+
+    @Test
+    void tagging_gets_query_string_form() {
+        assertThat(FormatHints.stringForName("Tagging")).contains("=");
+    }
+
+    @Test
+    void sse_c_members_get_a_mutually_consistent_triple() throws Exception {
+        assertThat(FormatHints.stringForName("SSECustomerAlgorithm")).isEqualTo("AES256");
+        assertThat(FormatHints.stringForName("CopySourceSSECustomerAlgorithm")).isEqualTo("AES256");
+
+        byte[] key = java.util.Base64.getDecoder()
+                .decode(FormatHints.stringForName("SSECustomerKey"));
+        assertThat(key).hasSize(32);
+
+        byte[] md5 = java.security.MessageDigest.getInstance("MD5").digest(key);
+        assertThat(FormatHints.stringForName("SSECustomerKeyMD5"))
+                .isEqualTo(java.util.Base64.getEncoder().encodeToString(md5));
+        assertThat(FormatHints.stringForName("CopySourceSSECustomerKeyMD5"))
+                .isEqualTo(FormatHints.stringForName("SSECustomerKeyMD5"));
+        assertThat(FormatHints.stringForName("CopySourceSSECustomerKey"))
+                .isEqualTo(FormatHints.stringForName("SSECustomerKey"));
+    }
 }
