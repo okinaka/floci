@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ssm#AmazonSSM",
     "modelVersion" : "2014-11-06",
-    "capturedAt" : "2026-08-22T08:53:21.813557Z"
+    "capturedAt" : "2026-08-22T11:53:57.277703Z"
   },
   "cases" : {
     "AddTagsToResource" : {
