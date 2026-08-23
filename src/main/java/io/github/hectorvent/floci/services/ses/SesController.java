@@ -123,6 +123,13 @@ public class SesController {
             // without leaving a half-created identity behind, matching AWS and the ConfigurationSetName
             // pre-check below.
             List<Tag> parsedTags = parseTagsArray(request.path("Tags"));
+            // Validate tag constraints (count / length / charset / reserved aws: prefix / duplicate
+            // keys) before creating the identity so a semantic tag error fails atomically. Otherwise
+            // the identity would be persisted first and a corrected retry would hit
+            // AlreadyExistsException. setIdentityTags re-validates on persist as a safety net.
+            if (parsedTags != null) {
+                SesTags.validate(parsedTags);
+            }
 
             // Verified against AWS: a non-existent ConfigurationSetName fails the whole call
             // (NotFoundException) without creating the identity, so validate it before creating.
