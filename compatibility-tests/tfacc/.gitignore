@@ -1,0 +1,3 @@
+# Cloned upstream provider source (~300MB) and go-test output.
+.work/
+.logs/
