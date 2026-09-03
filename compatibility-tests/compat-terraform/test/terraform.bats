@@ -86,6 +86,15 @@ setup() {
     run aws_cmd ses describe-active-receipt-rule-set
     assert_success
     assert_output --partial "floci-compat-rule-set"
+    assert_output --partial "X-Floci-Compat"
+}
+
+@test "Terraform: SES receipt rule round-trips its actions" {
+    run aws_cmd ses describe-receipt-rule --rule-set-name floci-compat-rule-set --rule-name floci-compat-rule
+    assert_success
+    assert_output --partial "X-Floci-Compat"
+    assert_output --partial "floci-compat-events"
+    assert_output --partial "RuleSet"
 }
 
 @test "Terraform: DynamoDB table created" {
