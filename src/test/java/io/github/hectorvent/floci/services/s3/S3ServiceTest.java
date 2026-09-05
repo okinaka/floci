@@ -1122,4 +1122,11 @@ class S3ServiceTest {
                     "configuration config-" + i + " was lost by a concurrent put");
         }
     }
+
+    @Test
+    void bucketExists_reportsPresenceWithoutThrowing() {
+        s3Service.createBucket("exists-bucket", "us-east-1");
+        assertTrue(s3Service.bucketExists("exists-bucket"));
+        assertFalse(s3Service.bucketExists("ghost-bucket"));
+    }
 }
