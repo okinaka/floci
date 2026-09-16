@@ -34,7 +34,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -1502,71 +1501,6 @@ public class SesController {
             LOG.infov("SES V2 DeleteConfigurationSetEventDestination: {0} on {1}",
                     eventDestinationName, configurationSetName);
             return Response.ok(objectMapper.createObjectNode()).build();
-        } catch (AwsException e) {
-            throw remapV1Exception(e);
-        }
-    }
-
-    // ──────────────────────────── Tags ───────────────────────────────
-
-    @POST
-    @Path("/tags")
-    public Response tagResource(@Context HttpHeaders headers, String body) {
-        String region = regionResolver.resolveRegion(headers);
-        try {
-            if (body == null || body.isBlank()) {
-                throw new AwsException("BadRequestException", "Request body is required.", 400);
-            }
-            JsonNode request = objectMapper.readTree(body);
-            String arn = request.path("ResourceArn").asText(null);
-            if (arn == null || arn.isBlank()) {
-                throw new AwsException("BadRequestException", "ResourceArn is required.", 400);
-            }
-            List<Tag> tags = parseTagsArray(request.path("Tags"));
-            if (tags == null) {
-                throw new AwsException("BadRequestException", "Tags must be an array.", 400);
-            }
-            sesService.tagResource(arn, region, tags);
-            LOG.infov("SES V2 TagResource: {0}", arn);
-            return Response.ok(objectMapper.createObjectNode()).build();
-        } catch (AwsException e) {
-            throw remapV1Exception(e);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new AwsException("BadRequestException", e.getMessage(), 400);
-        }
-    }
-
-    @DELETE
-    @Path("/tags")
-    public Response untagResource(@Context HttpHeaders headers,
-                                   @QueryParam("ResourceArn") String arn,
-                                   @QueryParam("TagKeys") List<String> tagKeys) {
-        String region = regionResolver.resolveRegion(headers);
-        try {
-            sesService.untagResource(arn, region, tagKeys);
-            LOG.infov("SES V2 UntagResource: {0}", arn);
-            return Response.ok(objectMapper.createObjectNode()).build();
-        } catch (AwsException e) {
-            throw remapV1Exception(e);
-        }
-    }
-
-    @GET
-    @Path("/tags")
-    public Response listTagsForResource(@Context HttpHeaders headers,
-                                         @QueryParam("ResourceArn") String arn) {
-        String region = regionResolver.resolveRegion(headers);
-        try {
-            List<Tag> tags = sesService.listResourceTags(arn, region);
-            ObjectNode result = objectMapper.createObjectNode();
-            ArrayNode arr = result.putArray("Tags");
-            for (Tag t : tags) {
-                ObjectNode tagNode = objectMapper.createObjectNode();
-                tagNode.put("Key", t.key());
-                tagNode.put("Value", t.value());
-                arr.add(tagNode);
-            }
-            return Response.ok(result).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);
         }
