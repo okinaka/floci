@@ -10,10 +10,12 @@ import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeType;
 import software.amazon.smithy.model.shapes.StructureShape;
+import software.amazon.smithy.model.shapes.UnionShape;
 import software.amazon.smithy.model.traits.HttpHeaderTrait;
 import software.amazon.smithy.model.traits.HttpLabelTrait;
 import software.amazon.smithy.model.traits.HttpPayloadTrait;
 import software.amazon.smithy.model.traits.HttpQueryTrait;
+import software.amazon.smithy.model.traits.XmlFlattenedTrait;
 import software.amazon.smithy.model.traits.XmlNameTrait;
 import software.amazon.smithy.model.traits.XmlNamespaceTrait;
 
@@ -33,6 +35,12 @@ import java.util.Map;
  * as an XML document rooted at the input structure's {@code @xmlName}
  * (falling back to the shape name). Most S3 write ops use an explicit
  * payload member, so that path dominates.
+ *
+ * <p>Nested serialization follows the restXml binding rules the S3 parsers
+ * enforce: a union writes just its one present member, and an
+ * {@code @xmlFlattened} list repeats its element under the member's own name
+ * (S3 {@code <Rule>}, {@code <Tiering>}, {@code <Tag>}) instead of wrapping
+ * {@code <member>} entries. S3 answers {@code MalformedXML} to either mistake.
  */
 public final class RestXmlEncoder implements RequestEncoder {
 
@@ -134,39 +142,63 @@ public final class RestXmlEncoder implements RequestEncoder {
         }
     }
 
+    /** A union carries exactly one member; write that one like a structure member. */
+    private void writeUnionMember(StringBuilder sb, JsonNode value, UnionShape union) {
+        for (Map.Entry<String, MemberShape> e : union.getAllMembers().entrySet()) {
+            JsonNode v = value.get(e.getKey());
+            if (v == null || v.isNull() || v.isMissingNode()) {
+                continue;
+            }
+            appendXmlMember(sb, v, e.getValue());
+            return;
+        }
+    }
+
     private void appendXmlMember(StringBuilder sb, JsonNode value, MemberShape member) {
         String name = member.getTrait(XmlNameTrait.class)
                 .map(XmlNameTrait::getValue)
                 .orElse(member.getMemberName());
         Shape target = model.expectShape(member.getTarget());
         switch (target.getType()) {
-            case STRUCTURE, UNION -> {
+            case STRUCTURE -> {
                 sb.append('<').append(name).append('>');
-                if (target instanceof StructureShape s) {
-                    writeStructMembers(sb, value, s);
-                }
+                writeStructMembers(sb, value, (StructureShape) target);
+                sb.append("</").append(name).append('>');
+            }
+            case UNION -> {
+                sb.append('<').append(name).append('>');
+                writeUnionMember(sb, value, (UnionShape) target);
                 sb.append("</").append(name).append('>');
             }
             case LIST, SET -> {
                 ListShape list = (ListShape) target;
                 MemberShape element = list.getMember();
-                String elementName = element.getTrait(XmlNameTrait.class)
-                        .map(XmlNameTrait::getValue)
-                        .orElse("member");
-                sb.append('<').append(name).append('>');
+                boolean flattened = member.hasTrait(XmlFlattenedTrait.class);
+                String elementName = flattened
+                        ? name
+                        : element.getTrait(XmlNameTrait.class)
+                                .map(XmlNameTrait::getValue)
+                                .orElse("member");
+                if (!flattened) {
+                    sb.append('<').append(name).append('>');
+                }
                 if (value.isArray()) {
+                    Shape elemTarget = model.expectShape(element.getTarget());
                     for (JsonNode item : value) {
-                        Shape elemTarget = model.expectShape(element.getTarget());
                         sb.append('<').append(elementName).append('>');
                         if (elemTarget instanceof StructureShape es) {
                             writeStructMembers(sb, item, es);
+                        } else if (elemTarget instanceof UnionShape eu) {
+                            writeUnionMember(sb, item, eu);
                         } else {
                             sb.append(escape(scalarToString(item)));
                         }
                         sb.append("</").append(elementName).append('>');
                     }
                 }
-                sb.append("</").append(name).append('>');
+                if (!flattened) {
+                    sb.append("</").append(name).append('>');
+                }
             }
             default -> sb.append('<').append(name).append('>')
                     .append(escape(scalarToString(value)))

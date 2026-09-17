@@ -88,4 +88,74 @@ class RestXmlEncoderTest {
 
         assertThat(v.headers()).containsEntry("Content-Type", "text/plain");
     }
+
+    @Test
+    void putBucketReplication_repeats_flattened_rules_without_member_wrapper() {
+        OperationShape op = S3.expectShape(
+                ShapeId.from("com.amazonaws.s3#PutBucketReplication"), OperationShape.class);
+        ObjectNode input = NODES.objectNode();
+        input.put("Bucket", "cov-probe-bucket");
+        ObjectNode config = input.putObject("ReplicationConfiguration");
+        config.put("Role", "arn:aws:iam::000000000000:role/r");
+        ObjectNode rule = config.putArray("Rules").addObject();
+        rule.put("Status", "Enabled");
+        rule.putObject("Destination").put("Bucket", "arn:aws:s3:::dest");
+        ObjectNode and = rule.putObject("Filter").putObject("And");
+        and.put("Prefix", "p");
+        and.putArray("Tags").addObject().put("Key", "k").put("Value", "v");
+
+        Variant v = new RestXmlEncoder(S3).encode(new GeneratedCase(
+                op, "test", input, ExpectedOutcome.SUCCESS, null));
+
+        // Rules is @xmlFlattened @xmlName("Rule"), Tags is @xmlFlattened @xmlName("Tag"):
+        // S3 rejects a <Rules><member> wrapper with MalformedXML.
+        assertThat(v.rawBody()).isEqualTo(
+                "<ReplicationConfiguration>"
+                        + "<Role>arn:aws:iam::000000000000:role/r</Role>"
+                        + "<Rule>"
+                        + "<Filter><And><Prefix>p</Prefix><Tag><Key>k</Key><Value>v</Value></Tag></And></Filter>"
+                        + "<Status>Enabled</Status>"
+                        + "<Destination><Bucket>arn:aws:s3:::dest</Bucket></Destination>"
+                        + "</Rule>"
+                        + "</ReplicationConfiguration>");
+        assertThat(v.rawBody()).doesNotContain("<member>").doesNotContain("<Rules>").doesNotContain("<Tags>");
+    }
+
+    @Test
+    void putBucketMetricsConfiguration_writes_the_present_union_member() {
+        OperationShape op = S3.expectShape(
+                ShapeId.from("com.amazonaws.s3#PutBucketMetricsConfiguration"), OperationShape.class);
+        ObjectNode input = NODES.objectNode();
+        input.put("Bucket", "cov-probe-bucket");
+        input.put("Id", "m1");
+        ObjectNode config = input.putObject("MetricsConfiguration");
+        config.put("Id", "m1");
+        config.putObject("Filter").put("Prefix", "logs/");
+
+        Variant v = new RestXmlEncoder(S3).encode(new GeneratedCase(
+                op, "test", input, ExpectedOutcome.SUCCESS, null));
+
+        // MetricsFilter is a union; an empty <Filter/> is MalformedXML on S3.
+        assertThat(v.rawBody()).isEqualTo(
+                "<MetricsConfiguration><Id>m1</Id><Filter><Prefix>logs/</Prefix></Filter></MetricsConfiguration>");
+    }
+
+    @Test
+    void putBucketAcl_keeps_wrapper_for_non_flattened_lists() {
+        OperationShape op = S3.expectShape(
+                ShapeId.from("com.amazonaws.s3#PutBucketAcl"), OperationShape.class);
+        ObjectNode input = NODES.objectNode();
+        input.put("Bucket", "cov-probe-bucket");
+        ObjectNode policy = input.putObject("AccessControlPolicy");
+        ObjectNode grant = policy.putArray("Grants").addObject();
+        grant.put("Permission", "READ");
+        grant.putObject("Grantee").put("Type", "Group").put("URI", "http://acs.amazonaws.com/groups/global/AllUsers");
+
+        Variant v = new RestXmlEncoder(S3).encode(new GeneratedCase(
+                op, "test", input, ExpectedOutcome.SUCCESS, null));
+
+        // Grants is @xmlName("AccessControlList") with @xmlName("Grant") entries, not flattened.
+        assertThat(v.rawBody()).contains("<AccessControlList><Grant>").contains("</Grant></AccessControlList>");
+        assertThat(v.rawBody()).doesNotContain("<member>");
+    }
 }
