@@ -179,7 +179,7 @@ public final class ConformanceRunner {
     private VariantResult execute(GeneratedCase generated) {
         pruneOneOf(generated);
         generated = saltInput(generated);
-        seedDependencies(generated.logicalInput());
+        seedDependencies(generated);
         Variant variant;
         try {
             variant = encoder.encode(generated);
@@ -232,12 +232,36 @@ public final class ConformanceRunner {
      * failure (already-exists, unsupported op) is ignored — the case itself
      * still records the authoritative verdict.
      */
-    private void seedDependencies(JsonNode input) {
+    private void seedDependencies(GeneratedCase c) {
+        seedDependencies(c.logicalInput(), c.operation());
+    }
+
+    private void seedDependencies(JsonNode input, OperationShape caseOperation) {
         if (seeder == DependencySeeder.NONE) {
             return;
         }
+        String caseOp = caseOperation.getId().getName();
         for (DependencySeeder.Seed seed : seeder.seedsFor(input)) {
             String key = seed.operation() + '|' + seed.value();
+            if (seed.createdBy(caseOp)) {
+                // The case creates this resource itself. Never pre-seed it, and if
+                // a same-label sibling already had it seeded, remove that copy so
+                // the create under test does not collide with harness state.
+                if (seededKeys.remove(key) && seed.deleteOperation() != null) {
+                    OperationShape del = resolveSeedOperation(seed.deleteOperation());
+                    if (del != null) {
+                        GeneratedCase delCase = new GeneratedCase(del, "dependency-unseed",
+                                seedInputNode(seed.deleteInputMember(), seed.value()),
+                                ExpectedOutcome.SUCCESS, null);
+                        try {
+                            invoker.send(encoder.encode(delCase));
+                        } catch (IOException | RuntimeException ignored) {
+                            // Best-effort like seeding; the case still records the real verdict.
+                        }
+                    }
+                }
+                continue;
+            }
             if (!seededKeys.add(key)) {
                 continue;
             }
@@ -245,9 +269,13 @@ public final class ConformanceRunner {
             if (op == null) {
                 continue;
             }
+            com.fasterxml.jackson.databind.node.ObjectNode seedInput =
+                    seedInputNode(seed.inputMember(), seed.value());
+            if (seed.template() != null && seed.template().isObject()) {
+                seedInput.setAll((com.fasterxml.jackson.databind.node.ObjectNode) seed.template().deepCopy());
+            }
             GeneratedCase seedCase = new GeneratedCase(
-                    op, "dependency-seed", seedInputNode(seed.inputMember(), seed.value()),
-                    ExpectedOutcome.SUCCESS, null);
+                    op, "dependency-seed", seedInput, ExpectedOutcome.SUCCESS, null);
             try {
                 invoker.send(encoder.encode(seedCase));
             } catch (IOException | RuntimeException ignored) {
@@ -318,7 +346,7 @@ public final class ConformanceRunner {
         JsonNode createInput = NameSalt.apply(s.createInput(), s.label());
         JsonNode deleteInput = NameSalt.apply(s.deleteInput(), s.label());
         JsonNode readInput = NameSalt.apply(s.readInput(), s.label());
-        seedDependencies(createInput);
+        seedDependencies(createInput, s.createOp());
 
         StepOutcome create = sendStep(new GeneratedCase(
                 s.createOp(), s.label(), createInput, ExpectedOutcome.SUCCESS, null), "create");
@@ -384,7 +412,7 @@ public final class ConformanceRunner {
     private VariantResult executeListAfterCreate(ListAfterCreateScenario s) {
         JsonNode createInput = NameSalt.apply(s.createInput(), s.label());
         JsonNode listInput = NameSalt.apply(s.listInput(), s.label());
-        seedDependencies(createInput);
+        seedDependencies(createInput, s.createOp());
         String idValue = createInput.path(s.identifierMember()).asText(null);
 
         StepOutcome create = sendStep(new GeneratedCase(
@@ -414,8 +442,8 @@ public final class ConformanceRunner {
         // echo comparison below, not the raw one.
         JsonNode setupInput = NameSalt.apply(s.setupInput(), s.generatorName());
         JsonNode verifyInput = NameSalt.apply(s.verifyInput(), s.generatorName());
-        seedDependencies(setupInput);
-        seedDependencies(verifyInput);
+        seedDependencies(setupInput, s.setupOp());
+        seedDependencies(verifyInput, s.verifyOp());
 
         // Step 1 — setup. Failure here means we can't tell if the verify step
         // would have round-tripped; report whatever the setup yielded so the

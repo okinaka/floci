@@ -45,6 +45,14 @@ public final class FormatHints {
     // S3's x-amz-tagging header is a URL query string; a bare token is rejected
     // as "missing '=' in pair".
     private static final String TAGGING = "cov-probe=x";
+    // Resource-based policy documents (S3 bucket policy, DynamoDB resource
+    // policy, SES identity policy) are validated as JSON before anything else;
+    // fakecloud 0.45 answers "Resource-based policy document is not valid JSON"
+    // to a bare token. A syntactically complete IAM document with the harness
+    // account as principal passes the JSON and schema checks everywhere.
+    private static final String POLICY_DOCUMENT = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"cov-probe\","
+            + "\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:root\"},"
+            + "\"Action\":\"*\",\"Resource\":\"*\"}]}";
 
     private FormatHints() {
     }
@@ -138,6 +146,12 @@ public final class FormatHints {
         // S3 x-amz-tagging: URL-encoded key=value pairs.
         if (equalsIgnoreCase(n, "Tagging")) {
             return TAGGING;
+        }
+
+        // Policy documents. Only the document members themselves: PolicyName,
+        // PolicyId, PolicyHash and the SES v2 *Policy ARNs stay plain strings.
+        if (equalsIgnoreCase(n, "Policy") || equalsIgnoreCase(n, "ResourcePolicy")) {
+            return POLICY_DOCUMENT;
         }
 
         // S3 SSE-C headers ([CopySource]SSECustomerAlgorithm/Key/KeyMD5).

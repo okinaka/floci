@@ -103,4 +103,17 @@ class FormatHintsTest {
         assertThat(FormatHints.stringForName("CopySourceSSECustomerKey"))
                 .isEqualTo(FormatHints.stringForName("SSECustomerKey"));
     }
+
+    @Test
+    void policy_document_members_get_a_json_policy() throws Exception {
+        var json = new com.fasterxml.jackson.databind.ObjectMapper();
+        for (String name : new String[]{"Policy", "ResourcePolicy"}) {
+            var doc = json.readTree(FormatHints.stringForName(name));
+            assertThat(doc.get("Version").asText()).isEqualTo("2012-10-17");
+            assertThat(doc.get("Statement").isArray()).isTrue();
+        }
+        // Names that merely contain "Policy" are identifiers or ARNs, not documents.
+        assertThat(FormatHints.stringForName("PolicyName")).isEqualTo(FormatHints.DEFAULT);
+        assertThat(FormatHints.stringForName("PolicyHash")).isEqualTo(FormatHints.DEFAULT);
+    }
 }

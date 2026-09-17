@@ -123,7 +123,7 @@ class BaselineGateTest {
                 new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
                         AwsJsonInvoker.Flavor.AWS_JSON_1_0),
                 AwsJsonEncoder.json10(),
-                DependencySeeder.NONE);
+                DependencySeeder.dynamoDb());
     }
 
     @Test

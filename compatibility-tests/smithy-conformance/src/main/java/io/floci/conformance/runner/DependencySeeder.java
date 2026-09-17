@@ -41,12 +41,39 @@ public final class DependencySeeder {
      *                        {@code CreateEmailIdentity}).
      * @param seedInputMember member of the seed operation's input that takes the
      *                        value (e.g. {@code EmailIdentity}).
+     * @param template        fixed members the seed operation needs beyond the
+     *                        name (e.g. a table's key schema), merged into the
+     *                        seed input; {@code null} for name-only creates.
+     * @param creators        operations other than {@code seedOperation} that
+     *                        create the resource themselves (DynamoDB
+     *                        {@code ImportTable} carries a {@code TableName}).
+     * @param deleteOperation operation that removes a seeded resource, with
+     *                        {@code deleteInputMember} taking the name. Names are
+     *                        shared per case label across operations, so a
+     *                        table seeded for {@code DescribeTable} would make the
+     *                        same-label {@code CreateTable} collide; the runner
+     *                        deletes a seeded resource before running a creator
+     *                        case on it. {@code null} when no such clean-up exists.
      */
-    public record SeedRule(String triggerMember, String seedOperation, String seedInputMember) {
+    public record SeedRule(String triggerMember, String seedOperation, String seedInputMember,
+                           JsonNode template, java.util.Set<String> creators,
+                           String deleteOperation, String deleteInputMember) {
+        public SeedRule(String triggerMember, String seedOperation, String seedInputMember) {
+            this(triggerMember, seedOperation, seedInputMember, null, java.util.Set.of(), null, null);
+        }
     }
 
     /** A concrete dependency discovered in a case input: seed {@code value} via {@code operation}. */
-    public record Seed(String operation, String inputMember, String value) {
+    public record Seed(String operation, String inputMember, String value, JsonNode template,
+                       java.util.Set<String> creators, String deleteOperation, String deleteInputMember) {
+        public Seed(String operation, String inputMember, String value) {
+            this(operation, inputMember, value, null, java.util.Set.of(), null, null);
+        }
+
+        /** True when {@code caseOperation} creates the resource itself, so seeding would collide. */
+        public boolean createdBy(String caseOperation) {
+            return operation.equals(caseOperation) || creators.contains(caseOperation);
+        }
     }
 
     /** No rules — the common case for services with no cross-resource dependencies. */
@@ -100,6 +127,35 @@ public final class DependencySeeder {
                 new SeedRule("CustomRedirectDomain", "VerifyDomainIdentity", "Domain")));
     }
 
+    /**
+     * DynamoDB rule: every table-scoped operation (Describe*, Update*, item
+     * reads and writes) answers {@code ResourceNotFoundException} for a table
+     * that does not exist, so a referenced {@code TableName} is seeded with
+     * {@code CreateTable}. The seed carries the minimal schema the emulators
+     * require: one string hash key named {@code cov-probe-key}, matching the
+     * key the synthesizer puts in item operations ({@code Key} maps are
+     * synthesized with that entry and a string {@code AttributeValue}), on
+     * on-demand billing so no throughput is needed.
+     */
+    public static DependencySeeder dynamoDb() {
+        return new DependencySeeder(List.of(
+                new SeedRule("TableName", "CreateTable", "TableName", TABLE_TEMPLATE,
+                        java.util.Set.of("ImportTable"), "DeleteTable", "TableName")));
+    }
+
+    private static final JsonNode TABLE_TEMPLATE = parse("""
+            {"AttributeDefinitions":[{"AttributeName":"cov-probe-key","AttributeType":"S"}],
+             "KeySchema":[{"AttributeName":"cov-probe-key","KeyType":"HASH"}],
+             "BillingMode":"PAY_PER_REQUEST"}""");
+
+    private static JsonNode parse(String json) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** Every dependency referenced by {@code input}, in encounter order. */
     public List<Seed> seedsFor(JsonNode input) {
         List<Seed> out = new ArrayList<>();
@@ -121,7 +177,9 @@ public final class DependencySeeder {
                 if (value.isTextual()) {
                     for (SeedRule rule : rules) {
                         if (rule.triggerMember().equals(e.getKey())) {
-                            out.add(new Seed(rule.seedOperation(), rule.seedInputMember(), value.asText()));
+                            out.add(new Seed(rule.seedOperation(), rule.seedInputMember(), value.asText(),
+                                    rule.template(), rule.creators(),
+                                    rule.deleteOperation(), rule.deleteInputMember()));
                         }
                     }
                 }

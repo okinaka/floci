@@ -144,7 +144,8 @@ class ReportingRunTest {
                 new AwsJsonInvoker(BASE_URL + "/", "DynamoDB_20120810", "dynamodb",
                         AwsJsonInvoker.Flavor.AWS_JSON_1_0),
                 AwsJsonEncoder.json10(),
-                AllGenerators.ALL);
+                AllGenerators.ALL,
+                DependencySeeder.dynamoDb());
 
         List<VariantResult> results = new java.util.ArrayList<>(
                 runner.run("com.amazonaws.dynamodb#DynamoDB_20120810"));

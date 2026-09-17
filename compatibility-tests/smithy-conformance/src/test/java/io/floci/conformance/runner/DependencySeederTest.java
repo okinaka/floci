@@ -107,4 +107,29 @@ class DependencySeederTest {
     void nullInputYieldsNoSeeds() {
         assertThat(SES.seedsFor(null)).isEmpty();
     }
+
+    @Test
+    void dynamoDbFactorySeedsTableWithKeySchemaTemplate() {
+        var seeds = DependencySeeder.dynamoDb().seedsFor(tree("""
+                {"TableName":"cov-probe-t","Key":{"cov-probe-key":{"S":"x"}}}"""));
+        assertThat(seeds).hasSize(1);
+        Seed seed = seeds.get(0);
+        assertThat(seed.operation()).isEqualTo("CreateTable");
+        assertThat(seed.inputMember()).isEqualTo("TableName");
+        assertThat(seed.value()).isEqualTo("cov-probe-t");
+        assertThat(seed.template().get("KeySchema").get(0).get("AttributeName").asText())
+                .isEqualTo("cov-probe-key");
+        assertThat(seed.template().get("BillingMode").asText()).isEqualTo("PAY_PER_REQUEST");
+        assertThat(seed.createdBy("CreateTable")).isTrue();
+        assertThat(seed.createdBy("ImportTable")).isTrue();
+        assertThat(seed.createdBy("DescribeTable")).isFalse();
+        assertThat(seed.deleteOperation()).isEqualTo("DeleteTable");
+        assertThat(seed.deleteInputMember()).isEqualTo("TableName");
+    }
+
+    @Test
+    void nameOnlyRulesCarryNoTemplate() {
+        assertThat(DependencySeeder.sesV2().seedsFor(tree("""
+                {"ConfigurationSetName":"cs"}""")).get(0).template()).isNull();
+    }
 }
