@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Sent-email records (the {@code emailStore}), extracted from {@link SesService} as part of the
+ * Sent-email records (the {@code emailStore}), extracted from {@link SesCrossDomainService} as part of the
  * store-based domain split. This is the send path's output sink: the facade's send methods keep the
  * whole send orchestration and only hand the finished record here through {@link #record}, while the
  * send-statistics and inspection endpoints read it back through {@link #countInRegion} /

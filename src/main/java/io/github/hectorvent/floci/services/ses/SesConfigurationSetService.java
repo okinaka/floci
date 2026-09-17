@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * Configuration sets, extracted from {@link SesService} as the next step of the store-based domain
+ * Configuration sets, extracted from {@link SesCrossDomainService} as the next step of the store-based domain
  * split: the store, key derivation, name validation, CRUD, the domain-pure option setters, and the
  * event destinations live here.
  *

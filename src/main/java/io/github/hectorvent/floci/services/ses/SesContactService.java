@@ -30,10 +30,10 @@ import java.util.regex.Pattern;
 
 /**
  * Contact lists and contacts (the {@code contactListStore} + {@code contactStore}), extracted from
- * {@link SesService} as the fifth step of the store-based domain split.
+ * {@link SesCrossDomainService} as the fifth step of the store-based domain split.
  *
  * <p>New facet: a multi-store domain — one service owns both stores and the locks that serialize
- * them (contact create/update against contact-list deletion), collapsing two SesService constructor
+ * them (contact create/update against contact-list deletion), collapsing two SesCrossDomainService constructor
  * arguments into one. It also owns the list-management contact behaviour used during a send
  * ({@link #getOrAutoCreateContact}, {@link #isListManagementOptedOut}, {@link #unsubscribeContact}),
  * including {@link #collectListManagementOptOuts}, which resolves a send's opted-out recipients

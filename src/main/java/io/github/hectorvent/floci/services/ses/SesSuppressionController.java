@@ -32,7 +32,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAb
 
 /**
  * SES V2 suppression-list endpoints ({@code /v2/email/suppression/addresses}), split out of
- * {@link SesController}. Every operation keeps going through the {@link SesService} facade,
+ * {@link SesController}. Every operation keeps going through the {@link SesCrossDomainService} facade,
  * because an optional {@code TenantName} routes it to that tenant's own list, which spans the
  * suppression and tenant domains; the account-level suppression attributes live under
  * {@code /account}.
@@ -44,14 +44,14 @@ public class SesSuppressionController {
 
     private static final Logger LOG = Logger.getLogger(SesSuppressionController.class);
 
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesSuppressionController(SesService sesService, RegionResolver regionResolver,
+    public SesSuppressionController(SesCrossDomainService crossDomainService, RegionResolver regionResolver,
                                     ObjectMapper objectMapper) {
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -69,7 +69,7 @@ public class SesSuppressionController {
             String emailAddress = readRequiredStringField(request, "EmailAddress");
             String reason = readRequiredStringField(request, "Reason");
             String tenantName = stringMemberOrAbsent(request, "TenantName");
-            sesService.putSuppressedDestination(region, emailAddress, reason, tenantName);
+            crossDomainService.putSuppressedDestination(region, emailAddress, reason, tenantName);
             LOG.infov("SES V2 PutSuppressedDestination: {0} ({1})", emailAddress, reason);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -87,7 +87,7 @@ public class SesSuppressionController {
         String region = regionResolver.resolveRegion(headers);
         try {
             SuppressedDestination suppressed =
-                    sesService.getSuppressedDestination(region, emailAddress, tenantName);
+                    crossDomainService.getSuppressedDestination(region, emailAddress, tenantName);
             ObjectNode result = objectMapper.createObjectNode();
             ObjectNode entry = result.putObject("SuppressedDestination");
             entry.put("EmailAddress", suppressed.getEmailAddress());
@@ -110,7 +110,7 @@ public class SesSuppressionController {
                                                  @QueryParam("TenantName") String tenantName) {
         String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.deleteSuppressedDestination(region, emailAddress, tenantName);
+            crossDomainService.deleteSuppressedDestination(region, emailAddress, tenantName);
             LOG.infov("SES V2 DeleteSuppressedDestination: {0}", emailAddress);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -126,7 +126,7 @@ public class SesSuppressionController {
         String region = regionResolver.resolveRegion(headers);
         List<SuppressedDestination> entries;
         try {
-            entries = sesService.listSuppressedDestinations(region, reasons, tenantName);
+            entries = crossDomainService.listSuppressedDestinations(region, reasons, tenantName);
         } catch (AwsException e) {
             throw remapV1Exception(e);
         }

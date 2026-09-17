@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  * Owns the SES inbound-mail management domain: receipt rule sets and their rules (the
  * {@code receiptRuleSetStore}) and receipt IP filters (the {@code receiptFilterStore}). Extracted
- * from {@link SesService} in the store-based domain split; the v1 {@link SesQueryHandler} is its
+ * from {@link SesCrossDomainService} in the store-based domain split; the v1 {@link SesQueryHandler} is its
  * only caller and reaches it directly. Action-target validation couples this domain to
  * {@link S3Service}, {@link SnsService}, and {@link LambdaService}, reproducing the checks real SES
  * runs against the account; the bounce-sender check arrives as a predicate the handler binds to

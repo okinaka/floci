@@ -875,7 +875,7 @@ class SesEventPublishingV2IntegrationTest {
         assertEquals("Email Sent", envelope.path("detail-type").asText());
         assertEquals("default", envelope.path("event-bus-name").asText());
         // AWS always emits a `resources` array on the envelope, and SesEventPublisher mirrors
-        // that contract. SesService derives sourceArn from FromEmailAddress, so this case
+        // that contract. SesCrossDomainService derives sourceArn from FromEmailAddress, so this case
         // produces a one-element array carrying the SES identity ARN; the sourceArn-null
         // branch (empty array on the PutEvents entry) is pinned by SesEventPublisherTest.
         assertTrue(envelope.has("resources") && envelope.get("resources").isArray(),

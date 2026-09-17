@@ -33,7 +33,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.requireJsonObjec
 /**
  * SES V2 email-template endpoints ({@code /v2/email/templates}), split out of
  * {@link SesController}. Talks to {@link SesTemplateService} directly; only
- * {@code DeleteEmailTemplate} goes through the {@link SesService} facade, which wraps the delete in
+ * {@code DeleteEmailTemplate} goes through the {@link SesCrossDomainService} facade, which wraps the delete in
  * the tenant-association guard.
  */
 @Path("/v2/email")
@@ -44,15 +44,15 @@ public class SesTemplateController {
     private static final Logger LOG = Logger.getLogger(SesTemplateController.class);
 
     private final SesTemplateService templateService;
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesTemplateController(SesTemplateService templateService, SesService sesService,
+    public SesTemplateController(SesTemplateService templateService, SesCrossDomainService crossDomainService,
                                  RegionResolver regionResolver, ObjectMapper objectMapper) {
         this.templateService = templateService;
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -138,7 +138,7 @@ public class SesTemplateController {
                                          @PathParam("templateName") String templateName) {
         String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.deleteTemplate(templateName, region);
+            crossDomainService.deleteTemplate(templateName, region);
             LOG.infov("SES V2 DeleteEmailTemplate: {0}", templateName);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {

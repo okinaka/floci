@@ -42,8 +42,8 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAb
  * REST JSON controller for the AWS SES V2 API.
  * Implements the AWS SES V2 wire protocol at /v2/email/* for the operations
  * exposed by this controller.
- * Reuses the shared {@link SesService} for business logic shared with other SES
- * protocol handlers.
+ * Reuses the shared {@link SesService} for the send logic it has in common with the v1
+ * protocol handler.
  *
  * Follows the same pattern as {@code LambdaController}: AwsExceptions are thrown
  * directly and converted by the global {@code AwsExceptionMapper}.
@@ -56,7 +56,7 @@ public class SesController {
     private static final Logger LOG = Logger.getLogger(SesController.class);
 
     private final SesService sesService;
-    // The bulk send resolves a stored template's content before handing the entries to the facade.
+    // The bulk send resolves a stored template's content before handing the entries to the send path.
     private final SesTemplateService templateService;
     // The send endpoints read the account-level sending switch before building the message.
     private final SesAccountService accountService;

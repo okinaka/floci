@@ -48,7 +48,8 @@ class SesServiceListManagementTest {
     void setUp() {
         SesServiceTestBuilder builder = SesServiceTestBuilder.create().smtpRelay(smtpRelay);
         contactStore = builder.contactStore();
-        service = builder.build();
+        builder.build();
+        service = builder.sesService();
         contacts = builder.contactService();
 
         // Sports defaults OPT_IN, Promos defaults OPT_OUT.

@@ -46,7 +46,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.requireJsonObjec
  * SES V2 configuration-set endpoints ({@code /v2/email/configuration-sets}), including the event
  * destinations, split out of {@link SesController}. Most operations call
  * {@link SesConfigurationSetService} directly; create, the tracking and delivery option setters
- * and delete go through the {@link SesService} facade, which supplies the verified-domain and
+ * and delete go through the {@link SesCrossDomainService} facade, which supplies the verified-domain and
  * dedicated-pool probes those validations need and guards the delete against tenant associations.
  */
 @Path("/v2/email")
@@ -57,16 +57,16 @@ public class SesConfigurationSetController {
     private static final Logger LOG = Logger.getLogger(SesConfigurationSetController.class);
 
     private final SesConfigurationSetService configSetService;
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
     public SesConfigurationSetController(SesConfigurationSetService configSetService,
-                                         SesService sesService, RegionResolver regionResolver,
+                                         SesCrossDomainService crossDomainService, RegionResolver regionResolver,
                                          ObjectMapper objectMapper) {
         this.configSetService = configSetService;
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -131,7 +131,7 @@ public class SesConfigurationSetController {
             if (!vdmNode.isMissingNode() && !vdmNode.isNull()) {
                 cs.setVdmOptions(parseVdmOptions(vdmNode));
             }
-            sesService.createConfigurationSet(cs, region);
+            crossDomainService.createConfigurationSet(cs, region);
             LOG.infov("SES V2 CreateConfigurationSet: {0}", name);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -270,7 +270,7 @@ public class SesConfigurationSetController {
         String region = regionResolver.resolveRegion(headers);
         try {
             JsonNode request = readOptionBody(objectMapper, body);
-            sesService.setConfigurationSetTrackingOptions(name, parseTrackingOptions(request), region);
+            crossDomainService.setConfigurationSetTrackingOptions(name, parseTrackingOptions(request), region);
             LOG.infov("SES V2 PutConfigurationSetTrackingOptions on {0}", name);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -286,7 +286,7 @@ public class SesConfigurationSetController {
         String region = regionResolver.resolveRegion(headers);
         try {
             JsonNode request = readOptionBody(objectMapper, body);
-            sesService.setConfigurationSetDeliveryOptions(name, parseDeliveryOptions(request), region);
+            crossDomainService.setConfigurationSetDeliveryOptions(name, parseDeliveryOptions(request), region);
             LOG.infov("SES V2 PutConfigurationSetDeliveryOptions on {0}", name);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -430,7 +430,7 @@ public class SesConfigurationSetController {
                                             @PathParam("configurationSetName") String name) {
         String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.deleteConfigurationSet(name, region);
+            crossDomainService.deleteConfigurationSet(name, region);
             LOG.infov("SES V2 DeleteConfigurationSet: {0}", name);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {

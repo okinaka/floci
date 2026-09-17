@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for the extracted contact domain. New facet: a multi-store service
- * (contact lists + contacts) constructed with just its two stores and a clock — the two SesService
+ * (contact lists + contacts) constructed with just its two stores and a clock — the two SesCrossDomainService
  * constructor arguments collapse into one. Also exercises the list-management behaviour the send
  * path calls into.
  */

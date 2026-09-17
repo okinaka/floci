@@ -15,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for the extracted CVET storage domain. The identity-dependent
- * validation lives in the SesService facade, so this service is a pure store — constructed with just
- * its own store and unit-tested without a 14-argument SesService.
+ * validation lives in the SesCrossDomainService facade, so this service is a pure store — constructed with just
+ * its own store and unit-tested without a 14-argument SesCrossDomainService.
  */
 class SesCvetServiceTest {
 

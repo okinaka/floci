@@ -22,7 +22,7 @@ import java.time.Clock;
 import static org.mockito.Mockito.mock;
 
 /**
- * Builds a {@link SesService} for unit tests without the fourteen-argument constructor. Every domain
+ * Builds a {@link SesCrossDomainService} for unit tests without the fourteen-argument constructor. Every domain
  * is backed by an in-memory store by default; tests override only the collaborators they care about
  * ({@link #smtpRelay}, {@link #clock}, {@link #route53Service}) and reach the underlying stores they
  * need to seed or inspect through the getters. Adding a store to a domain service only touches this
@@ -58,6 +58,7 @@ final class SesServiceTestBuilder {
     private SesSuppressionService suppressionService;
     private SesConfigurationSetService configSetService;
     private SesIdentityService identityService;
+    private SesService sesService;
 
     static SesServiceTestBuilder create() {
         return new SesServiceTestBuilder();
@@ -141,23 +142,40 @@ final class SesServiceTestBuilder {
         return identityService;
     }
 
-    SesService build() {
+    SesService sesService() {
+        if (sesService == null) {
+            throw new IllegalStateException("call build() first");
+        }
+        return sesService;
+    }
+
+    SesCrossDomainService build() {
         contactService = new SesContactService(contactListStore, contactStore, clock);
         suppressionService = new SesSuppressionService(suppressionStore, accountSuppressionStore,
                 new InMemoryStorage<>());
         configSetService = new SesConfigurationSetService(configSetStore);
         identityService = new SesIdentityService(identityStore, route53Service, clock);
-        return new SesService(
+        // Shared by the send path and the facade: one instance each so a test that seeds through
+        // one and reads back through the other sees the same state.
+        SesSentEmailService sentEmailService = new SesSentEmailService(emailStore);
+        SesTemplateService templateService =
+                new SesTemplateService(templateStore, objectMapper, new SecureRandom());
+        SesCvetService cvetService = new SesCvetService(cvetStore);
+        SesTenantService tenantService =
+                new SesTenantService(tenantStore, tenantAssociationStore, clock, new SecureRandom());
+        sesService = new SesService(identityService, sentEmailService, templateService,
+                configSetService, suppressionService, contactService, cvetService, tenantService,
+                smtpRelay);
+        return new SesCrossDomainService(
                 identityService,
-                new SesSentEmailService(emailStore),
-                new SesTemplateService(templateStore, objectMapper, new SecureRandom()),
+                sentEmailService,
+                templateService,
                 configSetService,
                 suppressionService,
                 new SesDedicatedIpService(dedicatedIpPoolStore),
                 contactService,
                 new SesPolicyService(policyStore, objectMapper),
-                new SesCvetService(cvetStore),
-                new SesTenantService(tenantStore, tenantAssociationStore, clock, new SecureRandom()),
-                smtpRelay);
+                cvetService,
+                tenantService);
     }
 }

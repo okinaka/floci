@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Covers {@link SesService#resolveSuppressionReason(String, String)} — the per-recipient
+ * Covers {@link SesService#resolveSuppressionReason(String, String, String)}, the per-recipient
  * lookup that publishSendEvents uses to map suppressed addresses to synthetic Bounce or
  * Complaint events.
  *
@@ -24,7 +24,8 @@ class SesServiceSuppressionReasonTest {
 
     private static final String REGION = "us-east-1";
 
-    private SesService service;
+    private SesCrossDomainService service;
+    private SesService sesService;
     private SesSuppressionService suppression;
     private InMemoryStorage<String, SuppressedDestination> suppressionStore;
     private InMemoryStorage<String, AccountSuppressionAttributes> accountSuppressionStore;
@@ -35,6 +36,7 @@ class SesServiceSuppressionReasonTest {
         suppressionStore = builder.suppressionStore();
         accountSuppressionStore = builder.accountSuppressionStore();
         service = builder.build();
+        sesService = builder.sesService();
         suppression = builder.suppressionService();
     }
 
@@ -42,14 +44,14 @@ class SesServiceSuppressionReasonTest {
     void notOnList_returnsNull() {
         // Default fresh account: suppressedReasons defaults to [BOUNCE, COMPLAINT], but the
         // address is not on the list, so resolution returns null.
-        assertNull(service.resolveSuppressionReason("unknown@example.com", null, REGION));
+        assertNull(sesService.resolveSuppressionReason("unknown@example.com", null, REGION));
     }
 
     @Test
     void onListAndReasonInAccountSettings_returnsReason() {
         service.putSuppressedDestination(REGION, "bouncer@example.com", "BOUNCE");
         // Account-level suppressedReasons defaults to [BOUNCE, COMPLAINT].
-        assertEquals("BOUNCE", service.resolveSuppressionReason("bouncer@example.com", null, REGION));
+        assertEquals("BOUNCE", sesService.resolveSuppressionReason("bouncer@example.com", null, REGION));
     }
 
     @Test
@@ -57,7 +59,7 @@ class SesServiceSuppressionReasonTest {
         service.putSuppressedDestination(REGION, "complainer@example.com", "COMPLAINT");
         // Narrow the account settings to BOUNCE only.
         suppression.putAccountSuppressionAttributes(REGION, List.of("BOUNCE"));
-        assertNull(service.resolveSuppressionReason("complainer@example.com", null, REGION));
+        assertNull(sesService.resolveSuppressionReason("complainer@example.com", null, REGION));
     }
 
     @Test
@@ -65,7 +67,7 @@ class SesServiceSuppressionReasonTest {
         service.putSuppressedDestination(REGION, "bouncer@example.com", "BOUNCE");
         // Disable account-level suppression by passing an empty list.
         suppression.putAccountSuppressionAttributes(REGION, new ArrayList<>());
-        assertNull(service.resolveSuppressionReason("bouncer@example.com", null, REGION));
+        assertNull(sesService.resolveSuppressionReason("bouncer@example.com", null, REGION));
     }
 
     @Test
@@ -73,13 +75,13 @@ class SesServiceSuppressionReasonTest {
         service.putSuppressedDestination(REGION, "trim-me@example.com", "BOUNCE");
         // Caller may pass the recipient with surrounding whitespace (e.g. from a header).
         assertEquals("BOUNCE",
-                service.resolveSuppressionReason("  trim-me@example.com  ", null, REGION));
+                sesService.resolveSuppressionReason("  trim-me@example.com  ", null, REGION));
     }
 
     @Test
     void nullOrBlankInput_returnsNull() {
-        assertNull(service.resolveSuppressionReason(null, null, REGION));
-        assertNull(service.resolveSuppressionReason("", null, REGION));
-        assertNull(service.resolveSuppressionReason("   ", null, REGION));
+        assertNull(sesService.resolveSuppressionReason(null, null, REGION));
+        assertNull(sesService.resolveSuppressionReason("", null, REGION));
+        assertNull(sesService.resolveSuppressionReason("   ", null, REGION));
     }
 }

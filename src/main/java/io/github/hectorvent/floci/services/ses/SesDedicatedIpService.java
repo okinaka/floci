@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Dedicated IP pools (the {@code dedicatedIpPoolStore}), extracted from {@link SesService} as part of
- * the store-based domain split. A clean leaf reached through the {@code SesService}
+ * Dedicated IP pools (the {@code dedicatedIpPoolStore}), extracted from {@link SesCrossDomainService} as part of
+ * the store-based domain split. A clean leaf reached through the {@code SesCrossDomainService}
  * facade, which delegates here; the facade's configuration-set delivery-options validation also
  * checks pool existence through {@link #dedicatedIpPoolExists}.
  */

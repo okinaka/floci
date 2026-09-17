@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 /**
  * SES v2 tenants (multi-tenancy), owning the {@code tenantStore}. The domain owns id/ARN generation,
  * the synthetic sending status, and the name validation so they can't be bypassed; the controller
- * only parses the REST JSON. Reached through the {@code SesService} facade, which delegates here.
+ * only parses the REST JSON. Reached through the {@code SesCrossDomainService} facade, which delegates here.
  *
  * <p>Account isolation comes from the account-aware store returned by {@code StorageFactory}: keys
  * built here carry only region and tenant name. The caller's account is used for the ARN (and the
@@ -63,7 +63,7 @@ public class SesTenantService {
     /**
      * A parsed, format-validated SES resource ARN for the association operations; {@code type} is one
      * of the wire resource types. Deliberately separate from the tag dispatch's {@code parseSesArn}
-     * in {@code SesService}: the association APIs have their own probe-confirmed error messages and
+     * in {@code SesCrossDomainService}: the association APIs have their own probe-confirmed error messages and
      * validation precedence (type before region before account), so the parsers must not be merged.
      */
     record AssociationResource(String type, String name, String arn) {

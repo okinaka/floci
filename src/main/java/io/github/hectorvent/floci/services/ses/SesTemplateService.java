@@ -29,8 +29,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Email templates (the {@code templateStore}), extracted from {@link SesService} as part of the
- * store-based domain split. Reached through the {@code SesService} facade, which delegates the CRUD
+ * Email templates (the {@code templateStore}), extracted from {@link SesCrossDomainService} as part of the
+ * store-based domain split. Reached through the {@code SesCrossDomainService} facade, which delegates the CRUD
  * here, along with the ARN-dispatched template tagging; the facade's templated-send path reads
  * templates back through {@link #getTemplate}.
  *

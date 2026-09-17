@@ -24,7 +24,8 @@ class SesServiceSuppressionLegacyKeyTest {
     private static final String LEGACY_KEY = "suppression::" + REGION + "::" + LEGACY_ADDR;
     private static final String CANONICAL_KEY = "suppression::" + REGION + "::Foo.Bar@example.com";
 
-    private SesService service;
+    private SesCrossDomainService service;
+    private SesService sesService;
     private InMemoryStorage<String, SuppressedDestination> suppressionStore;
 
     @BeforeEach
@@ -32,6 +33,7 @@ class SesServiceSuppressionLegacyKeyTest {
         SesServiceTestBuilder builder = SesServiceTestBuilder.create();
         suppressionStore = builder.suppressionStore();
         service = builder.build();
+        sesService = builder.sesService();
     }
 
     private void seedLegacyEntry() {
@@ -59,7 +61,7 @@ class SesServiceSuppressionLegacyKeyTest {
         // must also honor the legacy key, or a legacy entry stays deletable but no longer
         // suppresses sends. Default fresh account suppresses [BOUNCE, COMPLAINT].
         seedLegacyEntry();
-        assertEquals("BOUNCE", service.resolveSuppressionReason(LEGACY_ADDR, null, REGION));
+        assertEquals("BOUNCE", sesService.resolveSuppressionReason(LEGACY_ADDR, null, REGION));
     }
 
     @Test

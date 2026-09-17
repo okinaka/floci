@@ -37,7 +37,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.requireObjectOrA
  * authorization policies, DKIM, MAIL FROM, feedback and default configuration set, split out of
  * {@link SesController}. Reads and the single-domain attribute writes call
  * {@link SesIdentityService} directly; create, delete, the policy operations and the default
- * configuration set go through the {@link SesService} facade, which checks the configuration set
+ * configuration set go through the {@link SesCrossDomainService} facade, which checks the configuration set
  * exists, guards the delete against tenant associations and cascades the identity's policies.
  */
 @Path("/v2/email")
@@ -48,15 +48,15 @@ public class SesIdentityController {
     private static final Logger LOG = Logger.getLogger(SesIdentityController.class);
 
     private final SesIdentityService identityService;
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesIdentityController(SesIdentityService identityService, SesService sesService,
+    public SesIdentityController(SesIdentityService identityService, SesCrossDomainService crossDomainService,
                                  RegionResolver regionResolver, ObjectMapper objectMapper) {
         this.identityService = identityService;
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -100,7 +100,7 @@ public class SesIdentityController {
             // The service builds the complete identity (default configuration set and tags included)
             // and persists it with a single write, so any failure (AlreadyExists, invalid tags, a
             // missing configuration set) fails the whole call and creates nothing, matching AWS.
-            Identity identity = sesService.createEmailIdentity(emailIdentity,
+            Identity identity = crossDomainService.createEmailIdentity(emailIdentity,
                     hasConfigSet ? configurationSetName : null, parsedTags, region);
 
             ObjectNode result = objectMapper.createObjectNode();
@@ -170,7 +170,7 @@ public class SesIdentityController {
             throw new AwsException("NotFoundException",
                     "Email identity " + emailIdentity + " does not exist.", 404);
         }
-        sesService.deleteIdentity(emailIdentity, region);
+        crossDomainService.deleteIdentity(emailIdentity, region);
         LOG.infov("SES V2 DeleteEmailIdentity: {0}", emailIdentity);
         return Response.ok(objectMapper.createObjectNode()).build();
     }
@@ -183,7 +183,7 @@ public class SesIdentityController {
         String region = regionResolver.resolveRegion(headers);
         try {
             String policy = readPolicyBody(body);
-            sesService.createEmailIdentityPolicy(emailIdentity, policyName, policy, region);
+            crossDomainService.createEmailIdentityPolicy(emailIdentity, policyName, policy, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);
@@ -200,7 +200,7 @@ public class SesIdentityController {
         String region = regionResolver.resolveRegion(headers);
         try {
             String policy = readPolicyBody(body);
-            sesService.updateEmailIdentityPolicy(emailIdentity, policyName, policy, region);
+            crossDomainService.updateEmailIdentityPolicy(emailIdentity, policyName, policy, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);
@@ -214,7 +214,7 @@ public class SesIdentityController {
     public Response getEmailIdentityPolicies(@Context HttpHeaders headers,
                                              @PathParam("emailIdentity") String emailIdentity) {
         String region = regionResolver.resolveRegion(headers);
-        Map<String, String> policies = sesService.getEmailIdentityPolicies(emailIdentity, region);
+        Map<String, String> policies = crossDomainService.getEmailIdentityPolicies(emailIdentity, region);
         ObjectNode result = objectMapper.createObjectNode();
         ObjectNode policiesNode = result.putObject("Policies");
         policies.forEach(policiesNode::put);
@@ -227,7 +227,7 @@ public class SesIdentityController {
                                               @PathParam("emailIdentity") String emailIdentity,
                                               @PathParam("policyName") String policyName) {
         String region = regionResolver.resolveRegion(headers);
-        sesService.deleteEmailIdentityPolicy(emailIdentity, policyName, region);
+        crossDomainService.deleteEmailIdentityPolicy(emailIdentity, policyName, region);
         return Response.ok(objectMapper.createObjectNode()).build();
     }
 
@@ -413,7 +413,7 @@ public class SesIdentityController {
                     configurationSetName = node.asText();
                 }
             }
-            sesService.setEmailIdentityConfigurationSet(emailIdentity, configurationSetName, region);
+            crossDomainService.setEmailIdentityConfigurationSet(emailIdentity, configurationSetName, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);

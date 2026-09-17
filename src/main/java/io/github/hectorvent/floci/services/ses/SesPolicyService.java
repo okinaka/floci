@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 /**
  * Identity sending-authorization policies (the {@code policyStore}), extracted from
- * {@link SesService} as the fourth step of the store-based domain split.
+ * {@link SesCrossDomainService} as the fourth step of the store-based domain split.
  *
  * <p>New facet vs the earlier steps: a two-way relationship with the (not-yet-extracted) Identity
  * domain. The facade keeps the identity-existence check ({@code requireIdentityExists} reads the
@@ -65,7 +65,7 @@ public class SesPolicyService {
     }
 
     // v2 CreateEmailIdentityPolicy: fails if the name already exists. The identity-existence check is
-    // done by the SesService facade before this is called.
+    // done by the SesCrossDomainService facade before this is called.
     public void createEmailIdentityPolicy(String identity, String policyName, String policy, String region) {
         validatePolicyName(policyName);
         String normalized = normalizePolicy(policy);

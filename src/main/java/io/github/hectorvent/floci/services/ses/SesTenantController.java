@@ -34,7 +34,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAb
  * SES V2 tenant endpoints ({@code /v2/email/tenants}, {@code /v2/email/tenant} and
  * {@code /v2/email/resources/tenants}), split out of {@link SesController}. Tenant create, get,
  * list and suppression attributes call {@link SesTenantService} directly; the resource
- * associations and tenant delete go through the {@link SesService} facade, which checks the
+ * associations and tenant delete go through the {@link SesCrossDomainService} facade, which checks the
  * associated identity, configuration set or template exists and cascades the tenant's
  * suppression entries, work that spans several domains.
  */
@@ -46,15 +46,15 @@ public class SesTenantController {
     private static final Logger LOG = Logger.getLogger(SesTenantController.class);
 
     private final SesTenantService tenantService;
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesTenantController(SesTenantService tenantService, SesService sesService,
+    public SesTenantController(SesTenantService tenantService, SesCrossDomainService crossDomainService,
                                RegionResolver regionResolver, ObjectMapper objectMapper) {
         this.tenantService = tenantService;
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -151,7 +151,7 @@ public class SesTenantController {
                     : objectMapper.readTree(body);
             requireJsonObject(request);
             String tenantName = stringMemberOrAbsent(request, "TenantName");
-            sesService.deleteTenant(tenantName, region);
+            crossDomainService.deleteTenant(tenantName, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);
@@ -174,7 +174,7 @@ public class SesTenantController {
             requireJsonObject(request);
             String tenantName = stringMemberOrAbsent(request, "TenantName");
             String resourceArn = stringMemberOrAbsent(request, "ResourceArn");
-            sesService.createTenantResourceAssociation(tenantName, resourceArn,
+            crossDomainService.createTenantResourceAssociation(tenantName, resourceArn,
                     regionResolver.getAccountId(), region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -195,7 +195,7 @@ public class SesTenantController {
             requireJsonObject(request);
             String tenantName = stringMemberOrAbsent(request, "TenantName");
             String resourceArn = stringMemberOrAbsent(request, "ResourceArn");
-            sesService.deleteTenantResourceAssociation(tenantName, resourceArn,
+            crossDomainService.deleteTenantResourceAssociation(tenantName, resourceArn,
                     regionResolver.getAccountId(), region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -225,7 +225,7 @@ public class SesTenantController {
             }
             Integer pageSize = intMemberOrAbsent(request, "PageSize");
             String nextToken = stringMemberOrAbsent(request, "NextToken");
-            List<TenantResourceAssociation> associations = sesService.listTenantResources(
+            List<TenantResourceAssociation> associations = crossDomainService.listTenantResources(
                     tenantName, resourceTypeFilter, pageSize, nextToken, region);
             ObjectNode result = objectMapper.createObjectNode();
             // AWS renders NextToken as an explicit null on the last (here: only) page.
@@ -256,7 +256,7 @@ public class SesTenantController {
             String resourceArn = stringMemberOrAbsent(request, "ResourceArn");
             Integer pageSize = intMemberOrAbsent(request, "PageSize");
             String nextToken = stringMemberOrAbsent(request, "NextToken");
-            List<TenantResourceAssociation> associations = sesService.listResourceTenants(
+            List<TenantResourceAssociation> associations = crossDomainService.listResourceTenants(
                     resourceArn, pageSize, nextToken, regionResolver.getAccountId(), region);
             ObjectNode result = objectMapper.createObjectNode();
             result.putNull("NextToken");

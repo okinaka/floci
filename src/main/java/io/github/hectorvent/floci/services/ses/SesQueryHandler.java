@@ -44,6 +44,7 @@ public class SesQueryHandler {
 
     private static final Logger LOG = Logger.getLogger(SesQueryHandler.class);
 
+    private final SesCrossDomainService crossDomainService;
     private final SesService sesService;
     private final SesReceiptRuleService receiptRuleService;
     private final SesIdentityService identityService;
@@ -56,12 +57,14 @@ public class SesQueryHandler {
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesQueryHandler(SesService sesService, SesReceiptRuleService receiptRuleService,
+    public SesQueryHandler(SesCrossDomainService crossDomainService, SesService sesService,
+                           SesReceiptRuleService receiptRuleService,
                            SesIdentityService identityService, SesTemplateService templateService,
                            SesCvetService cvetService, SesAccountService accountService,
                            SesConfigurationSetService configSetService,
                            SesPolicyService policyService,
                            SesSentEmailService sentEmailService, ObjectMapper objectMapper) {
+        this.crossDomainService = crossDomainService;
         this.sesService = sesService;
         this.receiptRuleService = receiptRuleService;
         this.identityService = identityService;
@@ -193,7 +196,7 @@ public class SesQueryHandler {
 
     private Response handleDeleteIdentity(MultivaluedMap<String, String> params, String region) {
         String identityValue = getParam(params, "Identity");
-        sesService.deleteIdentity(identityValue, region);
+        crossDomainService.deleteIdentity(identityValue, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult("DeleteIdentity", AwsNamespaces.SES)).build();
     }
 
@@ -327,7 +330,7 @@ public class SesQueryHandler {
 
     private Response handleDeleteVerifiedEmailAddress(MultivaluedMap<String, String> params, String region) {
         String emailAddress = getParam(params, "EmailAddress");
-        sesService.deleteIdentity(emailAddress, region);
+        crossDomainService.deleteIdentity(emailAddress, region);
         return Response.ok(AwsQueryResponse.envelopeNoResult("DeleteVerifiedEmailAddress", AwsNamespaces.SES)).build();
     }
 
@@ -559,7 +562,7 @@ public class SesQueryHandler {
 
     private Response handleDeleteTemplate(MultivaluedMap<String, String> params, String region) {
         String templateName = getParam(params, "TemplateName");
-        sesService.deleteTemplate(templateName, region);
+        crossDomainService.deleteTemplate(templateName, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult("DeleteTemplate", AwsNamespaces.SES)).build();
     }
 
@@ -629,13 +632,13 @@ public class SesQueryHandler {
     // --- Custom verification email templates ---
 
     private Response handleCreateCustomVerificationEmailTemplate(MultivaluedMap<String, String> params, String region) {
-        sesService.createCustomVerificationEmailTemplate(readCvetParams(params), region);
+        crossDomainService.createCustomVerificationEmailTemplate(readCvetParams(params), region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult(
                 "CreateCustomVerificationEmailTemplate", AwsNamespaces.SES)).build();
     }
 
     private Response handleUpdateCustomVerificationEmailTemplate(MultivaluedMap<String, String> params, String region) {
-        sesService.updateCustomVerificationEmailTemplate(readCvetParams(params), region);
+        crossDomainService.updateCustomVerificationEmailTemplate(readCvetParams(params), region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult(
                 "UpdateCustomVerificationEmailTemplate", AwsNamespaces.SES)).build();
     }
@@ -777,7 +780,7 @@ public class SesQueryHandler {
         }
         ConfigurationSet configSet = new ConfigurationSet(name);
         configSet.setReputationMetricsEnabled(false);
-        sesService.createConfigurationSet(configSet, region);
+        crossDomainService.createConfigurationSet(configSet, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult("CreateConfigurationSet", AwsNamespaces.SES)).build();
     }
 
@@ -900,7 +903,7 @@ public class SesQueryHandler {
         if (name == null || name.isBlank()) {
             throw new AwsException("InvalidParameterValue", "ConfigurationSetName is required.", 400);
         }
-        sesService.deleteConfigurationSet(name, region);
+        crossDomainService.deleteConfigurationSet(name, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult("DeleteConfigurationSet", AwsNamespaces.SES)).build();
     }
 
@@ -946,7 +949,7 @@ public class SesQueryHandler {
                                                                  String region) {
         String configSet = requireParam(params, "ConfigurationSetName");
         String domain = getParam(params, "TrackingOptions.CustomRedirectDomain");
-        sesService.createConfigurationSetTrackingOptions(configSet, domain, region);
+        crossDomainService.createConfigurationSetTrackingOptions(configSet, domain, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult(
                 "CreateConfigurationSetTrackingOptions", AwsNamespaces.SES)).build();
     }
@@ -955,7 +958,7 @@ public class SesQueryHandler {
                                                                  String region) {
         String configSet = requireParam(params, "ConfigurationSetName");
         String domain = getParam(params, "TrackingOptions.CustomRedirectDomain");
-        sesService.updateConfigurationSetTrackingOptions(configSet, domain, region);
+        crossDomainService.updateConfigurationSetTrackingOptions(configSet, domain, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult(
                 "UpdateConfigurationSetTrackingOptions", AwsNamespaces.SES)).build();
     }
@@ -998,7 +1001,7 @@ public class SesQueryHandler {
             options = new DeliveryOptions();
             options.setTlsPolicy(tlsPolicy.toUpperCase(Locale.ROOT));
         }
-        sesService.setConfigurationSetDeliveryOptions(configSet, options, region);
+        crossDomainService.setConfigurationSetDeliveryOptions(configSet, options, region);
         return Response.ok(AwsQueryResponse.envelopeEmptyResult(
                 "PutConfigurationSetDeliveryOptions", AwsNamespaces.SES)).build();
     }

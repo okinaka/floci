@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
- * Unit tests for the static helpers left on the {@link SesService} facade: the bulk-send
+ * Unit tests for the static helpers on {@link SesService}, the send service: the bulk-send
  * template-data merge and the bulk error-code mapping.
  */
 class SesServiceHelperTest {

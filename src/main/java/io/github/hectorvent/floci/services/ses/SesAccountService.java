@@ -19,8 +19,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Account-level SES settings, extracted from {@link SesService} as part of the store-based domain
- * split. Reached through the {@code SesService} facade, which delegates here.
+ * Account-level SES settings, extracted from {@link SesCrossDomainService} as part of the store-based domain
+ * split. Reached through the {@code SesCrossDomainService} facade, which delegates here.
  *
  * <p>Owns the account sending-enabled flag ({@code accountSettingsStore}), the VDM (Virtual
  * Deliverability Manager) attributes ({@code accountVdmStore}), and the provisioning details

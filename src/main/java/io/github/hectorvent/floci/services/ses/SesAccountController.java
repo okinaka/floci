@@ -37,7 +37,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAb
  * The settings live in {@link SesAccountService}; {@code GetAccount} also reads the account
  * suppression attributes from {@link SesSuppressionService} and the sent-mail count from
  * {@link SesSentEmailService}, a read-only composition that needs no facade orchestration, so this
- * controller does not depend on {@link SesService}.
+ * controller does not depend on {@link SesCrossDomainService}.
  */
 @Path("/v2/email")
 @Produces(MediaType.APPLICATION_JSON)

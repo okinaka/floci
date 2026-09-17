@@ -20,10 +20,10 @@ import java.util.Set;
 
 /**
  * Storage for custom verification email templates (the {@code cvetStore}), extracted from
- * {@link SesService} as the third step of the store-based domain split.
+ * {@link SesCrossDomainService} as the third step of the store-based domain split.
  *
  * <p>This owns only the persistence and the concurrency guard. The cross-domain parts stay in the
- * {@link SesService} facade, which orchestrates them: {@code validateCustomVerificationTemplate}
+ * {@link SesCrossDomainService} facade, which orchestrates them: {@code validateCustomVerificationTemplate}
  * (its "From must be a verified identity" check reaches the Identity domain) runs in the facade
  * before create/update delegate here, and {@code sendCustomVerificationEmail} stays in the facade
  * and only reads a template through {@link #find}. This is the facade-as-coordinator model:

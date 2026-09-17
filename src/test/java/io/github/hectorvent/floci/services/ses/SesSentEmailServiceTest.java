@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Unit test for the extracted sent-email record domain: the send path's output sink plus the
  * per-region count and the inspection list/clear. The service is constructed with just its own store
- * — no 14-argument SesService needed.
+ * — no 14-argument SesCrossDomainService needed.
  */
 class SesSentEmailServiceTest {
 

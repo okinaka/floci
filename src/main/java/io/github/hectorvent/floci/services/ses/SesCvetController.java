@@ -33,7 +33,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.requireJsonObjec
  * SES V2 custom verification email template endpoints
  * ({@code /v2/email/custom-verification-email-templates}), split out of {@link SesController}.
  * Get, list and delete call {@link SesCvetService} directly; create and update go through the
- * {@link SesService} facade, which validates the template (including the From-address verified
+ * {@link SesCrossDomainService} facade, which validates the template (including the From-address verified
  * check against the identity domain) before the store write. Sending one of these templates stays
  * with the send endpoints.
  */
@@ -45,15 +45,15 @@ public class SesCvetController {
     private static final Logger LOG = Logger.getLogger(SesCvetController.class);
 
     private final SesCvetService cvetService;
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesCvetController(SesCvetService cvetService, SesService sesService,
+    public SesCvetController(SesCvetService cvetService, SesCrossDomainService crossDomainService,
                              RegionResolver regionResolver, ObjectMapper objectMapper) {
         this.cvetService = cvetService;
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -68,7 +68,7 @@ public class SesCvetController {
             // Tags exist only on the create request; UpdateCustomVerificationEmailTemplate has no
             // Tags member and preserves the stored ones.
             t.setTags(parseTagsArray(request.path("Tags")));
-            sesService.createCustomVerificationEmailTemplate(t, region);
+            crossDomainService.createCustomVerificationEmailTemplate(t, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);
@@ -113,7 +113,7 @@ public class SesCvetController {
         try {
             CustomVerificationEmailTemplate t = parseCvet(objectMapper.readTree(body));
             t.setTemplateName(templateName);
-            sesService.updateCustomVerificationEmailTemplate(t, region);
+            crossDomainService.updateCustomVerificationEmailTemplate(t, region);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
             throw remapV1Exception(e);

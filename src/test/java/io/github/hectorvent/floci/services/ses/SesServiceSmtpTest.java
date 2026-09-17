@@ -21,7 +21,8 @@ class SesServiceSmtpTest {
 
     @Mock SmtpRelay smtpRelay;
 
-    private SesService service;
+    private SesCrossDomainService service;
+    private SesService sesService;
     private SesConfigurationSetService configSets;
     private InMemoryStorage<String, SentEmail> emailStore;
 
@@ -30,6 +31,7 @@ class SesServiceSmtpTest {
         SesServiceTestBuilder builder = SesServiceTestBuilder.create().smtpRelay(smtpRelay);
         emailStore = builder.emailStore();
         service = builder.build();
+        sesService = builder.sesService();
         configSets = builder.configSetService();
     }
 
@@ -56,7 +58,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_callsRelayWithAllFields() {
-        String messageId = service.sendEmail("from@example.com",
+        String messageId = sesService.sendEmail("from@example.com",
                 List.of("to@example.com"),
                 List.of("cc@example.com"),
                 List.of("bcc@example.com"),
@@ -79,7 +81,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_storesAndRelays() {
-        String messageId = service.sendEmail("from@example.com",
+        String messageId = sesService.sendEmail("from@example.com",
                 List.of("to@example.com"), null, null, null, null,
                 "Subject", "text", null, null, List.of(), List.of(), null, "us-east-1");
 
@@ -90,7 +92,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_noReturnPath_fallsBackToSource() {
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("to@example.com"), null, null, null, null,
                 "Subject", "text", null, null, List.of(), List.of(), null, "us-east-1");
 
@@ -99,7 +101,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_explicitReturnPath_isRelayedAndStored() {
-        String messageId = service.sendEmail("from@example.com",
+        String messageId = sesService.sendEmail("from@example.com",
                 List.of("to@example.com"), null, null, null, "bounces@example.com",
                 "Subject", "text", null, null, List.of(), List.of(), null, "us-east-1");
 
@@ -109,7 +111,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendRawEmail_callsRelayRaw() {
-        String messageId = service.sendRawEmail("from@example.com",
+        String messageId = sesService.sendRawEmail("from@example.com",
                 List.of("to@example.com"), "raw MIME", null, null, List.of(), null, "us-east-1");
 
         SmtpRelay.RawRelayMessage relayed = capturedRawRelay();
@@ -126,7 +128,7 @@ class SesServiceSmtpTest {
                 + "Return-Path: <mime-bounces@example.com>\r\n"
                 + "Subject: x\r\n\r\nbody";
 
-        String messageId = service.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
+        String messageId = sesService.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
                 "request-bounces@example.com", null, List.of(), null, "us-east-1");
 
         assertEquals("mime-bounces@example.com", capturedRawRelay().returnPath());
@@ -137,7 +139,7 @@ class SesServiceSmtpTest {
     void sendRawEmail_noReturnPathHeader_usesRequestField() {
         String raw = "From: from@example.com\r\nTo: to@example.com\r\nSubject: x\r\n\r\nbody";
 
-        service.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
+        sesService.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
                 "request-bounces@example.com", null, List.of(), null, "us-east-1");
 
         assertEquals("request-bounces@example.com", capturedRawRelay().returnPath());
@@ -145,7 +147,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendRawEmail_storesAndRelays() {
-        String messageId = service.sendRawEmail("from@example.com",
+        String messageId = sesService.sendRawEmail("from@example.com",
                 List.of("to@example.com"), "raw", null, null, List.of(), null, "us-east-1");
 
         assertNotNull(messageId);
@@ -155,7 +157,7 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_relayReceivesCorrectFieldsWithNulls() {
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("to@example.com"),
                 null, null, null, null,
                 "Subject", null, "<p>html only</p>", null, List.of(), List.of(), null, "us-east-1");
@@ -174,7 +176,7 @@ class SesServiceSmtpTest {
         service.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
         service.putSuppressedDestination("us-east-1", "cc@example.com", "COMPLAINT");
 
-        String messageId = service.sendEmail("from@example.com",
+        String messageId = sesService.sendEmail("from@example.com",
                 List.of("to@example.com"),
                 List.of("cc@example.com"),
                 null, null, null,
@@ -191,7 +193,7 @@ class SesServiceSmtpTest {
         // Only suppress one of the To recipients; the other should still reach the relay.
         service.putSuppressedDestination("us-east-1", "suppressed@example.com", "BOUNCE");
 
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("to@example.com", "suppressed@example.com"),
                 List.of("cc-keep@example.com"),
                 null, null, null,
@@ -206,7 +208,7 @@ class SesServiceSmtpTest {
     void sendRawEmail_allRecipientsSuppressed_skipsRelayRawButStillStores() {
         service.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
 
-        String messageId = service.sendRawEmail("from@example.com",
+        String messageId = sesService.sendRawEmail("from@example.com",
                 List.of("to@example.com"), "raw MIME", null, null, List.of(), null, "us-east-1");
 
         assertNotNull(messageId);
@@ -218,7 +220,7 @@ class SesServiceSmtpTest {
     void sendRawEmail_partialSuppression_relayRawCalledWithFilteredRecipients() {
         service.putSuppressedDestination("us-east-1", "suppressed@example.com", "COMPLAINT");
 
-        service.sendRawEmail("from@example.com",
+        sesService.sendRawEmail("from@example.com",
                 List.of("to@example.com", "suppressed@example.com"),
                 "raw MIME", null, null, List.of(), null, "us-east-1");
 
@@ -237,7 +239,7 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-no-suppression"), "us-east-1");
         configSets.putSuppressionOptions("cs-no-suppression", List.of(), "us-east-1");
 
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("to@example.com"), null, null, null, null,
                 "Subject", "text body", null, "cs-no-suppression", List.of(), List.of(), null, "us-east-1");
 
@@ -253,7 +255,7 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-bounce-only"), "us-east-1");
         configSets.putSuppressionOptions("cs-bounce-only", List.of("BOUNCE"), "us-east-1");
 
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("complainer@example.com"), null, null, null, null,
                 "Subject", "text body", null, "cs-bounce-only", List.of(), List.of(), null, "us-east-1");
 
@@ -268,7 +270,7 @@ class SesServiceSmtpTest {
         service.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
         service.createConfigurationSet(new ConfigurationSet("cs-default"), "us-east-1");
 
-        service.sendEmail("from@example.com",
+        sesService.sendEmail("from@example.com",
                 List.of("to@example.com"), null, null, null, null,
                 "Subject", "text body", null, "cs-default", List.of(), List.of(), null, "us-east-1");
 
@@ -281,7 +283,7 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-no-suppression-raw"), "us-east-1");
         configSets.putSuppressionOptions("cs-no-suppression-raw", List.of(), "us-east-1");
 
-        service.sendRawEmail("from@example.com",
+        sesService.sendRawEmail("from@example.com",
                 List.of("to@example.com"), "raw MIME", null, "cs-no-suppression-raw", List.of(), null,
                 "us-east-1");
 

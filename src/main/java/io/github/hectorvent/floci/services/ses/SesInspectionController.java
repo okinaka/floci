@@ -23,19 +23,19 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class SesInspectionController {
 
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesInspectionController(SesService sesService, ObjectMapper objectMapper) {
-        this.sesService = sesService;
+    public SesInspectionController(SesCrossDomainService crossDomainService, ObjectMapper objectMapper) {
+        this.crossDomainService = crossDomainService;
         this.objectMapper = objectMapper;
     }
 
     @GET
     public Response getEmails(@QueryParam("id") String messageId,
                               @QueryParam("email") String recipient) {
-        List<SentEmail> emails = sesService.getEmails();
+        List<SentEmail> emails = crossDomainService.getEmails();
 
         ArrayNode messages = objectMapper.createArrayNode();
         for (SentEmail email : emails) {
@@ -120,7 +120,7 @@ public class SesInspectionController {
 
     @DELETE
     public Response clearEmails() {
-        sesService.clearEmails();
+        crossDomainService.clearEmails();
         return Response.ok().build();
     }
 }

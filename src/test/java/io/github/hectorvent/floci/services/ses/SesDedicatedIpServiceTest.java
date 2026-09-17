@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Unit test for the extracted dedicated-IP-pool domain: create/get/list/delete plus
  * the scaling-mode and duplicate validation. The service is constructed with just its own store — no
- * 14-argument SesService needed.
+ * 14-argument SesCrossDomainService needed.
  */
 class SesDedicatedIpServiceTest {
 

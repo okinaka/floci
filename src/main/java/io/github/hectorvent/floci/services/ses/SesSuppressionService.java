@@ -22,7 +22,7 @@ import java.util.Set;
 
 /**
  * Suppression: the account-level suppression attributes and the per-address suppression list,
- * extracted from {@link SesService} as the sixth step of the store-based domain split.
+ * extracted from {@link SesCrossDomainService} as the sixth step of the store-based domain split.
  *
  * <p>New facet: this resolves the shared-helper deferral called out in the account step. The
  * account-suppression and suppression-list sub-domains share {@code validateSuppressionReason}, so
@@ -30,7 +30,7 @@ import java.util.Set;
  * a private detail of it. The send path keeps its cross-domain orchestration
  * ({@code getEffectiveSuppressedReasons} reads a configuration set's options or falls back here;
  * {@code collectSuppressedReasons}/{@code resolveSuppressionReason} filter a send) in the
- * {@link SesService} facade, which reads entries back through {@link #findSuppressedDestination}.
+ * {@link SesCrossDomainService} facade, which reads entries back through {@link #findSuppressedDestination}.
  */
 @ApplicationScoped
 public class SesSuppressionService {

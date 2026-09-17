@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 
 /**
  * Shared SES resource-tag validation. Lives outside the facade so the extracted domain services can
- * validate tags without depending back on {@link SesService}.
+ * validate tags without depending back on {@link SesCrossDomainService}.
  *
  * <p>Rules and messages are probe-confirmed against real AWS SES v2 (2026-08-23): at most 50 tags,
  * unique keys, key 1–128 / value 0–256 characters, both key and value restricted to letters, numbers,

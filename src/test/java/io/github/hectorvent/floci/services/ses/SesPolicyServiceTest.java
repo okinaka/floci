@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for the extracted identity-policy domain. The identity-existence check
- * stays in the SesService facade, so this service is a pure policy store — unit-tested with just its
+ * stays in the SesCrossDomainService facade, so this service is a pure policy store — unit-tested with just its
  * store and an ObjectMapper, and it exercises the reverse-coupling helper deletePoliciesForIdentity.
  */
 class SesPolicyServiceTest {

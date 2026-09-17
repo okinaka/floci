@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Email and domain identities, extracted from {@link SesService} as the last store of the
+ * Email and domain identities, extracted from {@link SesCrossDomainService} as the last store of the
  * store-based domain split: the store, key derivation and whitespace validation, verification
  * (email and domain), listing, MAIL FROM and notification settings, the CVET pending registration,
  * the ARN-dispatched identity tagging, and the DKIM state machine (token generation, signing

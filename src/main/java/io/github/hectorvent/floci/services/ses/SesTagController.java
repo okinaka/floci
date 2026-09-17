@@ -29,7 +29,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.remapV1Exception
 
 /**
  * SES V2 resource-tag endpoints ({@code /v2/email/tags}), split out of {@link SesController}.
- * Every operation keeps going through the {@link SesService} facade, which parses the resource
+ * Every operation keeps going through the {@link SesCrossDomainService} facade, which parses the resource
  * ARN and dispatches to whichever of the seven taggable domains owns it; that cross-domain
  * dispatch is the facade's job by the survival rule, so this class is a pure size split like
  * {@code LambdaTagController}.
@@ -41,14 +41,14 @@ public class SesTagController {
 
     private static final Logger LOG = Logger.getLogger(SesTagController.class);
 
-    private final SesService sesService;
+    private final SesCrossDomainService crossDomainService;
     private final RegionResolver regionResolver;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public SesTagController(SesService sesService, RegionResolver regionResolver,
+    public SesTagController(SesCrossDomainService crossDomainService, RegionResolver regionResolver,
                             ObjectMapper objectMapper) {
-        this.sesService = sesService;
+        this.crossDomainService = crossDomainService;
         this.regionResolver = regionResolver;
         this.objectMapper = objectMapper;
     }
@@ -70,7 +70,7 @@ public class SesTagController {
             if (tags == null) {
                 throw new AwsException("BadRequestException", "Tags must be an array.", 400);
             }
-            sesService.tagResource(arn, region, tags);
+            crossDomainService.tagResource(arn, region, tags);
             LOG.infov("SES V2 TagResource: {0}", arn);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -87,7 +87,7 @@ public class SesTagController {
                                    @QueryParam("TagKeys") List<String> tagKeys) {
         String region = regionResolver.resolveRegion(headers);
         try {
-            sesService.untagResource(arn, region, tagKeys);
+            crossDomainService.untagResource(arn, region, tagKeys);
             LOG.infov("SES V2 UntagResource: {0}", arn);
             return Response.ok(objectMapper.createObjectNode()).build();
         } catch (AwsException e) {
@@ -101,7 +101,7 @@ public class SesTagController {
                                          @QueryParam("ResourceArn") String arn) {
         String region = regionResolver.resolveRegion(headers);
         try {
-            List<Tag> tags = sesService.listResourceTags(arn, region);
+            List<Tag> tags = crossDomainService.listResourceTags(arn, region);
             ObjectNode result = objectMapper.createObjectNode();
             ArrayNode arr = result.putArray("Tags");
             for (Tag t : tags) {

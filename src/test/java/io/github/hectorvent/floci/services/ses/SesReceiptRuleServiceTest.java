@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit test for the extracted receipt-rule domain. The payoff of the split: the
  * service is constructed with just its own store, mocked resource services, and a clock (no
- * 14-argument SesService needed).
+ * 14-argument SesCrossDomainService needed).
  */
 class SesReceiptRuleServiceTest {
 

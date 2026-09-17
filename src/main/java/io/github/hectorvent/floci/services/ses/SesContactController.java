@@ -39,7 +39,7 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.unexpectedStartE
 /**
  * SES V2 contact-list and contact endpoints ({@code /v2/email/contact-lists}), split out of
  * {@link SesController}. Every operation is a single-domain call on {@link SesContactService}, so
- * this controller does not touch the {@link SesService} facade at all; the send-path opt-out
+ * this controller does not touch the {@link SesCrossDomainService} facade at all; the send-path opt-out
  * collection that also reads contacts stays behind the facade.
  */
 @Path("/v2/email")
