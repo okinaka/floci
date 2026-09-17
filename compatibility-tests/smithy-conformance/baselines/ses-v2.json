@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-09-17T00:57:16.134337Z"
+    "capturedAt" : "2026-09-17T01:24:26.840072Z"
   },
   "cases" : {
     "BatchGetMetricData" : {
@@ -45,10 +45,10 @@
       "list-after-create.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.ConfigurationSetName" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
-      "optionals.required-only" : "INCONCLUSIVE_STATE",
+      "optionals.required-only" : "PASS",
       "property-based.seed-0" : "FAIL_5XX",
-      "property-based.seed-1" : "INCONCLUSIVE_STATE",
-      "property-based.seed-2" : "INCONCLUSIVE_STATE",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "read-after-delete.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
