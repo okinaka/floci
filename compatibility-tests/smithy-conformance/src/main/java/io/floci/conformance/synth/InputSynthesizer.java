@@ -37,7 +37,10 @@ import java.util.function.Predicate;
  */
 public final class InputSynthesizer {
 
-    private static final int MAX_DEPTH = 4;
+    // 6 reaches the deepest @required chains in the measured models (S3
+    // ReplicationRule.Destination.Bucket, InventoryEncryption.SSEKMS.KeyId,
+    // DynamoDB ReplicaUpdates); 4 left them null and produced empty elements.
+    private static final int MAX_DEPTH = 6;
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
     private final Model model;
