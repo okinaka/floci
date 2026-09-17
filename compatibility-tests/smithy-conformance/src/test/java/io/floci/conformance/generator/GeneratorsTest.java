@@ -97,6 +97,29 @@ class GeneratorsTest {
     }
 
     @Test
+    void negative_missing_required_defaulted_member_expects_success() {
+        // SetIdentityDkimEnabled.DkimEnabled is @required but targets a shape
+        // with @default false (a Coral primitive). Real SES treats the absent
+        // member as false and proceeds (floci-io/floci#3075), so the omission
+        // must predict SUCCESS rather than a validation error.
+        OperationShape op = V1.expectShape(
+                ShapeId.from("com.amazonaws.ses#SetIdentityDkimEnabled"), OperationShape.class);
+        List<GeneratedCase> cases = new NegativeGenerator().generate(op, V1)
+                .filter(c -> c.generator().startsWith("negative.missing-required."))
+                .toList();
+        assertThat(cases).extracting(GeneratedCase::generator)
+                .containsExactlyInAnyOrder(
+                        "negative.missing-required.Identity",
+                        "negative.missing-required.DkimEnabled");
+        assertThat(cases).filteredOn(c -> c.generator().endsWith(".DkimEnabled"))
+                .singleElement()
+                .extracting(GeneratedCase::expectedOutcome).isEqualTo(ExpectedOutcome.SUCCESS);
+        assertThat(cases).filteredOn(c -> c.generator().endsWith(".Identity"))
+                .singleElement()
+                .extracting(GeneratedCase::expectedOutcome).isEqualTo(ExpectedOutcome.CLIENT_ERROR);
+    }
+
+    @Test
     void negative_invalid_enum_emits_one_per_enum_member() {
         OperationShape op = V1.expectShape(
                 ShapeId.from("com.amazonaws.ses#ListIdentities"), OperationShape.class);

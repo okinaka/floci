@@ -10,6 +10,7 @@ import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.StructureShape;
+import software.amazon.smithy.model.traits.DefaultTrait;
 import software.amazon.smithy.model.traits.HttpLabelTrait;
 import software.amazon.smithy.model.traits.RequiredTrait;
 
@@ -32,6 +33,13 @@ import java.util.stream.Stream;
  * <p>{@code @httpLabel} required members are skipped from "missing-required"
  * since their absence yields a routing 404, not an application-level error,
  * which would muddy the verdict.
+ *
+ * <p>A {@code @required} member that also carries {@code @default} (directly
+ * or via its target) predicts SUCCESS when omitted: AWS models mark the old
+ * Coral primitive types this way, and the wire contract is "absent means the
+ * default value", not an error. Probed against real SES (awsQuery) for the
+ * five {@code Enabled}-style booleans in floci-io/floci#3075: an absent
+ * boolean deserializes to {@code false} and the request proceeds.
  */
 public final class NegativeGenerator implements Generator {
 
@@ -73,13 +81,15 @@ public final class NegativeGenerator implements Generator {
             Shape requiredTarget = model.expectShape(required.getTarget());
             boolean lenientListOmission = requiredTarget.getType() == software.amazon.smithy.model.shapes.ShapeType.LIST
                     && op.getErrors().isEmpty();
+            boolean defaultedOmission = required.getMemberTrait(model, DefaultTrait.class).isPresent();
             cases.add(new GeneratedCase(
                     op,
                     "negative.missing-required." + omitted,
                     new InputSynthesizer(model,
                             m -> !m.getMemberName().equals(omitted), null)
                             .synthesizeInput(struct),
-                    lenientListOmission ? ExpectedOutcome.SUCCESS : ExpectedOutcome.CLIENT_ERROR,
+                    lenientListOmission || defaultedOmission
+                            ? ExpectedOutcome.SUCCESS : ExpectedOutcome.CLIENT_ERROR,
                     null));
         }
         return cases;
