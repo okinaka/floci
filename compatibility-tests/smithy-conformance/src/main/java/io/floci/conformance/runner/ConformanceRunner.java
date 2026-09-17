@@ -285,6 +285,7 @@ public final class ConformanceRunner {
     }
 
     private StepOutcome sendStep(GeneratedCase stepCase, String phase) {
+        pruneOneOf(stepCase);
         Variant variant;
         try {
             variant = encoder.encode(stepCase);
@@ -333,6 +334,7 @@ public final class ConformanceRunner {
         // Read-back: send directly so a 4xx (the desired not-found) isn't terminalized.
         GeneratedCase readCase = new GeneratedCase(
                 s.readOp(), s.label(), readInput, ExpectedOutcome.CLIENT_ERROR, null);
+        pruneOneOf(readCase);
         Variant rv;
         try {
             rv = encoder.encode(readCase);

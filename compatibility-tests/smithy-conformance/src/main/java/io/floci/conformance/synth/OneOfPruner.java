@@ -68,6 +68,11 @@ public final class OneOfPruner {
             "LifecycleRuleFilter", List.of(List.of(
                     List.of("Prefix"), List.of("Tag"), List.of("And"),
                     List.of("ObjectSizeGreaterThan"), List.of("ObjectSizeLessThan"))),
+            // S3 inventory destination encryption and logging key format: one of two.
+            "InventoryEncryption", List.of(List.of(
+                    List.of("SSES3"), List.of("SSEKMS"))),
+            "TargetObjectKeyFormat", List.of(List.of(
+                    List.of("SimplePrefix"), List.of("PartitionedPrefix"))),
             // SES v1 event destination (distinct shape name, note SNSDestination casing).
             // SNS is listed first because the pruner keeps the first present branch and
             // an SNS destination is valid with just a TopicARN, whereas a synthesized

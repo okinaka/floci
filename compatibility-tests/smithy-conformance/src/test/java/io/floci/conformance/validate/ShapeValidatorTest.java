@@ -249,4 +249,23 @@ class ShapeValidatorTest {
         var root = JSON.readTree("{\"foo\": \"bar\"}");
         assertThat(ShapeValidator.unwrapXmlResult(root, "AnyOp")).isEqualTo(root);
     }
+
+    @Test
+    void s3_xml_attribute_member_is_read_from_the_attribute() throws Exception {
+        // Grantee.Type is @required @xmlAttribute("xsi:type"); XmlMapper keys the
+        // attribute by its local name, which must satisfy the required check.
+        Model s3 = SmithyModelLoader.loadS3();
+        String xml = """
+                <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LoggingEnabled>
+                <TargetBucket>logs</TargetBucket><TargetPrefix>p/</TargetPrefix>
+                <TargetGrants><Grant>
+                <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="CanonicalUser"><ID>abc</ID></Grantee>
+                <Permission>READ</Permission></Grant></TargetGrants>
+                </LoggingEnabled></BucketLoggingStatus>""";
+        var root = XML.readTree(xml.getBytes());
+        StructureShape out = s3.expectShape(
+                ShapeId.from("com.amazonaws.s3#GetBucketLoggingOutput"), StructureShape.class);
+        ShapeValidator.Result result = new ShapeValidator(s3, true).validate(root, out);
+        assertThat(result.issues()).isEmpty();
+    }
 }

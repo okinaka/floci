@@ -134,6 +134,16 @@ public final class ShapeValidator {
         }
         for (MemberShape m : struct.getAllMembers().values()) {
             JsonNode value = node.get(m.getMemberName());
+            if (value == null && xmlMode && m.hasTrait(software.amazon.smithy.model.traits.XmlAttributeTrait.class)) {
+                // XmlMapper keys an attribute by its local name, so an @xmlAttribute
+                // member (S3 Grantee.Type is the xsi:type attribute) lands under
+                // that name rather than the member name. Element-bound @xmlName
+                // members are left alone: flattened lists need their own walker.
+                value = m.getTrait(software.amazon.smithy.model.traits.XmlNameTrait.class)
+                        .map(t -> t.getValue().substring(t.getValue().indexOf(':') + 1))
+                        .map(node::get)
+                        .orElse(null);
+            }
             String mPath = path + "." + m.getMemberName();
             if (value == null || value.isNull() || value.isMissingNode()) {
                 if (requiredEnforced(m)) {

@@ -110,6 +110,19 @@ class OneOfPrunerTest {
     }
 
     @Test
+    void inventoryEncryptionKeepsOnlySseS3() {
+        var in = tree("""
+                {"Bucket":"b","Id":"i","InventoryConfiguration":{"Id":"i","IsEnabled":true,
+                 "IncludedObjectVersions":"All","Schedule":{"Frequency":"Daily"},
+                 "Destination":{"S3BucketDestination":{"Bucket":"arn:aws:s3:::d","Format":"CSV",
+                   "Encryption":{"SSES3":{},"SSEKMS":{"KeyId":"k"}}}}}}""");
+        S3_PRUNER.prune(in, s3Input("PutBucketInventoryConfiguration"));
+        var enc = in.get("InventoryConfiguration").get("Destination").get("S3BucketDestination").get("Encryption");
+        assertThat(enc.has("SSES3")).isTrue();
+        assertThat(enc.has("SSEKMS")).isFalse();
+    }
+
+    @Test
     void sseBranchWinsOverSseCustomerTriple() {
         // SSE-S3 and SSE-C are exclusive; the full SSE-C triple is dropped as one branch.
         var in = tree("""
