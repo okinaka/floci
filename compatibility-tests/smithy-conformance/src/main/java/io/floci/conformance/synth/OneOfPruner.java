@@ -58,6 +58,16 @@ public final class OneOfPruner {
                     List.of("KinesisFirehoseDestination"), List.of("CloudWatchDestination"),
                     List.of("SnsDestination"), List.of("EventBridgeDestination"),
                     List.of("PinpointDestination"))),
+            // S3 filter structures: exactly one of Prefix / Tag / And (S3 answers
+            // MalformedXML when more than one is present). The union-typed
+            // filters (MetricsFilter, AnalyticsFilter) need no entry.
+            "IntelligentTieringFilter", List.of(List.of(
+                    List.of("Prefix"), List.of("Tag"), List.of("And"))),
+            "ReplicationRuleFilter", List.of(List.of(
+                    List.of("Prefix"), List.of("Tag"), List.of("And"))),
+            "LifecycleRuleFilter", List.of(List.of(
+                    List.of("Prefix"), List.of("Tag"), List.of("And"),
+                    List.of("ObjectSizeGreaterThan"), List.of("ObjectSizeLessThan"))),
             // SES v1 event destination (distinct shape name, note SNSDestination casing).
             // SNS is listed first because the pruner keeps the first present branch and
             // an SNS destination is valid with just a TopicARN, whereas a synthesized

@@ -15,6 +15,7 @@ import software.amazon.smithy.model.traits.HttpHeaderTrait;
 import software.amazon.smithy.model.traits.HttpLabelTrait;
 import software.amazon.smithy.model.traits.HttpPayloadTrait;
 import software.amazon.smithy.model.traits.HttpQueryTrait;
+import software.amazon.smithy.model.traits.XmlAttributeTrait;
 import software.amazon.smithy.model.traits.XmlFlattenedTrait;
 import software.amazon.smithy.model.traits.XmlNameTrait;
 import software.amazon.smithy.model.traits.XmlNamespaceTrait;
@@ -126,7 +127,7 @@ public final class RestXmlEncoder implements RequestEncoder {
                 .map(uri -> " xmlns=\"" + uri + "\"")
                 .orElse("");
         StringBuilder sb = new StringBuilder();
-        sb.append('<').append(root).append(xmlns).append('>');
+        sb.append('<').append(root).append(xmlns).append(attributes(value, struct)).append('>');
         writeStructMembers(sb, value, struct);
         sb.append("</").append(root).append('>');
         return sb.toString();
@@ -135,11 +136,33 @@ public final class RestXmlEncoder implements RequestEncoder {
     private void writeStructMembers(StringBuilder sb, JsonNode value, StructureShape struct) {
         for (Map.Entry<String, MemberShape> e : struct.getAllMembers().entrySet()) {
             JsonNode v = value.get(e.getKey());
-            if (v == null || v.isNull() || v.isMissingNode()) {
+            if (v == null || v.isNull() || v.isMissingNode() || e.getValue().hasTrait(XmlAttributeTrait.class)) {
                 continue;
             }
             appendXmlMember(sb, v, e.getValue());
         }
+    }
+
+    /**
+     * {@code @xmlAttribute} members become attributes on the enclosing element.
+     * S3 has exactly one: {@code Grantee.Type} as {@code xsi:type}, whose prefix
+     * must be declared on the element that carries it.
+     */
+    private String attributes(JsonNode value, StructureShape struct) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, MemberShape> e : struct.getAllMembers().entrySet()) {
+            MemberShape m = e.getValue();
+            JsonNode v = value.get(e.getKey());
+            if (!m.hasTrait(XmlAttributeTrait.class) || v == null || v.isNull() || v.isMissingNode()) {
+                continue;
+            }
+            String name = m.getTrait(XmlNameTrait.class).map(XmlNameTrait::getValue).orElse(m.getMemberName());
+            if (name.startsWith("xsi:")) {
+                sb.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+            }
+            sb.append(' ').append(name).append("=\"").append(escape(scalarToString(v)).replace("\"", "&quot;")).append('"');
+        }
+        return sb.toString();
     }
 
     /** A union carries exactly one member; write that one like a structure member. */
@@ -161,7 +184,7 @@ public final class RestXmlEncoder implements RequestEncoder {
         Shape target = model.expectShape(member.getTarget());
         switch (target.getType()) {
             case STRUCTURE -> {
-                sb.append('<').append(name).append('>');
+                sb.append('<').append(name).append(attributes(value, (StructureShape) target)).append('>');
                 writeStructMembers(sb, value, (StructureShape) target);
                 sb.append("</").append(name).append('>');
             }
@@ -185,7 +208,11 @@ public final class RestXmlEncoder implements RequestEncoder {
                 if (value.isArray()) {
                     Shape elemTarget = model.expectShape(element.getTarget());
                     for (JsonNode item : value) {
-                        sb.append('<').append(elementName).append('>');
+                        sb.append('<').append(elementName);
+                        if (elemTarget instanceof StructureShape es) {
+                            sb.append(attributes(item, es));
+                        }
+                        sb.append('>');
                         if (elemTarget instanceof StructureShape es) {
                             writeStructMembers(sb, item, es);
                         } else if (elemTarget instanceof UnionShape eu) {

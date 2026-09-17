@@ -95,6 +95,21 @@ class OneOfPrunerTest {
     }
 
     @Test
+    void intelligentTieringFilterKeepsOnlyPrefixBranch() {
+        // S3 rejects a filter carrying Prefix, Tag and And together with MalformedXML;
+        // the group lives on the nested IntelligentTieringFilter structure.
+        var in = tree("""
+                {"Bucket":"b","Id":"t","IntelligentTieringConfiguration":{"Id":"t","Status":"Enabled",
+                 "Filter":{"Prefix":"p","Tag":{"Key":"k","Value":"v"},"And":{"Prefix":"p"}},
+                 "Tierings":[{"Days":90,"AccessTier":"ARCHIVE_ACCESS"}]}}""");
+        S3_PRUNER.prune(in, s3Input("PutBucketIntelligentTieringConfiguration"));
+        var filter = in.get("IntelligentTieringConfiguration").get("Filter");
+        assertThat(filter.has("Prefix")).isTrue();
+        assertThat(filter.has("Tag")).isFalse();
+        assertThat(filter.has("And")).isFalse();
+    }
+
+    @Test
     void sseBranchWinsOverSseCustomerTriple() {
         // SSE-S3 and SSE-C are exclusive; the full SSE-C triple is dropped as one branch.
         var in = tree("""

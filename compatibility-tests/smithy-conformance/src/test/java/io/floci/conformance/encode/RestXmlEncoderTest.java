@@ -154,8 +154,12 @@ class RestXmlEncoderTest {
         Variant v = new RestXmlEncoder(S3).encode(new GeneratedCase(
                 op, "test", input, ExpectedOutcome.SUCCESS, null));
 
-        // Grants is @xmlName("AccessControlList") with @xmlName("Grant") entries, not flattened.
+        // Grants is @xmlName("AccessControlList") with @xmlName("Grant") entries, not flattened,
+        // and Grantee.Type is @xmlAttribute("xsi:type"), so it rides on the element.
         assertThat(v.rawBody()).contains("<AccessControlList><Grant>").contains("</Grant></AccessControlList>");
-        assertThat(v.rawBody()).doesNotContain("<member>");
+        assertThat(v.rawBody()).contains(
+                "<Grantee xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"Group\">"
+                        + "<URI>http://acs.amazonaws.com/groups/global/AllUsers</URI></Grantee>");
+        assertThat(v.rawBody()).doesNotContain("<member>").doesNotContain("<Type>").doesNotContain("<xsi:type>");
     }
 }
