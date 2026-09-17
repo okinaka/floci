@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-09-17T00:20:59.454385Z"
+    "capturedAt" : "2026-09-17T00:57:15.288438Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
@@ -51,8 +51,7 @@
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "PASS",
-      "seed-and-read.CreateConfigurationSetEventDestination_to_DescribeConfigurationSet" : "INCONCLUSIVE_VALIDATION"
+      "property-based.seed-4" : "PASS"
     },
     "CreateConfigurationSetTrackingOptions" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -106,22 +105,22 @@
     "CreateReceiptRule" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.RuleSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.RuleSetName" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.short.RuleSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.RuleSetName" : "PASS",
       "identifier-fanout.wrong-region.RuleSetName" : "PASS",
       "model-examples.1.CreateReceiptRule" : "INCONCLUSIVE_VALIDATION",
       "negative.missing-required.Rule" : "PASS",
       "negative.missing-required.RuleSetName" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
       "property-based.seed-0" : "INCONCLUSIVE_MISSING",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
       "property-based.seed-3" : "INCONCLUSIVE_MISSING",
       "property-based.seed-4" : "INCONCLUSIVE_MISSING",
-      "read-after-delete.ReceiptRule" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRule" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRuleSet" : "INCONCLUSIVE_MISSING"
+      "read-after-delete.ReceiptRule" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRule" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.CreateReceiptRule_to_DescribeReceiptRuleSet" : "INCONCLUSIVE_VALIDATION"
     },
     "CreateReceiptRuleSet" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -361,6 +360,7 @@
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
+      "seed-and-read.CreateConfigurationSetEventDestination_to_DescribeConfigurationSet" : "PASS",
       "seed-and-read.PutConfigurationSetDeliveryOptions_to_DescribeConfigurationSet" : "FAIL_ECHO"
     },
     "DescribeReceiptRule" : {
@@ -1102,13 +1102,13 @@
     "UpdateReceiptRule" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.RuleSetName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.RuleSetName" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.short.RuleSetName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.wrong-account.RuleSetName" : "PASS",
       "identifier-fanout.wrong-region.RuleSetName" : "PASS",
       "model-examples.1.UpdateReceiptRule" : "INCONCLUSIVE_MISSING",
       "negative.missing-required.Rule" : "PASS",
       "negative.missing-required.RuleSetName" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
       "property-based.seed-0" : "INCONCLUSIVE_MISSING",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
