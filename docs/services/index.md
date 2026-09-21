@@ -86,8 +86,8 @@ Operation counts are exact. For dispatch-table services (Query and JSON 1.1) eac
 | [ECR](ecr.md) | `POST /` + `X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.*` (control plane) and `/v2/...` (data plane proxied to `registry:2`) | JSON 1.1 + OCI Distribution | 17 |
 | [Resource Groups Tagging API](resource-groups-tagging.md) | `POST /` + `X-Amz-Target: ResourceGroupsTaggingAPI_20170126.*` | JSON 1.1 | 5 |
 | [Resource Explorer](resource-explorer.md) | `POST /{OperationName}`, rewritten to `/re2/*` for the four paths S3 Vectors also claims | REST JSON | 32 |
-| [SES](ses.md) | `POST /` with `Action=` param | Query | 16 |
-| [SES v2](ses.md#v2) | `/v2/email/*` | REST JSON | 10 |
+| [SES](ses.md) | `POST /` with `Action=` param | Query | 70 |
+| [SES v2](ses.md#v2) | `/v2/email/*` | REST JSON | 87 |
 | [OpenSearch](opensearch.md) | `/2021-01-01/opensearch/...` | REST JSON | 24 |
 | [AppConfig](appconfig.md) | `/applications/...`, `/deploymentstrategies/...` | REST JSON | 16 |
 | [AppConfigData](appconfig.md#data-plane) | `/configurationsessions`, `/configuration` | REST JSON | 2 |
