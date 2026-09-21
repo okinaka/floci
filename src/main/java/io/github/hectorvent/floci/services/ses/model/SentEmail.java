@@ -55,6 +55,14 @@ public class SentEmail {
     @JsonProperty("SentAt")
     private Instant sentAt;
 
+    /**
+     * Set when the content scan rejected the message after acceptance. A rejected record keeps
+     * nothing the scan looked at (subject, headers, bodies, raw data), since that content is by
+     * definition something no store should hold.
+     */
+    @JsonProperty("RejectReason")
+    private String rejectReason;
+
     public SentEmail() {}
 
     /** Constructor for Simple / Template content. */
@@ -129,4 +137,17 @@ public class SentEmail {
 
     public Instant getSentAt() { return sentAt; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
+
+    public String getRejectReason() { return rejectReason; }
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
+
+    /** Drops everything the content scan looks at; used when the scan rejects the message. */
+    public void discardContent(String reason) {
+        this.rejectReason = reason;
+        this.subject = null;
+        this.headers = null;
+        this.bodyText = null;
+        this.bodyHtml = null;
+        this.rawData = null;
+    }
 }
