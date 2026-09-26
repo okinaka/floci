@@ -3,15 +3,18 @@ package io.github.hectorvent.floci.services.cognito.verification;
 import io.github.hectorvent.floci.services.cognito.model.CognitoUser;
 import io.github.hectorvent.floci.services.cognito.model.UserPool;
 import io.github.hectorvent.floci.services.ses.SesService;
+import io.github.hectorvent.floci.services.ses.model.SendEmailRequest;
 import io.github.hectorvent.floci.services.sns.SnsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -43,14 +46,14 @@ class CognitoMessageDispatcherTest {
         dispatcher.dispatch(pool, user, VerificationCode.Purpose.SIGNUP_CONFIRMATION,
             "123456", List.of("EMAIL"));
 
-        verify(ses).sendEmail(
-            anyString(),
-            eq(List.of("alice@example.com")),
-            eq(List.of()), eq(List.of()), eq(List.of()), isNull(),
-            eq("Verify your account"),
-            eq("Hi! Your code is 123456."),
-            isNull(), isNull(), eq(List.of()), eq(List.of()),
-            isNull(), isNull(), eq("us-east-1"));
+        SendEmailRequest sent = sentEmail();
+        assertEquals(SendEmailRequest.builder()
+            .source(sent.source())
+            .toAddresses(List.of("alice@example.com"))
+            .subject("Verify your account")
+            .bodyText("Hi! Your code is 123456.")
+            .region("us-east-1")
+            .build(), sent);
         verifyNoInteractions(sns);
     }
 
@@ -118,12 +121,14 @@ class CognitoMessageDispatcherTest {
         dispatcher.dispatch(pool, user, VerificationCode.Purpose.SIGNUP_CONFIRMATION,
             "111222", List.of("EMAIL"));
 
-        verify(ses).sendEmail(
-            anyString(), eq(List.of("alice@example.com")),
-            eq(List.of()), eq(List.of()), eq(List.of()), isNull(),
-            eq("Your verification code"),
-            eq("Your verification code is 111222."),
-            isNull(), isNull(), eq(List.of()), eq(List.of()), isNull(), isNull(), eq("us-east-1"));
+        SendEmailRequest sent = sentEmail();
+        assertEquals(SendEmailRequest.builder()
+            .source(sent.source())
+            .toAddresses(List.of("alice@example.com"))
+            .subject("Your verification code")
+            .bodyText("Your verification code is 111222.")
+            .region("us-east-1")
+            .build(), sent);
     }
 
     @Test
@@ -134,12 +139,15 @@ class CognitoMessageDispatcherTest {
         dispatcher.dispatch(pool, user, VerificationCode.Purpose.SIGNUP_CONFIRMATION,
             "999000", List.of("EMAIL"));
 
-        verify(ses).sendEmail(
-            anyString(), eq(List.of("alice@example.com")),
-            eq(List.of()), eq(List.of()), eq(List.of()), isNull(),
-            anyString(),
-            eq("Welcome, please verify.\nCode: 999000"),
-            isNull(), isNull(), eq(List.of()), eq(List.of()), isNull(), isNull(), eq("us-east-1"));
+        SendEmailRequest sent = sentEmail();
+        assertNotNull(sent.subject());
+        assertEquals(SendEmailRequest.builder()
+            .source(sent.source())
+            .toAddresses(List.of("alice@example.com"))
+            .subject(sent.subject())
+            .bodyText("Welcome, please verify.\nCode: 999000")
+            .region("us-east-1")
+            .build(), sent);
     }
 
     @Test
@@ -150,9 +158,16 @@ class CognitoMessageDispatcherTest {
         dispatcher.dispatch(pool, user, VerificationCode.Purpose.SIGNUP_CONFIRMATION,
             "444555", List.of());
 
-        verify(ses).sendEmail(anyString(), eq(List.of("alice@example.com")),
-            any(), any(), any(), isNull(), anyString(), anyString(), isNull(), isNull(), any(), any(),
-            isNull(), isNull(), anyString());
+        SendEmailRequest sent = sentEmail();
+        assertNotNull(sent.subject());
+        assertNotNull(sent.bodyText());
+        assertEquals(SendEmailRequest.builder()
+            .source(sent.source())
+            .toAddresses(List.of("alice@example.com"))
+            .subject(sent.subject())
+            .bodyText(sent.bodyText())
+            .region("us-east-1")
+            .build(), sent);
         verifyNoInteractions(sns);
     }
 
@@ -167,6 +182,12 @@ class CognitoMessageDispatcherTest {
         verify(sns).publish(isNull(), isNull(), eq("+5215551234567"),
             anyString(), isNull(), isNull(), anyString());
         verifyNoInteractions(ses);
+    }
+
+    private SendEmailRequest sentEmail() {
+        ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+        verify(ses).sendEmail(captor.capture());
+        return captor.getValue();
     }
 
     private UserPool pool(Map<String, Object> template) {

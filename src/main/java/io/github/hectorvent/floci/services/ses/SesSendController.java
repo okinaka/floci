@@ -13,6 +13,8 @@ import io.github.hectorvent.floci.services.ses.model.EmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.ListManagementOptions;
 import io.github.hectorvent.floci.services.ses.model.MessageHeader;
 import io.github.hectorvent.floci.services.ses.model.MessageTag;
+import io.github.hectorvent.floci.services.ses.model.SendEmailRequest;
+import io.github.hectorvent.floci.services.ses.model.SendRawEmailRequest;
 import io.github.hectorvent.floci.services.ses.model.Tag;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -123,9 +125,17 @@ public class SesSendController {
                 }
                 sesService.checkTenantRawSendAccess(tenantName, fromEmailAddress, rawData,
                         configurationSetName, regionResolver.getAccountId(), region);
-                messageId = sesService.sendRawEmail(fromEmailAddress, allDestinations, rawData,
-                        feedbackForwardingAddress, configurationSetName, emailTags, listManagement,
-                        tenantName, region);
+                messageId = sesService.sendRawEmail(SendRawEmailRequest.builder()
+                        .source(fromEmailAddress)
+                        .destinations(allDestinations)
+                        .rawMessage(rawData)
+                        .returnPath(feedbackForwardingAddress)
+                        .configurationSetName(configurationSetName)
+                        .emailTags(emailTags)
+                        .listManagement(listManagement)
+                        .tenantName(tenantName)
+                        .region(region)
+                        .build());
             } else if (content.has("Simple")) {
                 if (fromEmailAddress == null || fromEmailAddress.isBlank()) {
                     // AWS returns BadRequestException with a null message body here.
@@ -139,11 +149,23 @@ public class SesSendController {
                         parseHeadersArray(simple.path("Headers"), "content.simple.headers");
                 sesService.checkTenantSendAccess(tenantName, fromEmailAddress, configurationSetName,
                         null, regionResolver.getAccountId(), region);
-                messageId = sesService.sendEmail(fromEmailAddress, toAddresses, ccAddresses,
-                        bccAddresses, replyToAddresses, feedbackForwardingAddress,
-                        subject, bodyText, bodyHtml,
-                        configurationSetName, emailTags, additionalHeaders, listManagement,
-                        tenantName, region);
+                messageId = sesService.sendEmail(SendEmailRequest.builder()
+                        .source(fromEmailAddress)
+                        .toAddresses(toAddresses)
+                        .ccAddresses(ccAddresses)
+                        .bccAddresses(bccAddresses)
+                        .replyToAddresses(replyToAddresses)
+                        .returnPath(feedbackForwardingAddress)
+                        .subject(subject)
+                        .bodyText(bodyText)
+                        .bodyHtml(bodyHtml)
+                        .configurationSetName(configurationSetName)
+                        .emailTags(emailTags)
+                        .additionalHeaders(additionalHeaders)
+                        .listManagement(listManagement)
+                        .tenantName(tenantName)
+                        .region(region)
+                        .build());
             } else if (content.has("Template")) {
                 if (fromEmailAddress == null || fromEmailAddress.isBlank()) {
                     throw new AwsException("BadRequestException", "Source cannot be empty", 400);

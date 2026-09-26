@@ -5,6 +5,8 @@ import io.github.hectorvent.floci.core.storage.InMemoryStorage;
 import io.github.hectorvent.floci.services.ses.model.ConfigurationSet;
 import io.github.hectorvent.floci.services.ses.model.CustomVerificationEmailTemplate;
 import io.github.hectorvent.floci.services.ses.model.InsightsEvent;
+import io.github.hectorvent.floci.services.ses.model.SendEmailRequest;
+import io.github.hectorvent.floci.services.ses.model.SendRawEmailRequest;
 import io.github.hectorvent.floci.services.ses.model.SentEmail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,13 +125,17 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_callsRelayWithAllFields() {
-        String messageId = service.sendEmail("from@example.com",
-                List.of("to@example.com"),
-                List.of("cc@example.com"),
-                List.of("bcc@example.com"),
-                List.of("reply@example.com"),
-                null,
-                "Subject", "text body", "<p>html</p>", null, List.of(), List.of(), null, null, "us-east-1");
+        String messageId = service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .ccAddresses(List.of("cc@example.com"))
+                .bccAddresses(List.of("bcc@example.com"))
+                .replyToAddresses(List.of("reply@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .bodyHtml("<p>html</p>")
+                .region("us-east-1")
+                .build());
 
         SmtpRelay.RelayMessage relayed = capturedRelay();
         assertEquals("from@example.com", relayed.from());
@@ -146,9 +152,13 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_storesAndRelays() {
-        String messageId = service.sendEmail("from@example.com",
-                List.of("to@example.com"), null, null, null, null,
-                "Subject", "text", null, null, List.of(), List.of(), null, null, "us-east-1");
+        String messageId = service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .subject("Subject")
+                .bodyText("text")
+                .region("us-east-1")
+                .build());
 
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty());
@@ -157,18 +167,27 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_noReturnPath_fallsBackToSource() {
-        service.sendEmail("from@example.com",
-                List.of("to@example.com"), null, null, null, null,
-                "Subject", "text", null, null, List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .subject("Subject")
+                .bodyText("text")
+                .region("us-east-1")
+                .build());
 
         assertEquals("from@example.com", capturedRelay().returnPath());
     }
 
     @Test
     void sendEmail_explicitReturnPath_isRelayedAndStored() {
-        String messageId = service.sendEmail("from@example.com",
-                List.of("to@example.com"), null, null, null, "bounces@example.com",
-                "Subject", "text", null, null, List.of(), List.of(), null, null, "us-east-1");
+        String messageId = service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .returnPath("bounces@example.com")
+                .subject("Subject")
+                .bodyText("text")
+                .region("us-east-1")
+                .build());
 
         assertEquals("bounces@example.com", capturedRelay().returnPath());
         assertEquals("bounces@example.com", storedEmail(messageId).getReturnPath());
@@ -181,8 +200,13 @@ class SesServiceSmtpTest {
         String raw = "From: from@example.com\r\nTo: to@example.com\r\nReturn-Path: <bounces@evil.example>\r\n"
                 + "Subject: " + SesContentScan.signature() + "\r\n\r\nbody\r\n";
 
-        String messageId = service.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
-                "bounces@example.com", null, List.of(), null, null, "us-east-1");
+        String messageId = service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage(raw)
+                .returnPath("bounces@example.com")
+                .region("us-east-1")
+                .build());
 
         assertEquals("bounces@example.com", storedEmail(messageId).getReturnPath());
         assertEquals("Bad content", storedEmail(messageId).getRejectReason());
@@ -195,8 +219,12 @@ class SesServiceSmtpTest {
         // rather than recorded and relayed unseen.
         String raw = "Content-Type: message/rfc822\r\n\r\n".repeat(100_000) + "Subject: deep\r\n\r\nx\r\n";
 
-        AwsException e = assertThrows(AwsException.class, () -> service.sendRawEmail("from@example.com",
-                List.of("to@example.com"), raw, null, null, List.of(), null, null, "us-east-1"));
+        AwsException e = assertThrows(AwsException.class, () -> service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage(raw)
+                .region("us-east-1")
+                .build()));
 
         assertEquals(400, e.getHttpStatus());
         assertTrue(sentEmails.listAll().isEmpty());
@@ -205,8 +233,12 @@ class SesServiceSmtpTest {
 
     @Test
     void sendRawEmail_callsRelayRaw() {
-        String messageId = service.sendRawEmail("from@example.com",
-                List.of("to@example.com"), "raw MIME", null, null, List.of(), null, null, "us-east-1");
+        String messageId = service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage("raw MIME")
+                .region("us-east-1")
+                .build());
 
         SmtpRelay.RawRelayMessage relayed = capturedRawRelay();
         assertEquals("from@example.com", relayed.from());
@@ -222,8 +254,13 @@ class SesServiceSmtpTest {
                 + "Return-Path: <mime-bounces@example.com>\r\n"
                 + "Subject: x\r\n\r\nbody";
 
-        String messageId = service.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
-                "request-bounces@example.com", null, List.of(), null, null, "us-east-1");
+        String messageId = service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage(raw)
+                .returnPath("request-bounces@example.com")
+                .region("us-east-1")
+                .build());
 
         assertEquals("mime-bounces@example.com", capturedRawRelay().returnPath());
         assertEquals("mime-bounces@example.com", storedEmail(messageId).getReturnPath());
@@ -233,16 +270,25 @@ class SesServiceSmtpTest {
     void sendRawEmail_noReturnPathHeader_usesRequestField() {
         String raw = "From: from@example.com\r\nTo: to@example.com\r\nSubject: x\r\n\r\nbody";
 
-        service.sendRawEmail("from@example.com", List.of("to@example.com"), raw,
-                "request-bounces@example.com", null, List.of(), null, null, "us-east-1");
+        service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage(raw)
+                .returnPath("request-bounces@example.com")
+                .region("us-east-1")
+                .build());
 
         assertEquals("request-bounces@example.com", capturedRawRelay().returnPath());
     }
 
     @Test
     void sendRawEmail_storesAndRelays() {
-        String messageId = service.sendRawEmail("from@example.com",
-                List.of("to@example.com"), "raw", null, null, List.of(), null, null, "us-east-1");
+        String messageId = service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage("raw")
+                .region("us-east-1")
+                .build());
 
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty());
@@ -251,10 +297,16 @@ class SesServiceSmtpTest {
 
     @Test
     void sendEmail_relayReceivesCorrectFieldsWithNulls() {
-        service.sendEmail("from@example.com",
-                List.of("to@example.com"),
-                null, null, null, null,
-                "Subject", null, "<p>html only</p>", null, List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .ccAddresses(null)
+                .bccAddresses(null)
+                .replyToAddresses(null)
+                .subject("Subject")
+                .bodyHtml("<p>html only</p>")
+                .region("us-east-1")
+                .build());
 
         SmtpRelay.RelayMessage relayed = capturedRelay();
         assertEquals(List.of("to@example.com"), relayed.to());
@@ -270,11 +322,14 @@ class SesServiceSmtpTest {
         suppression.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
         suppression.putSuppressedDestination("us-east-1", "cc@example.com", "COMPLAINT");
 
-        String messageId = service.sendEmail("from@example.com",
-                List.of("to@example.com"),
-                List.of("cc@example.com"),
-                null, null, null,
-                "Subject", "text body", null, null, List.of(), List.of(), null, null, "us-east-1");
+        String messageId = service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .ccAddresses(List.of("cc@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .region("us-east-1")
+                .build());
 
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty(),
@@ -287,11 +342,14 @@ class SesServiceSmtpTest {
         // Only suppress one of the To recipients; the other should still reach the relay.
         suppression.putSuppressedDestination("us-east-1", "suppressed@example.com", "BOUNCE");
 
-        service.sendEmail("from@example.com",
-                List.of("to@example.com", "suppressed@example.com"),
-                List.of("cc-keep@example.com"),
-                null, null, null,
-                "Subject", "text body", null, null, List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com", "suppressed@example.com"))
+                .ccAddresses(List.of("cc-keep@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .region("us-east-1")
+                .build());
 
         SmtpRelay.RelayMessage relayed = capturedRelay();
         assertEquals(List.of("to@example.com"), relayed.to());
@@ -302,8 +360,12 @@ class SesServiceSmtpTest {
     void sendRawEmail_allRecipientsSuppressed_skipsRelayRawButStillStores() {
         suppression.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
 
-        String messageId = service.sendRawEmail("from@example.com",
-                List.of("to@example.com"), "raw MIME", null, null, List.of(), null, null, "us-east-1");
+        String messageId = service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage("raw MIME")
+                .region("us-east-1")
+                .build());
 
         assertNotNull(messageId);
         assertFalse(emailStore.scan(k -> true).isEmpty());
@@ -314,9 +376,12 @@ class SesServiceSmtpTest {
     void sendRawEmail_partialSuppression_relayRawCalledWithFilteredRecipients() {
         suppression.putSuppressedDestination("us-east-1", "suppressed@example.com", "COMPLAINT");
 
-        service.sendRawEmail("from@example.com",
-                List.of("to@example.com", "suppressed@example.com"),
-                "raw MIME", null, null, List.of(), null, null, "us-east-1");
+        service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com", "suppressed@example.com"))
+                .rawMessage("raw MIME")
+                .region("us-east-1")
+                .build());
 
         assertEquals(List.of("to@example.com"), capturedRawRelay().destinations());
     }
@@ -333,9 +398,14 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-no-suppression"), "us-east-1");
         configSets.putSuppressionOptions("cs-no-suppression", List.of(), "us-east-1");
 
-        service.sendEmail("from@example.com",
-                List.of("to@example.com"), null, null, null, null,
-                "Subject", "text body", null, "cs-no-suppression", List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .configurationSetName("cs-no-suppression")
+                .region("us-east-1")
+                .build());
 
         assertEquals(List.of("to@example.com"), capturedRelay().to());
     }
@@ -349,9 +419,14 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-bounce-only"), "us-east-1");
         configSets.putSuppressionOptions("cs-bounce-only", List.of("BOUNCE"), "us-east-1");
 
-        service.sendEmail("from@example.com",
-                List.of("complainer@example.com"), null, null, null, null,
-                "Subject", "text body", null, "cs-bounce-only", List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("complainer@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .configurationSetName("cs-bounce-only")
+                .region("us-east-1")
+                .build());
 
         assertEquals(List.of("complainer@example.com"), capturedRelay().to());
     }
@@ -364,9 +439,14 @@ class SesServiceSmtpTest {
         suppression.putSuppressedDestination("us-east-1", "to@example.com", "BOUNCE");
         service.createConfigurationSet(new ConfigurationSet("cs-default"), "us-east-1");
 
-        service.sendEmail("from@example.com",
-                List.of("to@example.com"), null, null, null, null,
-                "Subject", "text body", null, "cs-default", List.of(), List.of(), null, null, "us-east-1");
+        service.sendEmail(SendEmailRequest.builder()
+                .source("from@example.com")
+                .toAddresses(List.of("to@example.com"))
+                .subject("Subject")
+                .bodyText("text body")
+                .configurationSetName("cs-default")
+                .region("us-east-1")
+                .build());
 
         verify(smtpRelay, never()).relay(any(SmtpRelay.RelayMessage.class));
     }
@@ -377,9 +457,13 @@ class SesServiceSmtpTest {
         service.createConfigurationSet(new ConfigurationSet("cs-no-suppression-raw"), "us-east-1");
         configSets.putSuppressionOptions("cs-no-suppression-raw", List.of(), "us-east-1");
 
-        service.sendRawEmail("from@example.com",
-                List.of("to@example.com"), "raw MIME", null, "cs-no-suppression-raw", List.of(), null, null, 
-                "us-east-1");
+        service.sendRawEmail(SendRawEmailRequest.builder()
+                .source("from@example.com")
+                .destinations(List.of("to@example.com"))
+                .rawMessage("raw MIME")
+                .configurationSetName("cs-no-suppression-raw")
+                .region("us-east-1")
+                .build());
 
         assertEquals(List.of("to@example.com"), capturedRawRelay().destinations());
     }

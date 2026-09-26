@@ -20,6 +20,8 @@ import io.github.hectorvent.floci.services.ses.model.ReceiptAction;
 import io.github.hectorvent.floci.services.ses.model.ReceiptFilter;
 import io.github.hectorvent.floci.services.ses.model.ReceiptRule;
 import io.github.hectorvent.floci.services.ses.model.ReceiptRuleSet;
+import io.github.hectorvent.floci.services.ses.model.SendEmailRequest;
+import io.github.hectorvent.floci.services.ses.model.SendRawEmailRequest;
 import io.github.hectorvent.floci.services.ses.model.SnsDestination;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -252,9 +254,20 @@ public class SesQueryHandler {
         List<MessageTag> emailTags = extractMessageTags(params, "Tags");
 
         // ListManagementOptions is a v2-only SendEmail field; the v1 Query API has no equivalent.
-        String messageId = sesService.sendEmail(source, toAddresses, ccAddresses, bccAddresses,
-                replyToAddresses, returnPath, subject, bodyText, bodyHtml, configurationSetName,
-                emailTags, List.of(), null, null, region);
+        String messageId = sesService.sendEmail(SendEmailRequest.builder()
+                .source(source)
+                .toAddresses(toAddresses)
+                .ccAddresses(ccAddresses)
+                .bccAddresses(bccAddresses)
+                .replyToAddresses(replyToAddresses)
+                .returnPath(returnPath)
+                .subject(subject)
+                .bodyText(bodyText)
+                .bodyHtml(bodyHtml)
+                .configurationSetName(configurationSetName)
+                .emailTags(emailTags)
+                .region(region)
+                .build());
 
         String result = new XmlBuilder().elem("MessageId", messageId).build();
         return Response.ok(AwsQueryResponse.envelope("SendEmail", AwsNamespaces.SES, result)).build();
@@ -271,8 +284,14 @@ public class SesQueryHandler {
         String configurationSetName = getParam(params, "ConfigurationSetName");
         List<MessageTag> emailTags = extractMessageTags(params, "Tags");
 
-        String messageId = sesService.sendRawEmail(source, destinations, rawMessage,
-                null, configurationSetName, emailTags, null, null, region);
+        String messageId = sesService.sendRawEmail(SendRawEmailRequest.builder()
+                .source(source)
+                .destinations(destinations)
+                .rawMessage(rawMessage)
+                .configurationSetName(configurationSetName)
+                .emailTags(emailTags)
+                .region(region)
+                .build());
 
         String result = new XmlBuilder().elem("MessageId", messageId).build();
         return Response.ok(AwsQueryResponse.envelope("SendRawEmail", AwsNamespaces.SES, result)).build();
