@@ -120,4 +120,40 @@ class ConstraintGeneratorsTest {
         // GetSendQuota may or may not have @examples; if it does, fine — just verify no crash.
         assertThat(cases).isNotNull();
     }
+
+    @Test
+    void lengthBoundaryFillsCollectionsWithRealElements() {
+        // BatchGetItem.RequestItems is Map<String, KeysAndAttributes>. A scalar
+        // placeholder there is a type error the server rejects before it ever
+        // checks the length, so the element must be a synthesized structure.
+        Model ddb = SmithyModelLoader.loadDynamoDb();
+        OperationShape op = ddb.expectShape(
+                ShapeId.from("com.amazonaws.dynamodb#BatchGetItem"), OperationShape.class);
+        var cases = new BoundaryGenerator().generate(op, ddb)
+                .filter(c -> c.generator().equals("boundary.length.min.RequestItems"))
+                .toList();
+        assertThat(cases).hasSize(1);
+        var requestItems = cases.get(0).logicalInput().get("RequestItems");
+        assertThat(requestItems.isObject()).isTrue();
+        assertThat(requestItems).isNotEmpty();
+        requestItems.forEach(v -> assertThat(v.isObject())
+                .as("map value must be a KeysAndAttributes object, not a scalar").isTrue());
+    }
+
+    @Test
+    void lengthBoundaryFillsListsWithRealElements() {
+        // TransactGetItems.TransactItems is List<TransactGetItem>.
+        Model ddb = SmithyModelLoader.loadDynamoDb();
+        OperationShape op = ddb.expectShape(
+                ShapeId.from("com.amazonaws.dynamodb#TransactGetItems"), OperationShape.class);
+        var cases = new BoundaryGenerator().generate(op, ddb)
+                .filter(c -> c.generator().equals("boundary.length.min.TransactItems"))
+                .toList();
+        assertThat(cases).hasSize(1);
+        var items = cases.get(0).logicalInput().get("TransactItems");
+        assertThat(items.isArray()).isTrue();
+        assertThat(items).isNotEmpty();
+        items.forEach(v -> assertThat(v.isObject())
+                .as("list element must be a TransactGetItem object, not a scalar").isTrue());
+    }
 }

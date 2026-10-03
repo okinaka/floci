@@ -70,6 +70,16 @@ public final class InputSynthesizer {
         return (ObjectNode) buildStruct(input, 0, new HashSet<>());
     }
 
+    /**
+     * Build a tree for an arbitrary shape rather than an operation input, for a
+     * collection's element or a map's value. {@code owner} is the member the
+     * value hangs off, so the format hints and constraint traits that key on a
+     * member name still apply.
+     */
+    public JsonNode synthesizeValue(Shape shape, MemberShape owner) {
+        return buildShape(shape, 1, new HashSet<>(), owner);
+    }
+
     private JsonNode buildShape(Shape shape, int depth, Set<ShapeId> visiting, MemberShape owner) {
         if (depth > MAX_DEPTH) {
             return NODES.nullNode();

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.floci.conformance.model.ExpectedOutcome;
 import io.floci.conformance.synth.InputSynthesizer;
 import software.amazon.smithy.model.Model;
+import software.amazon.smithy.model.shapes.ListShape;
+import software.amazon.smithy.model.shapes.MapShape;
 import software.amazon.smithy.model.shapes.MemberShape;
 import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
@@ -66,7 +68,7 @@ public final class BoundaryGenerator implements Generator {
         List<GeneratedCase> cases = new ArrayList<>();
         for (MemberShape member : struct.getAllMembers().values()) {
             Shape target = model.expectShape(member.getTarget());
-            collectLengthCases(op, baselineSupplier, member, target, cases);
+            collectLengthCases(op, baselineSupplier, member, target, cases, model);
             collectRangeCases(op, baselineSupplier, member, target, cases);
         }
         return cases.stream();
@@ -74,7 +76,8 @@ public final class BoundaryGenerator implements Generator {
 
     private void collectLengthCases(OperationShape op,
                                     java.util.function.Supplier<ObjectNode> baseline,
-                                    MemberShape member, Shape target, List<GeneratedCase> out) {
+                                    MemberShape member, Shape target, List<GeneratedCase> out,
+                                    Model model) {
         LengthTrait length = member.getTrait(LengthTrait.class)
                 .orElse(target.getTrait(LengthTrait.class).orElse(null));
         if (length == null) {
@@ -87,7 +90,7 @@ public final class BoundaryGenerator implements Generator {
         }
         length.getMin().ifPresent(min -> {
             int v = min.intValue();
-            emit(op, baseline, member, lengthValue(type, v),
+            emit(op, baseline, member, lengthValue(target, v, model),
                     "boundary.length.min." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
             // An empty @httpLabel value changes the URL structure and routes
@@ -98,17 +101,17 @@ public final class BoundaryGenerator implements Generator {
             boolean emptyLabel = v - 1 == 0 && member.hasTrait(HttpLabelTrait.class)
                     && type == ShapeType.STRING;
             if (v > 0 && !emptyLabel) {
-                emit(op, baseline, member, lengthValue(type, v - 1),
+                emit(op, baseline, member, lengthValue(target, v - 1, model),
                         "boundary.length.under.min." + member.getMemberName(),
                         ExpectedOutcome.CLIENT_ERROR, out);
             }
         });
         length.getMax().ifPresent(max -> {
             int v = max.intValue();
-            emit(op, baseline, member, lengthValue(type, v),
+            emit(op, baseline, member, lengthValue(target, v, model),
                     "boundary.length.max." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, out);
-            emit(op, baseline, member, lengthValue(type, v + 1),
+            emit(op, baseline, member, lengthValue(target, v + 1, model),
                     "boundary.length.over.max." + member.getMemberName(),
                     ExpectedOutcome.CLIENT_ERROR, out);
         });
@@ -152,24 +155,43 @@ public final class BoundaryGenerator implements Generator {
         };
     }
 
-    private static JsonNode lengthValue(ShapeType t, int n) {
+    /**
+     * A value of the member's own type with exactly {@code n} units of length.
+     *
+     * <p>Collections get real elements. Filling them with a scalar placeholder
+     * put a string where the model declares a structure or a union, which a
+     * server rejects at the deserialization layer before the length is ever
+     * checked: DynamoDB answers {@code SerializationException} to
+     * {@code BatchGetItem.RequestItems} as {@code {"k0":"v"}} or
+     * {@code TransactGetItems.TransactItems} as {@code ["x"]}, so the variant
+     * measured the harness rather than the limit.
+     */
+    private static JsonNode lengthValue(Shape target, int n, Model model) {
         if (n < 0) {
             n = 0;
         }
-        return switch (t) {
+        return switch (target.getType()) {
             case STRING -> NODES.textNode("a".repeat(n));
             case BLOB -> NODES.textNode(java.util.Base64.getEncoder().encodeToString(new byte[n]));
             case LIST -> {
+                MemberShape element = ((ListShape) target).getMember();
+                Shape elementTarget = model.expectShape(element.getTarget());
+                InputSynthesizer synth = new InputSynthesizer(
+                        model, InputSynthesizer.allMembers(), null);
                 var arr = NODES.arrayNode();
                 for (int i = 0; i < n; i++) {
-                    arr.add("x");
+                    arr.add(synth.synthesizeValue(elementTarget, element));
                 }
                 yield arr;
             }
             case MAP -> {
+                MemberShape value = ((MapShape) target).getValue();
+                Shape valueTarget = model.expectShape(value.getTarget());
+                InputSynthesizer synth = new InputSynthesizer(
+                        model, InputSynthesizer.allMembers(), null);
                 var m = NODES.objectNode();
                 for (int i = 0; i < n; i++) {
-                    m.put("k" + i, "v");
+                    m.set("cov-probe-key" + i, synth.synthesizeValue(valueTarget, value));
                 }
                 yield m;
             }
