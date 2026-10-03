@@ -144,6 +144,30 @@ class DependencySeederTest {
     }
 
     @Test
+    void sesV2FactorySeedsTenant() {
+        var seeds = DependencySeeder.sesV2().seedsFor(tree("""
+                {"TenantName":"cov-probe-t"}"""));
+        assertThat(seeds).hasSize(1);
+        Seed tenant = seeds.get(0);
+        assertThat(tenant.operation()).isEqualTo("CreateTenant");
+        assertThat(tenant.inputMember()).isEqualTo("TenantName");
+        assertThat(tenant.value()).isEqualTo("cov-probe-t");
+        assertThat(tenant.template()).isNull();
+        assertThat(tenant.deleteOperation()).isEqualTo("DeleteTenant");
+        // CreateTenant makes the tenant itself, so the runner unseeds instead.
+        assertThat(tenant.createdBy("CreateTenant")).isTrue();
+        assertThat(tenant.createdBy("SendEmail")).isFalse();
+    }
+
+    @Test
+    void sesV2FactoryDoesNotSeedContactLists() {
+        // SES allows one contact list per account, so a seeded list would
+        // consume the only slot and fail the CreateContactList case under test.
+        assertThat(DependencySeeder.sesV2().seedsFor(tree("""
+                {"ContactListName":"cov-probe-l"}"""))).isEmpty();
+    }
+
+    @Test
     void nameOnlyRulesCarryNoTemplate() {
         assertThat(DependencySeeder.sesV2().seedsFor(tree("""
                 {"ConfigurationSetName":"cs"}""")).get(0).template()).isNull();

@@ -95,14 +95,35 @@ public final class DependencySeeder {
      *       verified email identity, so seed it with {@code CreateEmailIdentity}
      *       (which Floci auto-verifies) before the referencing operation runs;
      *   <li>a delivery option's {@code SendingPoolName} must name an existing
-     *       dedicated IP pool, so seed it with {@code CreateDedicatedIpPool}.
+     *       dedicated IP pool, so seed it with {@code CreateDedicatedIpPool};
+     *   <li>a {@code TenantName} must name an existing tenant. Thirteen
+     *       operations take one, and without the tenant they answer
+     *       {@code NotFoundException} rather than reaching their own logic.
      * </ul>
+     *
+     * <p>{@code CreateTenant} takes nothing but the name, so the rule carries
+     * no template. Seeding a tenant does not make {@code SendEmail} succeed: it
+     * then answers {@code AccessDeniedException}, because the sender identity
+     * has to be associated with the tenant as well. That association needs two
+     * ordered creates and is out of this table's reach, so the verdict stays
+     * inconclusive -- but on the honest reason.
+     *
+     * <p>There is deliberately no {@code ContactListName} rule. SES allows one
+     * contact list per account ("A maximum of 1 Lists allowed per account"), so
+     * a list seeded under one case label consumes the only slot and the
+     * {@code CreateContactList} case under test then fails for lack of quota.
+     * Measured: the rule gained 4 contact reads and lost 5 cases that way.
+     * Making the contact operations measurable needs one shared list name
+     * rather than the per-case name the salt provides, which is a change to the
+     * naming scheme, not a seeding rule.
      */
     public static DependencySeeder sesV2() {
         return new DependencySeeder(List.of(
                 new SeedRule("ConfigurationSetName", "CreateConfigurationSet", "ConfigurationSetName"),
                 new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity"),
-                new SeedRule("SendingPoolName", "CreateDedicatedIpPool", "PoolName")));
+                new SeedRule("SendingPoolName", "CreateDedicatedIpPool", "PoolName"),
+                new SeedRule("TenantName", "CreateTenant", "TenantName", null,
+                        java.util.Set.of(), "DeleteTenant", "TenantName")));
     }
 
     /**
