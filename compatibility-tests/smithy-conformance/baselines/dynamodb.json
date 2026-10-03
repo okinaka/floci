@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.dynamodb#DynamoDB_20120810",
     "modelVersion" : "2012-08-10",
-    "capturedAt" : "2026-10-03T09:49:43.735833Z"
+    "capturedAt" : "2026-10-03T15:12:33.441775Z"
   },
   "cases" : {
     "BatchExecuteStatement" : {
@@ -26,7 +26,7 @@
     },
     "BatchGetItem" : {
       "boundary.length.max.RequestItems" : "INCONCLUSIVE_MISSING",
-      "boundary.length.min.RequestItems" : "INCONCLUSIVE_VALIDATION",
+      "boundary.length.min.RequestItems" : "INCONCLUSIVE_MISSING",
       "boundary.length.over.max.RequestItems" : "INCONCLUSIVE_MISSING",
       "boundary.length.under.min.RequestItems" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -46,7 +46,7 @@
     },
     "BatchWriteItem" : {
       "boundary.length.max.RequestItems" : "INCONCLUSIVE_MISSING",
-      "boundary.length.min.RequestItems" : "INCONCLUSIVE_VALIDATION",
+      "boundary.length.min.RequestItems" : "INCONCLUSIVE_MISSING",
       "boundary.length.over.max.RequestItems" : "INCONCLUSIVE_MISSING",
       "boundary.length.under.min.RequestItems" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -569,7 +569,7 @@
       "boundary.length.max.NextToken" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.max.Statement" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.NextToken" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.min.Parameters" : "FAIL_WRONG_ERROR_TYPE",
+      "boundary.length.min.Parameters" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.Statement" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.over.max.NextToken" : "PASS",
       "boundary.length.over.max.Statement" : "PASS",
@@ -1185,7 +1185,7 @@
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "TransactGetItems" : {
-      "boundary.length.max.TransactItems" : "PASS",
+      "boundary.length.max.TransactItems" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.TransactItems" : "PASS",
       "boundary.length.over.max.TransactItems" : "PASS",
       "boundary.length.under.min.TransactItems" : "PASS",
@@ -1205,9 +1205,9 @@
     },
     "TransactWriteItems" : {
       "boundary.length.max.ClientRequestToken" : "FAIL_5XX",
-      "boundary.length.max.TransactItems" : "PASS",
+      "boundary.length.max.TransactItems" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.ClientRequestToken" : "FAIL_5XX",
-      "boundary.length.min.TransactItems" : "PASS",
+      "boundary.length.min.TransactItems" : "FAIL_5XX",
       "boundary.length.over.max.ClientRequestToken" : "FAIL_5XX",
       "boundary.length.over.max.TransactItems" : "PASS",
       "boundary.length.under.min.ClientRequestToken" : "FAIL_5XX",

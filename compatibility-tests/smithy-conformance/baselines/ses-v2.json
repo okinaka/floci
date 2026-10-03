@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-10-03T09:49:43.749002Z"
+    "capturedAt" : "2026-10-03T15:12:33.456278Z"
   },
   "cases" : {
     "AssociateEmailIdentityCertificate" : {

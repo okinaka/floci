@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.ses#SimpleEmailService",
     "modelVersion" : "2010-12-01",
-    "capturedAt" : "2026-10-03T09:49:43.796801Z"
+    "capturedAt" : "2026-10-03T15:12:33.506152Z"
   },
   "cases" : {
     "CloneReceiptRuleSet" : {
