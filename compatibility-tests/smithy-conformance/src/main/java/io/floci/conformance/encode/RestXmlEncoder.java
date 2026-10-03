@@ -46,6 +46,7 @@ import java.util.Map;
 public final class RestXmlEncoder implements RequestEncoder {
 
     private static final String PROTOCOL = "aws.protocols#restXml";
+    private static final String CONTENT_MD5 = "Content-MD5";
 
     private final Model model;
 
@@ -109,6 +110,12 @@ public final class RestXmlEncoder implements RequestEncoder {
                     contentType = "application/xml";
                 }
             }
+        }
+        // Content-MD5 is a digest of the body, so no synthesized placeholder can
+        // ever be right: S3 answers InvalidDigest and the case never reaches the
+        // operation. Recompute it once the body is final.
+        if (headers.containsKey(CONTENT_MD5)) {
+            headers.put(CONTENT_MD5, md5Base64(rawBody));
         }
         return new Variant(op, g.generator(), path, query, headers,
                 null, rawBody, contentType,
@@ -230,6 +237,17 @@ public final class RestXmlEncoder implements RequestEncoder {
             default -> sb.append('<').append(name).append('>')
                     .append(escape(scalarToString(value)))
                     .append("</").append(name).append('>');
+        }
+    }
+
+    /** Base64 of the MD5 of the request body, empty body included. */
+    private static String md5Base64(String body) {
+        byte[] payload = body == null ? new byte[0] : body.getBytes(StandardCharsets.UTF_8);
+        try {
+            return Base64.getEncoder().encodeToString(
+                    java.security.MessageDigest.getInstance("MD5").digest(payload));
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("MD5 is required of every JRE", e);
         }
     }
 
