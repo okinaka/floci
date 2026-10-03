@@ -160,11 +160,18 @@ class DependencySeederTest {
     }
 
     @Test
-    void sesV2FactoryDoesNotSeedContactLists() {
-        // SES allows one contact list per account, so a seeded list would
-        // consume the only slot and fail the CreateContactList case under test.
-        assertThat(DependencySeeder.sesV2().seedsFor(tree("""
-                {"ContactListName":"cov-probe-l"}"""))).isEmpty();
+    void sesV2FactorySeedsTheAccountContactList() {
+        // Safe only because NameSalt treats ContactListName as an account
+        // singleton, so the seeded list is the one every case references.
+        var seeds = DependencySeeder.sesV2().seedsFor(tree("""
+                {"ContactListName":"cov-probe-l"}"""));
+        assertThat(seeds).hasSize(1);
+        Seed list = seeds.get(0);
+        assertThat(list.operation()).isEqualTo("CreateContactList");
+        assertThat(list.inputMember()).isEqualTo("ContactListName");
+        assertThat(list.deleteOperation()).isEqualTo("DeleteContactList");
+        assertThat(list.createdBy("CreateContactList")).isTrue();
+        assertThat(list.createdBy("CreateContact")).isFalse();
     }
 
     @Test

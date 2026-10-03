@@ -108,14 +108,16 @@ public final class DependencySeeder {
      * ordered creates and is out of this table's reach, so the verdict stays
      * inconclusive -- but on the honest reason.
      *
-     * <p>There is deliberately no {@code ContactListName} rule. SES allows one
-     * contact list per account ("A maximum of 1 Lists allowed per account"), so
-     * a list seeded under one case label consumes the only slot and the
-     * {@code CreateContactList} case under test then fails for lack of quota.
-     * Measured: the rule gained 4 contact reads and lost 5 cases that way.
-     * Making the contact operations measurable needs one shared list name
-     * rather than the per-case name the salt provides, which is a change to the
-     * naming scheme, not a seeding rule.
+     * <p>The {@code ContactListName} rule depends on the salt treating that
+     * member as an account singleton. SES allows one contact list per account
+     * ("A maximum of 1 Lists allowed per account"), so while the salt gave each
+     * case its own list name a seeded list consumed the only slot and the
+     * {@code CreateContactList} case under test failed for lack of quota: the
+     * rule was measured at +4 reads and -5 cases and left out. Now that every
+     * case references the one list the account can hold, seeding it is safe and
+     * necessary -- {@code CreateContact} sorts before {@code CreateContactList}
+     * in the model, so without the seed the contact operations run before any
+     * list exists.
      */
     public static DependencySeeder sesV2() {
         return new DependencySeeder(List.of(
@@ -123,7 +125,9 @@ public final class DependencySeeder {
                 new SeedRule("CustomRedirectDomain", "CreateEmailIdentity", "EmailIdentity"),
                 new SeedRule("SendingPoolName", "CreateDedicatedIpPool", "PoolName"),
                 new SeedRule("TenantName", "CreateTenant", "TenantName", null,
-                        java.util.Set.of(), "DeleteTenant", "TenantName")));
+                        java.util.Set.of(), "DeleteTenant", "TenantName"),
+                new SeedRule("ContactListName", "CreateContactList", "ContactListName", null,
+                        java.util.Set.of(), "DeleteContactList", "ContactListName")));
     }
 
     /**
