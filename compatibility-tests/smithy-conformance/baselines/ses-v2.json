@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-10-03T15:21:24.124150Z"
+    "capturedAt" : "2026-10-03T15:31:58.852925Z"
   },
   "cases" : {
     "AssociateEmailIdentityCertificate" : {
@@ -296,7 +296,10 @@
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
-      "property-based.seed-4" : "PASS"
+      "property-based.seed-4" : "PASS",
+      "seed-and-read.CreateTenant_to_GetSuppressedDestination" : "INCONCLUSIVE_STATE",
+      "seed-and-read.CreateTenant_to_ListSuppressedDestinations" : "INCONCLUSIVE_STATE",
+      "seed-and-read.CreateTenant_to_ListTenantResources" : "INCONCLUSIVE_STATE"
     },
     "CreateTenantResourceAssociation" : {
       "boundary.length.min.ResourceArn" : "INCONCLUSIVE_VALIDATION",
@@ -483,8 +486,8 @@
       "negative.missing-required.TenantName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
@@ -597,7 +600,8 @@
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
       "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "seed-and-read.PutSuppressedDestination_to_GetContact" : "INCONCLUSIVE_MISSING"
     },
     "GetContactList" : {
       "empty.passthrough" : "INCONCLUSIVE_MISSING",
@@ -719,7 +723,8 @@
       "property-based.seed-1" : "FAIL_4XX_UNROUTED",
       "property-based.seed-2" : "FAIL_4XX_UNROUTED",
       "property-based.seed-3" : "FAIL_4XX_UNROUTED",
-      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "seed-and-read.PutSuppressedDestination_to_GetEmailAddressInsights" : "FAIL_4XX_UNROUTED"
     },
     "GetEmailIdentity" : {
       "boundary.length.min.EmailIdentity" : "PASS",
@@ -840,11 +845,13 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.CreateTenant_to_GetSuppressedDestination" : "INCONCLUSIVE_MISSING"
+      "read-after-delete.SuppressedDestination" : "PASS",
+      "seed-and-read.PutSuppressedDestination_to_GetSuppressedDestination" : "PASS",
+      "seed-and-read.PutTenantSuppressionAttributes_to_GetSuppressedDestination" : "INCONCLUSIVE_MISSING"
     },
     "GetTenant" : {
       "boundary.length.min.TenantName" : "PASS",
@@ -855,12 +862,14 @@
       "negative.missing-required.TenantName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
-      "read-after-delete.Tenant" : "PASS"
+      "read-after-delete.Tenant" : "PASS",
+      "seed-and-read.PutSuppressedDestination_to_GetTenant" : "PASS",
+      "seed-and-read.PutTenantSuppressionAttributes_to_GetTenant" : "PASS"
     },
     "ListConfigurationSets" : {
       "empty.passthrough" : "FAIL_4XX_UNROUTED",
@@ -1075,11 +1084,12 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
-      "seed-and-read.CreateTenant_to_ListSuppressedDestinations" : "PASS"
+      "seed-and-read.PutSuppressedDestination_to_ListSuppressedDestinations" : "PASS",
+      "seed-and-read.PutTenantSuppressionAttributes_to_ListSuppressedDestinations" : "PASS"
     },
     "ListTagsForResource" : {
       "boundary.length.min.ResourceArn" : "INCONCLUSIVE_VALIDATION",
@@ -1108,11 +1118,12 @@
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "PASS",
-      "seed-and-read.CreateTenant_to_ListTenantResources" : "INCONCLUSIVE_VALIDATION"
+      "seed-and-read.PutSuppressedDestination_to_ListTenantResources" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutTenantSuppressionAttributes_to_ListTenantResources" : "INCONCLUSIVE_VALIDATION"
     },
     "ListTenants" : {
       "empty.passthrough" : "PASS",
@@ -1502,8 +1513,8 @@
       "boundary.length.min.TenantName" : "PASS",
       "boundary.length.under.min.TenantName" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
-      "enum-exhaust.Reason.BOUNCE" : "INCONCLUSIVE_MISSING",
-      "enum-exhaust.Reason.COMPLAINT" : "INCONCLUSIVE_MISSING",
+      "enum-exhaust.Reason.BOUNCE" : "PASS",
+      "enum-exhaust.Reason.COMPLAINT" : "PASS",
       "identifier-fanout.arn.TenantName" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.short.TenantName" : "PASS",
       "negative.invalid-enum.Reason" : "PASS",
@@ -1512,39 +1523,28 @@
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
-      "property-based.seed-4" : "PASS",
-      "read-after-delete.SuppressedDestination" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_GetContact" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_GetEmailAddressInsights" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_GetSuppressedDestination" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_GetTenant" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_ListSuppressedDestinations" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutSuppressedDestination_to_ListTenantResources" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-4" : "PASS"
     },
     "PutTenantSuppressionAttributes" : {
       "boundary.length.min.TenantName" : "PASS",
       "boundary.length.under.min.TenantName" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
-      "enum-exhaust.SuppressionScope.ACCOUNT" : "INCONCLUSIVE_MISSING",
-      "enum-exhaust.SuppressionScope.TENANT" : "INCONCLUSIVE_MISSING",
+      "enum-exhaust.SuppressionScope.ACCOUNT" : "PASS",
+      "enum-exhaust.SuppressionScope.TENANT" : "PASS",
       "identifier-fanout.arn.TenantName" : "INCONCLUSIVE_MISSING",
       "identifier-fanout.short.TenantName" : "PASS",
       "negative.invalid-enum.SuppressionScope" : "PASS",
       "negative.missing-required.TenantName" : "PASS",
       "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
-      "seed-and-read.PutTenantSuppressionAttributes_to_GetSuppressedDestination" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutTenantSuppressionAttributes_to_GetTenant" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutTenantSuppressionAttributes_to_ListSuppressedDestinations" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutTenantSuppressionAttributes_to_ListTenantResources" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "SendBulkEmail" : {
       "boundary.length.min.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
@@ -1597,27 +1597,27 @@
       "property-based.seed-4" : "INCONCLUSIVE_MISSING"
     },
     "SendEmail" : {
-      "boundary.length.min.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "boundary.length.min.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
+      "boundary.length.min.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
+      "boundary.length.min.FromEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.TenantName" : "INCONCLUSIVE_VALIDATION",
-      "boundary.length.under.min.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "boundary.length.under.min.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
+      "boundary.length.under.min.FeedbackForwardingEmailAddressIdentityArn" : "PASS",
+      "boundary.length.under.min.FromEmailAddressIdentityArn" : "PASS",
       "boundary.length.under.min.TenantName" : "PASS",
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.arn.EndpointId" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.arn.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.arn.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.arn.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.EndpointId" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.arn.FromEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.TenantName" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.short.EndpointId" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.short.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.short.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.short.ConfigurationSetName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.EndpointId" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.FromEmailAddressIdentityArn" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.TenantName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.wrong-account.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.wrong-account.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.wrong-region.FeedbackForwardingEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.wrong-region.FromEmailAddressIdentityArn" : "INCONCLUSIVE_MISSING",
+      "identifier-fanout.wrong-account.FeedbackForwardingEmailAddressIdentityArn" : "PASS",
+      "identifier-fanout.wrong-account.FromEmailAddressIdentityArn" : "PASS",
+      "identifier-fanout.wrong-region.FeedbackForwardingEmailAddressIdentityArn" : "PASS",
+      "identifier-fanout.wrong-region.FromEmailAddressIdentityArn" : "PASS",
       "negative.missing-required.Content" : "PASS",
       "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",

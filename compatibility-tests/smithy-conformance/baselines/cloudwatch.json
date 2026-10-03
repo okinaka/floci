@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.cloudwatch#GraniteServiceVersion20100801",
     "modelVersion" : "2010-08-01",
-    "capturedAt" : "2026-10-03T15:21:24.134643Z"
+    "capturedAt" : "2026-10-03T15:31:58.863919Z"
   },
   "cases" : {
     "AssociateDatasetKmsKey" : {
@@ -721,7 +721,7 @@
       "boundary.range.over.max.MaxResults" : "PASS",
       "boundary.range.under.min.MaxResults" : "PASS",
       "empty.passthrough" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "PASS",
