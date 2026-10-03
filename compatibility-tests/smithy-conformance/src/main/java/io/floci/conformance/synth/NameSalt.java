@@ -50,6 +50,25 @@ public final class NameSalt {
 
     private static volatile String nonce = "";
 
+    /**
+     * Members naming a resource the service allows only one of per account.
+     * These get the run nonce without the per-case component, so every case
+     * references the one instance that can exist.
+     *
+     * <p>The per-case component exists to stop two cases of the same create
+     * operation colliding. For a singleton that isolation is impossible by
+     * definition -- the service enforces a single instance -- so a per-case
+     * name only guarantees that whichever case creates it first wins and every
+     * other case finds nothing. SES v2 allows one contact list per account
+     * ("A maximum of 1 Lists allowed per account"), which left the nine
+     * contact operations reading a list that was never theirs.
+     *
+     * <p>{@code ContactListName} appears in the SES v2 model and in no other,
+     * so this carve-out reaches nothing else.
+     */
+    private static final java.util.Set<String> ACCOUNT_SINGLETON_MEMBERS =
+            java.util.Set.of("ContactListName");
+
     private NameSalt() {
     }
 
@@ -81,15 +100,16 @@ public final class NameSalt {
         if (input == null || input.isNull() || input.isMissingNode()) {
             return input;
         }
-        String replacement = TOKEN + '-' + nonce + caseHash(caseLabel);
-        return rewrite(input, replacement);
+        String perCase = TOKEN + '-' + nonce + caseHash(caseLabel);
+        String perRun = TOKEN + '-' + nonce;
+        return rewrite(input, perCase, perRun);
     }
 
     private static String caseHash(String caseLabel) {
         return Integer.toHexString((caseLabel == null ? 0 : caseLabel.hashCode()) & 0x000fffff);
     }
 
-    private static JsonNode rewrite(JsonNode node, String replacement) {
+    private static JsonNode rewrite(JsonNode node, String replacement, String perRun) {
         if (node.isTextual()) {
             String text = node.textValue();
             return text.contains(TOKEN)
@@ -101,14 +121,16 @@ public final class NameSalt {
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> e = fields.next();
-                copy.set(e.getKey(), rewrite(e.getValue(), replacement));
+                String forField = ACCOUNT_SINGLETON_MEMBERS.contains(e.getKey())
+                        ? perRun : replacement;
+                copy.set(e.getKey(), rewrite(e.getValue(), forField, perRun));
             }
             return copy;
         }
         if (node.isArray()) {
             ArrayNode copy = NODES.arrayNode();
             for (JsonNode child : node) {
-                copy.add(rewrite(child, replacement));
+                copy.add(rewrite(child, replacement, perRun));
             }
             return copy;
         }
