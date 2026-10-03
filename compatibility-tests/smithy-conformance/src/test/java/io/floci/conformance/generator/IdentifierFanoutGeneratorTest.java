@@ -13,45 +13,64 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Offline unit tests for {@link IdentifierFanoutGenerator}: four variants
- * (short name / ARN / wrong-region / wrong-account) per identifier-shaped
- * member, the member-name heuristic, and skipping of ops with no identifier.
+ * (short name / ARN / wrong-region / wrong-account) per ARN-capable
+ * identifier member, two for a name-only one, the member-name heuristic, and
+ * skipping of ops with no identifier.
  */
 class IdentifierFanoutGeneratorTest {
 
     private static final Model V1 = SmithyModelLoader.loadSesV1();
+    private static final Model DDB = SmithyModelLoader.loadDynamoDb();
 
     @Test
-    void emits_four_variants_per_identifier_member() {
-        // DeleteIdentity has Identity (string, identifier-shaped name).
+    void emits_four_variants_per_arn_capable_member() {
+        // GetIdentityPolicies' Identity takes "its name or ... its Amazon
+        // Resource Name (ARN)", and PolicyNames is a list, so Identity is the
+        // only fanned-out member.
         OperationShape op = V1.expectShape(
-                ShapeId.from("com.amazonaws.ses#DeleteIdentity"), OperationShape.class);
+                ShapeId.from("com.amazonaws.ses#GetIdentityPolicies"), OperationShape.class);
         List<GeneratedCase> cases = new IdentifierFanoutGenerator().generate(op, V1).toList();
 
-        // Identity is the only id-like member; 4 variants.
-        assertThat(cases).hasSize(4);
-        var generators = cases.stream().map(GeneratedCase::generator).toList();
-        assertThat(generators).contains(
+        assertThat(cases).extracting(GeneratedCase::generator).containsExactlyInAnyOrder(
                 "identifier-fanout.short.Identity",
                 "identifier-fanout.arn.Identity",
                 "identifier-fanout.wrong-region.Identity",
                 "identifier-fanout.wrong-account.Identity");
 
-        // DeleteIdentity declares no not-found error — AWS deletes are
-        // idempotent here (verified live: deleting a nonexistent identity
-        // returns 200) — so even the wrong-* variants expect SUCCESS.
+        // GetIdentityPolicies declares no not-found error (AWS answers an
+        // unknown identity with an empty policy map), so even the wrong-*
+        // variants expect SUCCESS.
         for (GeneratedCase c : cases) {
             assertThat(c.expectedOutcome()).isEqualTo(ExpectedOutcome.SUCCESS);
         }
     }
 
     @Test
-    void wrong_variants_expect_error_only_for_strict_lookup_ops() {
-        // GetTemplate declares TemplateDoesNotExistException — unknown
-        // identifiers must be rejected, so wrong-* predicts CLIENT_ERROR.
+    void name_only_member_gets_no_wrong_variants() {
+        // GetCustomVerificationEmailTemplate's TemplateName is a name only. An
+        // ARN-shaped value is just another name, which the same-label create
+        // case creates, so a wrong-account/wrong-region read would rightly be
+        // a 200: the variants test nothing and are not emitted.
         OperationShape op = V1.expectShape(
-                ShapeId.from("com.amazonaws.ses#GetTemplate"), OperationShape.class);
+                ShapeId.from("com.amazonaws.ses#GetCustomVerificationEmailTemplate"), OperationShape.class);
         List<GeneratedCase> cases = new IdentifierFanoutGenerator().generate(op, V1).toList();
 
+        assertThat(cases).extracting(GeneratedCase::generator).containsExactlyInAnyOrder(
+                "identifier-fanout.short.TemplateName",
+                "identifier-fanout.arn.TemplateName");
+    }
+
+    @Test
+    void wrong_variants_expect_error_only_for_strict_lookup_ops() {
+        // DescribeTable declares ResourceNotFoundException and its TableName
+        // accepts a table ARN, so an ARN in another account or region must
+        // be rejected: wrong-* predicts CLIENT_ERROR.
+        OperationShape op = DDB.expectShape(
+                ShapeId.from("com.amazonaws.dynamodb#DescribeTable"), OperationShape.class);
+        List<GeneratedCase> cases = new IdentifierFanoutGenerator().generate(op, DDB).toList();
+
+        assertThat(cases).extracting(GeneratedCase::generator)
+                .contains("identifier-fanout.wrong-account.TableName");
         for (GeneratedCase c : cases) {
             if (c.generator().contains("wrong-")) {
                 assertThat(c.expectedOutcome()).isEqualTo(ExpectedOutcome.CLIENT_ERROR);
