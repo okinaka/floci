@@ -21,6 +21,8 @@ import io.floci.conformance.report.ReportMeta;
 import io.floci.conformance.runner.ConformanceRunner;
 import io.floci.conformance.runner.DependencySeeder;
 import io.floci.conformance.util.AllGenerators;
+import io.floci.conformance.synth.FormatHints;
+import io.floci.conformance.util.EmulatorIdentity;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
 import org.junit.jupiter.api.Assumptions;
@@ -197,5 +199,9 @@ class BaselineGateTest {
 
     private static void assumeFloci() {
         HealthProbe.assumeReachable(BASE_URL);
+        // Point the synthesized ARNs at the target's own account, so an
+        // implementation that checks the account is not handed cross-account
+        // input. Idempotent, and cheap enough to repeat per service.
+        FormatHints.useAccount(EmulatorIdentity.accountOf(BASE_URL));
     }
 }

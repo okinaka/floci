@@ -24,12 +24,53 @@ public final class FormatHints {
 
     private static final String EMAIL = "cov-probe@example.com";
     private static final String DOMAIN = "cov-probe.example.com";
-    private static final String ARN_SES = "arn:aws:ses:us-east-1:123456789012:identity/cov-probe";
-    private static final String ARN_SNS_TOPIC = "arn:aws:sns:us-east-1:123456789012:cov-probe-topic";
-    private static final String ARN_IAM_ROLE = "arn:aws:iam::123456789012:role/cov-probe-role";
     private static final String ARN_S3_BUCKET = "arn:aws:s3:::cov-probe-bucket";
-    private static final String ARN_KINESIS = "arn:aws:kinesis:us-east-1:123456789012:stream/cov-probe";
-    private static final String ARN_FIREHOSE = "arn:aws:firehose:us-east-1:123456789012:deliverystream/cov-probe";
+
+    /**
+     * Account the synthesized ARNs name. Emulators do not agree on their own
+     * account id: floci and ministack answer 000000000000 to
+     * {@code sts:GetCallerIdentity} while fakecloud answers 123456789012. A
+     * fixed value is therefore same-account for some targets and cross-account
+     * for the rest, and an implementation that checks the account is penalised
+     * for being right (floci answers "Resource &lt;arn&gt; must be in the same
+     * account" where a lenient emulator returns an empty success).
+     *
+     * <p>The harness sets this from the target's own identity before a run, so
+     * every target sees an ARN in its own account. The default is the
+     * AWS-local convention, used when no probe has run.
+     */
+    private static final String DEFAULT_ACCOUNT = "000000000000";
+    private static volatile String account = DEFAULT_ACCOUNT;
+
+    /** Point the synthesized ARNs at {@code accountId}; blank restores the default. */
+    public static void useAccount(String accountId) {
+        account = (accountId == null || accountId.isBlank()) ? DEFAULT_ACCOUNT : accountId.trim();
+    }
+
+    /** Account the synthesized ARNs currently name. */
+    public static String account() {
+        return account;
+    }
+
+    private static String arnSes() {
+        return "arn:aws:ses:us-east-1:" + account + ":identity/cov-probe";
+    }
+
+    private static String arnSnsTopic() {
+        return "arn:aws:sns:us-east-1:" + account + ":cov-probe-topic";
+    }
+
+    private static String arnIamRole() {
+        return "arn:aws:iam::" + account + ":role/cov-probe-role";
+    }
+
+    private static String arnKinesis() {
+        return "arn:aws:kinesis:us-east-1:" + account + ":stream/cov-probe";
+    }
+
+    private static String arnFirehose() {
+        return "arn:aws:firehose:us-east-1:" + account + ":deliverystream/cov-probe";
+    }
     private static final String URL = "https://example.com/cov-probe";
     private static final String S3_BUCKET = "cov-probe-bucket";
     private static final String MEDIA_TYPE = "application/cov-probe";
@@ -50,9 +91,11 @@ public final class FormatHints {
     // fakecloud 0.45 answers "Resource-based policy document is not valid JSON"
     // to a bare token. A syntactically complete IAM document with the harness
     // account as principal passes the JSON and schema checks everywhere.
-    private static final String POLICY_DOCUMENT = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"cov-probe\","
-            + "\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:root\"},"
-            + "\"Action\":\"*\",\"Resource\":\"*\"}]}";
+    private static String policyDocument() {
+        return "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"cov-probe\","
+                + "\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::" + account + ":root\"},"
+                + "\"Action\":\"*\",\"Resource\":\"*\"}]}";
+    }
 
     private FormatHints() {
     }
@@ -78,10 +121,10 @@ public final class FormatHints {
 
         // ARNs: most specific service families first so generic *Arn doesn't win.
         if (containsAll(lower, "topic", "arn") || endsWithIgnoreCase(n, "TopicArn")) {
-            return ARN_SNS_TOPIC;
+            return arnSnsTopic();
         }
         if (containsAll(lower, "role", "arn") || endsWithIgnoreCase(n, "RoleArn")) {
-            return ARN_IAM_ROLE;
+            return arnIamRole();
         }
         if (containsAll(lower, "bucket", "arn")) {
             return ARN_S3_BUCKET;
@@ -89,13 +132,13 @@ public final class FormatHints {
         // Firehose first — "DeliveryStreamArn" contains both "delivery" and
         // "stream", and Firehose is more specific than bare Kinesis.
         if (containsAll(lower, "firehose", "arn") || containsAll(lower, "delivery", "arn")) {
-            return ARN_FIREHOSE;
+            return arnFirehose();
         }
         if (containsAll(lower, "kinesis", "arn") || containsAll(lower, "stream", "arn")) {
-            return ARN_KINESIS;
+            return arnKinesis();
         }
         if (endsWithIgnoreCase(n, "Arn") || endsWithIgnoreCase(n, "ARN")) {
-            return ARN_SES;
+            return arnSes();
         }
 
         // Email-like
@@ -151,7 +194,7 @@ public final class FormatHints {
         // Policy documents. Only the document members themselves: PolicyName,
         // PolicyId, PolicyHash and the SES v2 *Policy ARNs stay plain strings.
         if (equalsIgnoreCase(n, "Policy") || equalsIgnoreCase(n, "ResourcePolicy")) {
-            return POLICY_DOCUMENT;
+            return policyDocument();
         }
 
         // S3 SSE-C headers ([CopySource]SSECustomerAlgorithm/Key/KeyMD5).

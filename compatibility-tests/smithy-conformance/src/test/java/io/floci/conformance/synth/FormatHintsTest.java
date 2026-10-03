@@ -116,4 +116,26 @@ class FormatHintsTest {
         assertThat(FormatHints.stringForName("PolicyName")).isEqualTo(FormatHints.DEFAULT);
         assertThat(FormatHints.stringForName("PolicyHash")).isEqualTo(FormatHints.DEFAULT);
     }
+
+    @Test
+    void synthesized_arns_follow_the_configured_account() {
+        try {
+            FormatHints.useAccount("123456789012");
+            assertThat(FormatHints.stringForName("TopicArn")).contains(":123456789012:");
+            assertThat(FormatHints.stringForName("RoleArn")).contains("::123456789012:");
+            assertThat(FormatHints.stringForName("Policy")).contains("::123456789012:root");
+
+            FormatHints.useAccount("000000000000");
+            assertThat(FormatHints.stringForName("TopicArn")).contains(":000000000000:");
+            assertThat(FormatHints.stringForName("SomethingArn")).contains(":000000000000:");
+
+            // A blank value falls back rather than producing a malformed ARN.
+            FormatHints.useAccount("  ");
+            assertThat(FormatHints.account()).isEqualTo("000000000000");
+        } finally {
+            FormatHints.useAccount(null);
+        }
+        // The S3 bucket ARN form carries no account at all.
+        assertThat(FormatHints.stringForName("BucketArn")).isEqualTo("arn:aws:s3:::cov-probe-bucket");
+    }
 }
