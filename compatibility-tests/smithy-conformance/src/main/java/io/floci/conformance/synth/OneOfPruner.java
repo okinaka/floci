@@ -52,45 +52,69 @@ public final class OneOfPruner {
      * back into inconclusive. The event-destination ops have no such negatives,
      * so pruning them is a clean gain.
      */
-    private static final Map<String, List<List<List<String>>>> GROUPS = Map.of(
+    private static final List<String> ACL_GRANT_SET = List.of(
+            "GrantFullControl", "GrantRead", "GrantReadACP", "GrantWrite", "GrantWriteACP");
+
+    private static final Map<String, List<List<List<String>>>> GROUPS = Map.ofEntries(
             // SES v2 event destination.
-            "EventDestinationDefinition", List.of(List.of(
+            Map.entry("EventDestinationDefinition", List.of(List.of(
                     List.of("KinesisFirehoseDestination"), List.of("CloudWatchDestination"),
                     List.of("SnsDestination"), List.of("EventBridgeDestination"),
-                    List.of("PinpointDestination"))),
+                    List.of("PinpointDestination")))),
             // S3 filter structures: exactly one of Prefix / Tag / And (S3 answers
             // MalformedXML when more than one is present). The union-typed
             // filters (MetricsFilter, AnalyticsFilter) need no entry.
-            "IntelligentTieringFilter", List.of(List.of(
-                    List.of("Prefix"), List.of("Tag"), List.of("And"))),
-            "ReplicationRuleFilter", List.of(List.of(
-                    List.of("Prefix"), List.of("Tag"), List.of("And"))),
-            "LifecycleRuleFilter", List.of(List.of(
+            Map.entry("IntelligentTieringFilter", List.of(List.of(
+                    List.of("Prefix"), List.of("Tag"), List.of("And")))),
+            Map.entry("ReplicationRuleFilter", List.of(List.of(
+                    List.of("Prefix"), List.of("Tag"), List.of("And")))),
+            Map.entry("LifecycleRuleFilter", List.of(List.of(
                     List.of("Prefix"), List.of("Tag"), List.of("And"),
-                    List.of("ObjectSizeGreaterThan"), List.of("ObjectSizeLessThan"))),
+                    List.of("ObjectSizeGreaterThan"), List.of("ObjectSizeLessThan")))),
             // S3 inventory destination encryption and logging key format: one of two.
-            "InventoryEncryption", List.of(List.of(
-                    List.of("SSES3"), List.of("SSEKMS"))),
-            "TargetObjectKeyFormat", List.of(List.of(
-                    List.of("SimplePrefix"), List.of("PartitionedPrefix"))),
+            Map.entry("InventoryEncryption", List.of(List.of(
+                    List.of("SSES3"), List.of("SSEKMS")))),
+            Map.entry("TargetObjectKeyFormat", List.of(List.of(
+                    List.of("SimplePrefix"), List.of("PartitionedPrefix")))),
             // SES v1 event destination (distinct shape name, note SNSDestination casing).
             // SNS is listed first because the pruner keeps the first present branch and
             // an SNS destination is valid with just a TopicARN, whereas a synthesized
             // CloudWatch destination carries null dimension fields that get rejected.
-            "EventDestination", List.of(List.of(
+            Map.entry("EventDestination", List.of(List.of(
                     List.of("SNSDestination"), List.of("CloudWatchDestination"),
-                    List.of("KinesisFirehoseDestination"))),
+                    List.of("KinesisFirehoseDestination")))),
             // S3 write ops: SSE-S3/KMS and SSE-C are mutually exclusive encryption
             // families ("SSE-C cannot be combined with x-amz-server-side-encryption").
             // ServerSideEncryption is kept so enum-exhaust over it stays meaningful;
             // the SSE-C write path is still exercised by shapes without a
             // ServerSideEncryption member (UploadPart, GetObject, ...).
-            "PutObjectRequest", List.of(List.of(
-                    List.of("ServerSideEncryption"), SSE_C_SET)),
-            "CreateMultipartUploadRequest", List.of(List.of(
-                    List.of("ServerSideEncryption"), SSE_C_SET)),
-            "CopyObjectRequest", List.of(List.of(
-                    List.of("ServerSideEncryption"), SSE_C_SET)));
+            Map.entry("PutObjectRequest", List.of(
+                    List.of(List.of("ServerSideEncryption"), SSE_C_SET),
+                    List.of(List.of("ACL"), ACL_GRANT_SET))),
+            Map.entry("CreateMultipartUploadRequest", List.of(
+                    List.of(List.of("ServerSideEncryption"), SSE_C_SET),
+                    List.of(List.of("ACL"), ACL_GRANT_SET))),
+            Map.entry("CopyObjectRequest", List.of(
+                    List.of(List.of("ServerSideEncryption"), SSE_C_SET),
+                    List.of(List.of("ACL"), ACL_GRANT_SET))),
+            // S3 canned ACL vs header grants: "Specifying both Canned ACLs and
+            // Header Grants is not allowed" (verified against fakecloud 0.47.0,
+            // which answers InvalidRequest; real S3 rejects it the same way).
+            // The all-members generator sets x-amz-acl and every x-amz-grant-*
+            // header at once, which failed CreateBucket outright and cascaded
+            // into NoSuchBucket for the rest of the suite.
+            Map.entry("CreateBucketRequest", List.of(List.of(
+                    List.of("ACL"), ACL_GRANT_SET))),
+            Map.entry("PutBucketAclRequest", List.of(List.of(
+                    List.of("ACL"), ACL_GRANT_SET))),
+            Map.entry("PutObjectAclRequest", List.of(List.of(
+                    List.of("ACL"), ACL_GRANT_SET))),
+            // A general-purpose bucket takes LocationConstraint; a directory
+            // bucket takes Location plus Bucket. Sending both describes two
+            // different bucket kinds in one request.
+            Map.entry("CreateBucketConfiguration", List.of(List.of(
+                    List.of("LocationConstraint"), List.of("Location", "Bucket")))));
+
 
     /**
      * Structure local name → member sets that are only valid complete ("SSE-C
