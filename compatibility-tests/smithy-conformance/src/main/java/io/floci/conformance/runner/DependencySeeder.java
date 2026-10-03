@@ -143,6 +143,25 @@ public final class DependencySeeder {
                         java.util.Set.of("ImportTable"), "DeleteTable", "TableName")));
     }
 
+    /**
+     * S3 rule: a bucket-scoped operation answers {@code NoSuchBucket} for a
+     * bucket that does not exist, so a referenced {@code Bucket} is seeded with
+     * {@code CreateBucket}. floci stopped creating buckets implicitly, which is
+     * what AWS does: {@code PutBucketTagging} on an unseeded bucket is a 404
+     * before this and a 204 after. Without the rule the 109 bucket-scoped
+     * operations never reach their own logic.
+     *
+     * <p>The create needs nothing but the name. Names are shared per case label,
+     * so the bucket seeded for a read is deleted again before the same-label
+     * {@code CreateBucket} case runs; a delete of a non-empty bucket fails and
+     * is ignored like any other seeding step.
+     */
+    public static DependencySeeder s3() {
+        return new DependencySeeder(List.of(
+                new SeedRule("Bucket", "CreateBucket", "Bucket", null,
+                        java.util.Set.of(), "DeleteBucket", "Bucket")));
+    }
+
     private static final JsonNode TABLE_TEMPLATE = parse("""
             {"AttributeDefinitions":[{"AttributeName":"cov-probe-key","AttributeType":"S"}],
              "KeySchema":[{"AttributeName":"cov-probe-key","KeyType":"HASH"}],

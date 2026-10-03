@@ -108,7 +108,8 @@ class ReportingRunTest {
                 model,
                 new RestXmlInvoker(BASE_URL, "s3"),
                 new RestXmlEncoder(model),
-                AllGenerators.ALL);
+                AllGenerators.ALL,
+                DependencySeeder.s3());
 
         List<VariantResult> results = runOnce(runner, "com.amazonaws.s3#AmazonS3");
         ReportMeta meta = new ReportMeta(

@@ -105,7 +105,7 @@ class BaselineGateTest {
                 model,
                 new RestXmlInvoker(BASE_URL, "s3"),
                 new RestXmlEncoder(model),
-                DependencySeeder.NONE);
+                DependencySeeder.s3());
     }
 
     @Test

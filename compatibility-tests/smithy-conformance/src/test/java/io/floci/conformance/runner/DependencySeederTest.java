@@ -128,6 +128,22 @@ class DependencySeederTest {
     }
 
     @Test
+    void s3FactorySeedsBucketAndCanUnseedIt() {
+        var seeds = DependencySeeder.s3().seedsFor(tree("""
+                {"Bucket":"cov-probe-bucket","Key":"k"}"""));
+        assertThat(seeds).hasSize(1);
+        Seed seed = seeds.get(0);
+        assertThat(seed.operation()).isEqualTo("CreateBucket");
+        assertThat(seed.inputMember()).isEqualTo("Bucket");
+        assertThat(seed.value()).isEqualTo("cov-probe-bucket");
+        assertThat(seed.template()).isNull();
+        // CreateBucket creates it itself, so the runner unseeds instead of seeding.
+        assertThat(seed.createdBy("CreateBucket")).isTrue();
+        assertThat(seed.createdBy("PutBucketTagging")).isFalse();
+        assertThat(seed.deleteOperation()).isEqualTo("DeleteBucket");
+    }
+
+    @Test
     void nameOnlyRulesCarryNoTemplate() {
         assertThat(DependencySeeder.sesV2().seedsFor(tree("""
                 {"ConfigurationSetName":"cs"}""")).get(0).template()).isNull();
