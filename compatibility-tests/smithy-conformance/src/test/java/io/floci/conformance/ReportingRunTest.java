@@ -19,7 +19,10 @@ import io.floci.conformance.runner.DependencySeeder;
 import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import software.amazon.smithy.model.Model;
 
 import java.io.IOException;
@@ -50,6 +53,7 @@ import java.util.List;
  * on the same port works, which is how cross-implementation comparisons are
  * produced.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ReportingRunTest {
 
     private static final String BASE_URL =
@@ -58,6 +62,7 @@ class ReportingRunTest {
 
 
     @Test
+    @Order(6)
     void sesV1_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSesV1();
@@ -68,9 +73,7 @@ class ReportingRunTest {
                 AllGenerators.ALL,
                 DependencySeeder.sesV1());
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.ses#SimpleEmailService"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.ses#SimpleEmailService"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.ses#SimpleEmailService");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.ses#SimpleEmailService", "2010-12-01", Instant.now().toString());
 
@@ -78,6 +81,7 @@ class ReportingRunTest {
     }
 
     @Test
+    @Order(3)
     void sesV2_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSesV2();
@@ -88,9 +92,7 @@ class ReportingRunTest {
                 AllGenerators.ALL,
                 DependencySeeder.sesV2());
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.sesv2#SimpleEmailService_v2"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.sesv2#SimpleEmailService_v2"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.sesv2#SimpleEmailService_v2");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.sesv2#SimpleEmailService_v2", "2019-09-27", Instant.now().toString());
 
@@ -98,6 +100,7 @@ class ReportingRunTest {
     }
 
     @Test
+    @Order(5)
     void s3_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadS3();
@@ -107,9 +110,7 @@ class ReportingRunTest {
                 new RestXmlEncoder(model),
                 AllGenerators.ALL);
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.s3#AmazonS3"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.s3#AmazonS3"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.s3#AmazonS3");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.s3#AmazonS3", "2006-03-01", Instant.now().toString());
 
@@ -117,6 +118,7 @@ class ReportingRunTest {
     }
 
     @Test
+    @Order(1)
     void ssm_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSsm();
@@ -126,9 +128,7 @@ class ReportingRunTest {
                 AwsJsonEncoder.json11(),
                 AllGenerators.ALL);
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.ssm#AmazonSSM"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.ssm#AmazonSSM"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.ssm#AmazonSSM");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.ssm#AmazonSSM", "2014-11-06", Instant.now().toString());
 
@@ -136,6 +136,7 @@ class ReportingRunTest {
     }
 
     @Test
+    @Order(2)
     void dynamodb_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadDynamoDb();
@@ -147,9 +148,7 @@ class ReportingRunTest {
                 AllGenerators.ALL,
                 DependencySeeder.dynamoDb());
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.dynamodb#DynamoDB_20120810"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.dynamodb#DynamoDB_20120810"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.dynamodb#DynamoDB_20120810");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.dynamodb#DynamoDB_20120810", "2012-08-10", Instant.now().toString());
 
@@ -157,6 +156,7 @@ class ReportingRunTest {
     }
 
     @Test
+    @Order(4)
     void cloudwatch_reports() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadCloudWatch();
@@ -166,14 +166,21 @@ class ReportingRunTest {
                 new RpcV2CborEncoder(),
                 AllGenerators.ALL);
 
-        List<VariantResult> results = new java.util.ArrayList<>(
-                runner.run("com.amazonaws.cloudwatch#GraniteServiceVersion20100801"));
-        results.addAll(runner.runRoundTrip("com.amazonaws.cloudwatch#GraniteServiceVersion20100801"));
+        List<VariantResult> results = runOnce(runner, "com.amazonaws.cloudwatch#GraniteServiceVersion20100801");
         ReportMeta meta = new ReportMeta(
                 "com.amazonaws.cloudwatch#GraniteServiceVersion20100801", "2010-08-01",
                 Instant.now().toString());
 
         writeReports("conformance-cloudwatch", meta, results);
+    }
+
+    /** One run per service per JVM, shared with {@link BaselineGateTest}; see {@link SuiteRuns}. */
+    private static List<VariantResult> runOnce(ConformanceRunner runner, String serviceShapeId) {
+        return SuiteRuns.of(serviceShapeId, () -> {
+            List<VariantResult> results = new java.util.ArrayList<>(runner.run(serviceShapeId));
+            results.addAll(runner.runRoundTrip(serviceShapeId));
+            return results;
+        });
     }
 
     private static void writeReports(String stem, ReportMeta meta, List<VariantResult> results)
