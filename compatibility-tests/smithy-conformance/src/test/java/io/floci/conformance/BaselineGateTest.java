@@ -24,7 +24,10 @@ import io.floci.conformance.util.AllGenerators;
 import io.floci.conformance.util.HealthProbe;
 import io.floci.conformance.util.SmithyModelLoader;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import software.amazon.smithy.model.Model;
 
 import java.io.IOException;
@@ -57,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Skips entirely when Floci is unreachable.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BaselineGateTest {
 
     private static final String BASE_URL =
@@ -66,6 +70,7 @@ class BaselineGateTest {
 
 
     @Test
+    @Order(6)
     void gate_sesV1() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSesV1();
@@ -78,6 +83,7 @@ class BaselineGateTest {
     }
 
     @Test
+    @Order(3)
     void gate_sesV2() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSesV2();
@@ -90,6 +96,7 @@ class BaselineGateTest {
     }
 
     @Test
+    @Order(5)
     void gate_s3() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadS3();
@@ -102,6 +109,7 @@ class BaselineGateTest {
     }
 
     @Test
+    @Order(1)
     void gate_ssm() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadSsm();
@@ -114,6 +122,7 @@ class BaselineGateTest {
     }
 
     @Test
+    @Order(2)
     void gate_dynamodb() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadDynamoDb();
@@ -127,6 +136,7 @@ class BaselineGateTest {
     }
 
     @Test
+    @Order(4)
     void gate_cloudwatch() throws Exception {
         assumeFloci();
         Model model = SmithyModelLoader.loadCloudWatch();
@@ -142,8 +152,12 @@ class BaselineGateTest {
                                 Model model, Invoker invoker, RequestEncoder encoder,
                                 DependencySeeder seeder) throws IOException {
         ConformanceRunner runner = new ConformanceRunner(model, invoker, encoder, AllGenerators.ALL, seeder);
-        List<VariantResult> results = new java.util.ArrayList<>(runner.run(serviceShapeId));
-        results.addAll(runner.runRoundTrip(serviceShapeId));
+        // Shared with ReportingRunTest so the diff and the JSON report describe one run.
+        List<VariantResult> results = SuiteRuns.of(serviceShapeId, () -> {
+            List<VariantResult> run = new java.util.ArrayList<>(runner.run(serviceShapeId));
+            run.addAll(runner.runRoundTrip(serviceShapeId));
+            return run;
+        });
         ReportMeta meta = new ReportMeta(serviceShapeId, modelVersion, Instant.now().toString());
         Baseline current = Baseline.from(meta, results);
 
