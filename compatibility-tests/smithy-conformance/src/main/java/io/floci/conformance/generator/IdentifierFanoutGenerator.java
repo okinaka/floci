@@ -10,9 +10,11 @@ import software.amazon.smithy.model.shapes.OperationShape;
 import software.amazon.smithy.model.shapes.Shape;
 import software.amazon.smithy.model.shapes.ShapeType;
 import software.amazon.smithy.model.shapes.StructureShape;
+import software.amazon.smithy.model.traits.DocumentationTrait;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -31,6 +33,15 @@ import java.util.stream.Stream;
  *       all-zeros account.
  * </ul>
  *
+ * <p>The wrong-* variants are emitted only for members that can carry an ARN:
+ * the member name ends in {@code Arn}, or its documentation says it accepts
+ * one ("name or Amazon Resource Name (ARN)", as for DynamoDB's
+ * {@code TableName}). A member that takes only a name has no account or
+ * region to get wrong: an ARN-shaped string there is just another name, and
+ * the same-label create case (names are salted per case label, see
+ * {@code NameSalt}) creates exactly that name, so a later read rightly
+ * answers 200. SES v1's {@code TemplateName} is one such member.
+ *
  * <p>The wrong-* variants' expectation depends on the operation's lookup
  * semantics, derived from its Smithy {@code errors} declaration: ops that
  * declare a not-found-family error are strict about unknown identifiers
@@ -47,6 +58,7 @@ public final class IdentifierFanoutGenerator implements Generator {
 
     private static final String BARE_NAME = "cov-probe-resource";
     private static final String SERVICE_HINT_DEFAULT = "ses";
+    private static final Pattern ARN_MENTION = Pattern.compile("\\bARN\\b|Amazon Resource Name");
 
     @Override
     public String name() {
@@ -89,6 +101,9 @@ public final class IdentifierFanoutGenerator implements Generator {
             emit(op, struct, model, member, bareArn,
                     "identifier-fanout.arn." + member.getMemberName(),
                     ExpectedOutcome.SUCCESS, null, cases);
+            if (!acceptsArn(member, model)) {
+                continue;
+            }
             emit(op, struct, model, member, wrongRegionArn,
                     "identifier-fanout.wrong-region." + member.getMemberName(),
                     wrongIdOutcome, null, cases);
@@ -105,6 +120,20 @@ public final class IdentifierFanoutGenerator implements Generator {
                 || n.endsWith("Id") || n.endsWith("ID")
                 || n.endsWith("Name") || n.endsWith("Identity")
                 || n.equals("Identities");
+    }
+
+    /**
+     * Whether the member can name its resource by ARN: an {@code *Arn} member,
+     * or one whose documentation (on the member or its target) mentions an ARN.
+     */
+    static boolean acceptsArn(MemberShape member, Model model) {
+        String name = member.getMemberName();
+        if (name.endsWith("Arn") || name.endsWith("ARN")) {
+            return true;
+        }
+        return member.getMemberTrait(model, DocumentationTrait.class)
+                .map(doc -> ARN_MENTION.matcher(doc.getValue()).find())
+                .orElse(false);
     }
 
     /** Guess the ARN resource-type segment from the member name. */
