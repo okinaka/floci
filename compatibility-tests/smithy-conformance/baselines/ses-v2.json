@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-10-03T15:31:58.852925Z"
+    "capturedAt" : "2026-10-03T16:42:52.239129Z"
   },
   "cases" : {
     "AssociateEmailIdentityCertificate" : {
@@ -96,13 +96,13 @@
       "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
       "negative.missing-required.EmailAddress" : "PASS",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
-      "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "PASS",
       "read-after-delete.Contact" : "INCONCLUSIVE_VALIDATION",
       "round-trip-echo.Contact" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.CreateContact_to_GetContactList" : "INCONCLUSIVE_MISSING",
@@ -124,6 +124,7 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "read-after-delete.ContactList" : "INCONCLUSIVE_VALIDATION",
+      "round-trip-echo.ContactList" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.CreateContactList_to_GetContact" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.CreateContactList_to_ListContacts" : "INCONCLUSIVE_VALIDATION"
     },
@@ -368,11 +369,11 @@
       "property-based.seed-4" : "INCONCLUSIVE_MISSING"
     },
     "DeleteContactList" : {
-      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "empty.passthrough" : "PASS",
       "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
       "optionals.all-members" : "INCONCLUSIVE_MISSING",
-      "optionals.required-only" : "PASS",
+      "optionals.required-only" : "INCONCLUSIVE_MISSING",
       "property-based.seed-0" : "INCONCLUSIVE_MISSING",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
@@ -604,17 +605,16 @@
       "seed-and-read.PutSuppressedDestination_to_GetContact" : "INCONCLUSIVE_MISSING"
     },
     "GetContactList" : {
-      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "empty.passthrough" : "PASS",
       "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING",
-      "round-trip-echo.ContactList" : "PASS"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "GetCustomVerificationEmailTemplate" : {
       "boundary.length.min.TemplateName" : "INCONCLUSIVE_MISSING",
@@ -892,16 +892,16 @@
       "property-based.seed-4" : "PASS"
     },
     "ListContacts" : {
-      "empty.passthrough" : "INCONCLUSIVE_MISSING",
+      "empty.passthrough" : "PASS",
       "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "PASS",
       "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
+      "property-based.seed-0" : "PASS",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
+      "property-based.seed-4" : "PASS"
     },
     "ListCustomVerificationEmailTemplates" : {
       "empty.passthrough" : "PASS",
@@ -1712,24 +1712,24 @@
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
       "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "INCONCLUSIVE_VALIDATION",
       "optionals.required-only" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-0" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-1" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-2" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-3" : "INCONCLUSIVE_MISSING",
-      "property-based.seed-4" : "INCONCLUSIVE_MISSING"
-    },
-    "UpdateContactList" : {
-      "empty.passthrough" : "INCONCLUSIVE_MISSING",
-      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
-      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
-      "optionals.all-members" : "INCONCLUSIVE_MISSING",
-      "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_MISSING",
       "property-based.seed-2" : "INCONCLUSIVE_MISSING",
       "property-based.seed-3" : "INCONCLUSIVE_MISSING",
+      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+    },
+    "UpdateContactList" : {
+      "empty.passthrough" : "PASS",
+      "identifier-fanout.arn.ContactListName" : "INCONCLUSIVE_VALIDATION",
+      "identifier-fanout.short.ContactListName" : "INCONCLUSIVE_MISSING",
+      "optionals.all-members" : "PASS",
+      "optionals.required-only" : "PASS",
+      "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-1" : "PASS",
+      "property-based.seed-2" : "PASS",
+      "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
     "UpdateCustomVerificationEmailTemplate" : {
