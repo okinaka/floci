@@ -2,7 +2,7 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.dynamodb#DynamoDB_20120810",
     "modelVersion" : "2012-08-10",
-    "capturedAt" : "2026-10-03T08:08:50.205236Z"
+    "capturedAt" : "2026-10-03T09:49:43.735833Z"
   },
   "cases" : {
     "BatchExecuteStatement" : {
@@ -159,7 +159,7 @@
       "optionals.required-only" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "PASS",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "read-after-delete.Table" : "INCONCLUSIVE_VALIDATION",
@@ -273,7 +273,7 @@
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "PASS",
       "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS"
     },
@@ -1125,6 +1125,45 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },
+    "SearchVectors" : {
+      "boundary.length.max.IndexName" : "NOT_IMPLEMENTED",
+      "boundary.length.max.SearchVector" : "NOT_IMPLEMENTED",
+      "boundary.length.max.TableName" : "NOT_IMPLEMENTED",
+      "boundary.length.min.IndexName" : "NOT_IMPLEMENTED",
+      "boundary.length.min.SearchVector" : "NOT_IMPLEMENTED",
+      "boundary.length.min.TableName" : "NOT_IMPLEMENTED",
+      "boundary.length.over.max.IndexName" : "NOT_IMPLEMENTED",
+      "boundary.length.over.max.SearchVector" : "NOT_IMPLEMENTED",
+      "boundary.length.over.max.TableName" : "NOT_IMPLEMENTED",
+      "boundary.length.under.min.IndexName" : "NOT_IMPLEMENTED",
+      "boundary.length.under.min.SearchVector" : "NOT_IMPLEMENTED",
+      "boundary.length.under.min.TableName" : "NOT_IMPLEMENTED",
+      "boundary.range.min.TopK" : "NOT_IMPLEMENTED",
+      "boundary.range.under.min.TopK" : "NOT_IMPLEMENTED",
+      "empty.passthrough" : "NOT_IMPLEMENTED",
+      "enum-exhaust.ReturnConsumedCapacity.INDEXES" : "NOT_IMPLEMENTED",
+      "enum-exhaust.ReturnConsumedCapacity.NONE" : "NOT_IMPLEMENTED",
+      "enum-exhaust.ReturnConsumedCapacity.TOTAL" : "NOT_IMPLEMENTED",
+      "identifier-fanout.arn.IndexName" : "NOT_IMPLEMENTED",
+      "identifier-fanout.arn.TableName" : "NOT_IMPLEMENTED",
+      "identifier-fanout.short.IndexName" : "NOT_IMPLEMENTED",
+      "identifier-fanout.short.TableName" : "NOT_IMPLEMENTED",
+      "identifier-fanout.wrong-account.TableName" : "NOT_IMPLEMENTED",
+      "identifier-fanout.wrong-region.TableName" : "NOT_IMPLEMENTED",
+      "model-examples.1.To-search-for-similar-vectors" : "NOT_IMPLEMENTED",
+      "negative.invalid-enum.ReturnConsumedCapacity" : "NOT_IMPLEMENTED",
+      "negative.missing-required.IndexName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.SearchVector" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TableName" : "NOT_IMPLEMENTED",
+      "negative.missing-required.TopK" : "NOT_IMPLEMENTED",
+      "optionals.all-members" : "NOT_IMPLEMENTED",
+      "optionals.required-only" : "NOT_IMPLEMENTED",
+      "property-based.seed-0" : "NOT_IMPLEMENTED",
+      "property-based.seed-1" : "NOT_IMPLEMENTED",
+      "property-based.seed-2" : "NOT_IMPLEMENTED",
+      "property-based.seed-3" : "NOT_IMPLEMENTED",
+      "property-based.seed-4" : "NOT_IMPLEMENTED"
+    },
     "TagResource" : {
       "boundary.length.max.ResourceArn" : "INCONCLUSIVE_VALIDATION",
       "boundary.length.min.ResourceArn" : "INCONCLUSIVE_VALIDATION",
@@ -1412,7 +1451,7 @@
       "optionals.required-only" : "PASS",
       "property-based.seed-0" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-1" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-2" : "PASS",
+      "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
     },

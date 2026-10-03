@@ -2,9 +2,33 @@
   "meta" : {
     "serviceShapeId" : "com.amazonaws.sesv2#SimpleEmailService_v2",
     "modelVersion" : "2019-09-27",
-    "capturedAt" : "2026-10-03T08:08:50.217328Z"
+    "capturedAt" : "2026-10-03T09:49:43.749002Z"
   },
   "cases" : {
+    "AssociateEmailIdentityCertificate" : {
+      "boundary.length.max.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "boundary.length.min.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "boundary.length.over.max.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "boundary.length.under.min.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.arn.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.short.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.short.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.wrong-account.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.wrong-region.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.CertificateArn" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+    },
     "BatchGetMetricData" : {
       "boundary.length.max.Queries" : "FAIL_4XX_UNROUTED",
       "boundary.length.min.Queries" : "FAIL_4XX_UNROUTED",
@@ -46,7 +70,7 @@
       "property-based.seed-1" : "PASS",
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
-      "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
+      "property-based.seed-4" : "FAIL_5XX",
       "read-after-delete.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
       "round-trip-echo.ConfigurationSet" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.CreateConfigurationSet_to_GetConfigurationSetEventDestinations" : "INCONCLUSIVE_VALIDATION"
@@ -195,7 +219,8 @@
       "property-based.seed-3" : "PASS",
       "property-based.seed-4" : "PASS",
       "seed-and-read.CreateEmailIdentityPolicy_to_GetEmailIdentity" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.CreateEmailIdentityPolicy_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_MISSING"
+      "seed-and-read.CreateEmailIdentityPolicy_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_MISSING",
+      "seed-and-read.CreateEmailIdentityPolicy_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_MISSING"
     },
     "CreateEmailTemplate" : {
       "boundary.length.min.TemplateName" : "PASS",
@@ -485,6 +510,21 @@
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+    },
+    "DisassociateEmailIdentityCertificate" : {
+      "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.short.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "GetAccount" : {
       "empty.passthrough" : "PASS",
@@ -823,14 +863,14 @@
       "read-after-delete.Tenant" : "PASS"
     },
     "ListConfigurationSets" : {
-      "empty.passthrough" : "PASS",
-      "optionals.all-members" : "PASS",
-      "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "PASS",
-      "property-based.seed-4" : "PASS"
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "ListContactLists" : {
       "empty.passthrough" : "PASS",
@@ -898,15 +938,31 @@
       "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "ListEmailIdentities" : {
-      "empty.passthrough" : "PASS",
-      "list-after-create.EmailIdentity" : "PASS",
-      "optionals.all-members" : "PASS",
-      "optionals.required-only" : "PASS",
-      "property-based.seed-0" : "PASS",
-      "property-based.seed-1" : "PASS",
-      "property-based.seed-2" : "PASS",
-      "property-based.seed-3" : "PASS",
-      "property-based.seed-4" : "PASS"
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "list-after-create.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
+    },
+    "ListEmailIdentityCertificates" : {
+      "boundary.length.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "boundary.length.under.min.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.arn.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.short.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.EmailIdentity" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED",
+      "seed-and-read.CreateEmailIdentity_to_ListEmailIdentityCertificates" : "FAIL_4XX_UNROUTED"
     },
     "ListEmailTemplates" : {
       "empty.passthrough" : "PASS",
@@ -1107,6 +1163,22 @@
       "property-based.seed-2" : "PASS",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "PASS"
+    },
+    "PutAccountPricingAttributes" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.Plan.ENTERPRISE" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.Plan.ESSENTIALS" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.Plan.NONE" : "FAIL_4XX_UNROUTED",
+      "enum-exhaust.Plan.PRO" : "FAIL_4XX_UNROUTED",
+      "negative.invalid-enum.Plan" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.Plan" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "PutAccountSendingAttributes" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
@@ -1323,7 +1395,8 @@
       "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_GetConfigurationSet" : "INCONCLUSIVE_MISSING",
       "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_GetConfigurationSetEventDestinations" : "INCONCLUSIVE_MISSING",
       "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_GetEmailIdentity" : "INCONCLUSIVE_MISSING",
-      "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_MISSING"
+      "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_MISSING",
+      "seed-and-read.PutEmailIdentityConfigurationSetAttributes_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_MISSING"
     },
     "PutEmailIdentityDkimAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
@@ -1338,7 +1411,8 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "PASS",
       "seed-and-read.PutEmailIdentityDkimAttributes_to_GetEmailIdentity" : "INCONCLUSIVE_VALIDATION",
-      "seed-and-read.PutEmailIdentityDkimAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION"
+      "seed-and-read.PutEmailIdentityDkimAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutEmailIdentityDkimAttributes_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_VALIDATION"
     },
     "PutEmailIdentityDkimSigningAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
@@ -1369,6 +1443,8 @@
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_SA_EAST_1" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_EAST_1" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_EAST_2" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_GOV_EAST_1" : "INCONCLUSIVE_VALIDATION",
+      "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_GOV_WEST_1" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_WEST_1" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.SigningAttributesOrigin.AWS_SES_US_WEST_2" : "INCONCLUSIVE_VALIDATION",
       "enum-exhaust.SigningAttributesOrigin.EXTERNAL" : "INCONCLUSIVE_VALIDATION",
@@ -1384,7 +1460,8 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.PutEmailIdentityDkimSigningAttributes_to_GetEmailIdentity" : "INCONCLUSIVE_VALIDATION",
-      "seed-and-read.PutEmailIdentityDkimSigningAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION"
+      "seed-and-read.PutEmailIdentityDkimSigningAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutEmailIdentityDkimSigningAttributes_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_VALIDATION"
     },
     "PutEmailIdentityFeedbackAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
@@ -1399,7 +1476,8 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.PutEmailIdentityFeedbackAttributes_to_GetEmailIdentity" : "INCONCLUSIVE_VALIDATION",
-      "seed-and-read.PutEmailIdentityFeedbackAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION"
+      "seed-and-read.PutEmailIdentityFeedbackAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutEmailIdentityFeedbackAttributes_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_VALIDATION"
     },
     "PutEmailIdentityMailFromAttributes" : {
       "boundary.length.min.EmailIdentity" : "PASS",
@@ -1417,7 +1495,8 @@
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION",
       "seed-and-read.PutEmailIdentityMailFromAttributes_to_GetEmailIdentity" : "INCONCLUSIVE_VALIDATION",
-      "seed-and-read.PutEmailIdentityMailFromAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION"
+      "seed-and-read.PutEmailIdentityMailFromAttributes_to_GetEmailIdentityPolicies" : "INCONCLUSIVE_VALIDATION",
+      "seed-and-read.PutEmailIdentityMailFromAttributes_to_ListEmailIdentityCertificates" : "INCONCLUSIVE_VALIDATION"
     },
     "PutSuppressedDestination" : {
       "boundary.length.min.TenantName" : "PASS",
@@ -1600,6 +1679,19 @@
       "property-based.seed-2" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-3" : "INCONCLUSIVE_VALIDATION",
       "property-based.seed-4" : "INCONCLUSIVE_VALIDATION"
+    },
+    "UpdateConfigurationSet" : {
+      "empty.passthrough" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.arn.ConfigurationSetName" : "FAIL_4XX_UNROUTED",
+      "identifier-fanout.short.ConfigurationSetName" : "FAIL_4XX_UNROUTED",
+      "negative.missing-required.ConfigurationSetName" : "FAIL_4XX_UNROUTED",
+      "optionals.all-members" : "FAIL_4XX_UNROUTED",
+      "optionals.required-only" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-0" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-1" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-2" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-3" : "FAIL_4XX_UNROUTED",
+      "property-based.seed-4" : "FAIL_4XX_UNROUTED"
     },
     "UpdateConfigurationSetEventDestination" : {
       "empty.passthrough" : "INCONCLUSIVE_VALIDATION",
