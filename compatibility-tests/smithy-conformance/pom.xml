@@ -19,6 +19,7 @@
         <jackson.version>2.18.2</jackson.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.6</assertj.version>
+        <exec.mainClass>io.floci.conformance.coverage.CoverageMain</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -81,6 +82,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
             </plugin>
         </plugins>
     </build>

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.floci.conformance.classify.ErrorClassifier;
 import io.floci.conformance.classify.ErrorClassifier.Category;
+import io.floci.conformance.classify.ErrorTypes;
 import io.floci.conformance.encode.RequestEncoder;
 import io.floci.conformance.generator.GeneratedCase;
 import io.floci.conformance.generator.Generator;
@@ -705,25 +706,7 @@ public final class ConformanceRunner {
     }
 
     private static String extractErrorType(InvocationResponse resp) {
-        if (resp.body() == null || resp.body().isEmpty()) {
-            return null;
-        }
-        String ct = resp.contentType() == null ? "" : resp.contentType().toLowerCase();
-        try {
-            if (ct.contains("xml") || resp.body().startsWith("<")) {
-                JsonNode root = XML.readTree(resp.body().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                JsonNode code = root.findValue("Code");
-                return code != null && code.isTextual() ? code.asText() : null;
-            }
-            JsonNode root = JSON.readTree(resp.body());
-            JsonNode t = root.get("__type");
-            if (t == null) {
-                t = root.get("code");
-            }
-            return t != null && t.isTextual() ? t.asText() : null;
-        } catch (IOException e) {
-            return null;
-        }
+        return ErrorTypes.extract(resp);
     }
 
     private static String truncate(String s) {
