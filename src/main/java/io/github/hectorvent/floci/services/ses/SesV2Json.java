@@ -229,6 +229,16 @@ final class SesV2Json {
         return values;
     }
 
+    /**
+     * The model's validation failures of one request, reported together the way SES's Smithy layer
+     * does: each entry reads "Value at 'path' failed to satisfy constraint: ...", in the order SES
+     * lists them.
+     */
+    static AwsException validationErrors(List<String> violations) {
+        return new AwsException("BadRequestException", violations.size() + " validation error"
+                + (violations.size() > 1 ? "s" : "") + " detected: " + String.join("; ", violations), 400);
+    }
+
     static AwsException unexpectedStartError(JsonNode node) {
         if (node.isArray()) {
             return new AwsException("SerializationException",

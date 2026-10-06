@@ -41,6 +41,9 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.remapV1Exception
 import static io.github.hectorvent.floci.services.ses.SesV2Json.requireJsonObject;
 import static io.github.hectorvent.floci.services.ses.SesV2Json.requireObjectOrAbsent;
 import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAbsent;
+import static io.github.hectorvent.floci.services.ses.SesV2Json.structureMemberOrAbsent;
+import static io.github.hectorvent.floci.services.ses.SesV2Json.typedStringMemberOrAbsent;
+import static io.github.hectorvent.floci.services.ses.SesV2Json.validationErrors;
 
 /**
  * REST JSON controller for the three SES V2 send endpoints:
@@ -57,6 +60,8 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAb
 public class SesSendController {
 
     private static final Logger LOG = Logger.getLogger(SesSendController.class);
+
+    private static final List<String> TRACKING_VALUES = List.of("ENABLED", "DISABLED");
 
     private final SesService sesService;
     // The bulk send resolves a stored template's content before handing the entries to the facade.
@@ -91,6 +96,7 @@ public class SesSendController {
 
             JsonNode request = objectMapper.readTree(body);
             requireJsonObject(request);
+            validateTrackingOverrides(request);
 
             // FromEmailAddress is optional per the AWS v2 contract. Each content type below
             // enforces the sender requirement the way AWS does: Raw can take its From from the
@@ -232,6 +238,7 @@ public class SesSendController {
 
             JsonNode request = objectMapper.readTree(body);
             requireJsonObject(request);
+            validateTrackingOverrides(request);
             String fromEmailAddress = request.path("FromEmailAddress").asText(null);
             if (fromEmailAddress == null || fromEmailAddress.isBlank()) {
                 throw new AwsException("BadRequestException",
@@ -489,6 +496,41 @@ public class SesSendController {
         return new AwsException("BadRequestException",
                 "1 validation error detected: Value at '" + location + "." + index + ".member." + member
                         + "' failed to satisfy constraint: Member must not be null", 400);
+    }
+
+    /**
+     * {@code ConfigurationOverrides.Tracking}, checked the way SES checks it (probed 2026-10-06): an
+     * unknown member is ignored, a wrong JSON type is a SerializationException, and a value outside
+     * the enum is a validation error, both values reported together with the click one first. Floci
+     * has no open or click tracking, so a valid override is accepted and has no effect.
+     */
+    private static void validateTrackingOverrides(JsonNode request) {
+        JsonNode overrides = structureMemberOrAbsent(request, "ConfigurationOverrides");
+        if (overrides.isMissingNode() || overrides.isNull()) {
+            return;
+        }
+        JsonNode tracking = structureMemberOrAbsent(overrides, "Tracking");
+        if (tracking.isMissingNode() || tracking.isNull()) {
+            return;
+        }
+        String open = typedStringMemberOrAbsent(tracking, "OpenTrackingEnabled");
+        String click = typedStringMemberOrAbsent(tracking, "ClickTrackingEnabled");
+        List<String> violations = new ArrayList<>();
+        if (click != null && !TRACKING_VALUES.contains(click)) {
+            violations.add(trackingViolation("clickTrackingEnabled"));
+        }
+        if (open != null && !TRACKING_VALUES.contains(open)) {
+            violations.add(trackingViolation("openTrackingEnabled"));
+        }
+        if (!violations.isEmpty()) {
+            throw validationErrors(violations);
+        }
+    }
+
+    private static String trackingViolation(String member) {
+        return "Value at 'configurationOverrides.tracking." + member
+                + "' failed to satisfy constraint: Member must satisfy enum value set: ["
+                + String.join(", ", TRACKING_VALUES) + "]";
     }
 
     private static ListManagementOptions parseListManagementOptions(JsonNode node) {
