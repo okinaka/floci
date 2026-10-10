@@ -140,7 +140,7 @@ public class SesSendController {
                 }
                 sesService.checkTenantRawSendAccess(tenantName, fromEmailAddress, rawData,
                         configurationSetName, regionResolver.getAccountId(), region);
-                messageId = sesService.sendEmail(sendRequest.content(new EmailContent.Raw(rawData)).build());
+                messageId = sesService.sendEmail(sendRequest.content(new EmailContent.Raw(rawData, true)).build());
             } else if (content.has("Simple")) {
                 if (fromEmailAddress == null || fromEmailAddress.isBlank()) {
                     // AWS returns BadRequestException with a null message body here.

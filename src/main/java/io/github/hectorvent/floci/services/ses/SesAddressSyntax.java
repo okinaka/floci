@@ -2,11 +2,13 @@ package io.github.hectorvent.floci.services.ses;
 
 import io.github.hectorvent.floci.core.common.AwsException;
 import io.github.hectorvent.floci.services.ses.model.BulkEmailEntry;
+import io.github.hectorvent.floci.services.ses.model.EmailContent;
 import io.github.hectorvent.floci.services.ses.model.SendEmailRequest;
 import org.apache.james.mime4j.dom.Message;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The address syntax check AWS applies to every address of a send ahead of the destination,
@@ -17,11 +19,14 @@ import java.util.List;
  * display name or a comment may hold any character, and a quoted local part is not inspected
  * except for a CR or LF, which AWS rejects with its own wording even before whitespace.
  * Of the raw headers, only From and To were probed, so only those are checked. The v2 controller
- * remaps the code to BadRequestException.
+ * remaps the code to BadRequestException. A v2 raw send checks its From header only without a
+ * sender parameter, and then answers an invalid From address for every violation but a missing
+ * {@code @} (probe-confirmed).
  */
 final class SesAddressSyntax {
 
     private static final List<String> RAW_CHECKED_HEADERS = List.of("To");
+    private static final String MISSING_FINAL_DOMAIN = "Missing final '@domain'";
 
     private SesAddressSyntax() {
     }
@@ -30,8 +35,27 @@ final class SesAddressSyntax {
         SesSendAddresses.forEachEnvelope(request, SesAddressSyntax::require);
     }
 
-    static void requireRaw(SendEmailRequest request, Message message) {
-        SesSendAddresses.forEachRaw(request, message, RAW_CHECKED_HEADERS, SesAddressSyntax::require);
+    static void requireRaw(SendEmailRequest request, EmailContent.Raw raw, Message message) {
+        SesSendAddresses.forEachRaw(request, message, RAW_CHECKED_HEADERS, fromHeaderCheck(request, raw),
+                SesAddressSyntax::require);
+    }
+
+    private static Consumer<String> fromHeaderCheck(SendEmailRequest request, EmailContent.Raw raw) {
+        if (!raw.fromHeaderAsFallback()) {
+            return SesAddressSyntax::require;
+        }
+        if (request.source() != null && !request.source().isBlank()) {
+            return address -> { };
+        }
+        return SesAddressSyntax::requireFallbackFrom;
+    }
+
+    private static void requireFallbackFrom(String address) {
+        String violation = violation(address);
+        if (violation != null) {
+            throw new AwsException("InvalidParameterValue",
+                    MISSING_FINAL_DOMAIN.equals(violation) ? violation : "Invalid From address provided.", 400);
+        }
     }
 
     /**
@@ -96,7 +120,7 @@ final class SesAddressSyntax {
             }
         }
         if (i >= addrSpec.length()) {
-            return "Missing final '@domain'";
+            return MISSING_FINAL_DOMAIN;
         }
         String domain = addrSpec.substring(i + 1);
         if (domain.isEmpty()) {
