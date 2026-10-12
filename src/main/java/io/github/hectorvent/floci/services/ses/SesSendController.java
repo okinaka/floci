@@ -46,7 +46,6 @@ import static io.github.hectorvent.floci.services.ses.SesV2Json.requireObjectOrA
 import static io.github.hectorvent.floci.services.ses.SesV2Json.sparseStringArrayOrAbsent;
 import static io.github.hectorvent.floci.services.ses.SesV2Json.stringMemberOrAbsent;
 import static io.github.hectorvent.floci.services.ses.SesV2Json.structureMemberOrAbsent;
-import static io.github.hectorvent.floci.services.ses.SesV2Json.typedBlobMemberOrAbsent;
 import static io.github.hectorvent.floci.services.ses.SesV2Json.typedStringMemberOrAbsent;
 
 /**
@@ -112,22 +111,9 @@ public class SesSendController {
             String feedbackForwardingAddress = typedStringMemberOrAbsent(request, "FeedbackForwardingEmailAddress");
             String configurationSetName = typedStringMemberOrAbsent(request, "ConfigurationSetName");
             String tenantName = stringMemberOrAbsent(request, "TenantName");
-            // A member of the wrong JSON type fails deserialization on AWS, ahead of every check
-            // (probe-confirmed), so the content members are read before anything is validated.
+            // Read ahead of every check below, as SesV2SendContent explains.
             JsonNode content = request.path("Content");
-            String rawData = typedBlobMemberOrAbsent(content.path("Raw"), "Data");
-            JsonNode simple = content.path("Simple");
-            String subject = Objects.requireNonNullElse(
-                    typedStringMemberOrAbsent(simple.path("Subject"), "Data"), "");
-            String bodyText = typedStringMemberOrAbsent(simple.path("Body").path("Text"), "Data");
-            String bodyHtml = typedStringMemberOrAbsent(simple.path("Body").path("Html"), "Data");
-            JsonNode template = content.path("Template");
-            String templateName = typedStringMemberOrAbsent(template, "TemplateName");
-            String templateArn = typedStringMemberOrAbsent(template, "TemplateArn");
-            JsonNode inline = template.path("TemplateContent");
-            String inlineSubject = typedStringMemberOrAbsent(inline, "Subject");
-            String inlineText = typedStringMemberOrAbsent(inline, "Text");
-            String inlineHtml = typedStringMemberOrAbsent(inline, "Html");
+            SesV2SendContent.Members contentMembers = SesV2SendContent.read(content);
             List<MessageTag> emailTags = parseEmailTagsArray(request.path("EmailTags"), "EmailTags");
             ListManagementOptions listManagement =
                     parseListManagementOptions(request.path("ListManagementOptions"));
@@ -148,6 +134,7 @@ public class SesSendController {
             String messageId;
 
             if (content.has("Raw")) {
+                String rawData = contentMembers.raw().data();
                 if (rawData == null || rawData.isBlank()) {
                     throw new AwsException("BadRequestException",
                             "Content.Raw.Data is required.", 400);
@@ -161,6 +148,8 @@ public class SesSendController {
                     // AWS returns BadRequestException with a null message body here.
                     throw new AwsException("BadRequestException", null, 400);
                 }
+                JsonNode simple = content.path("Simple");
+                SesV2SendContent.Simple simpleMembers = contentMembers.simple();
                 List<MessageHeader> additionalHeaders =
                         parseHeadersArray(simple.path("Headers"), "content.simple.headers");
                 List<MessageAttachment> attachments =
@@ -168,13 +157,17 @@ public class SesSendController {
                 sesService.checkTenantSendAccess(tenantName, fromEmailAddress, configurationSetName,
                         null, regionResolver.getAccountId(), region);
                 messageId = sesService.sendEmail(sendRequest
-                        .content(new EmailContent.Simple(subject, bodyText, bodyHtml, additionalHeaders,
-                                attachments))
+                        .content(new EmailContent.Simple(simpleMembers.subject(), simpleMembers.text(),
+                                simpleMembers.html(), additionalHeaders, attachments))
                         .build());
             } else if (content.has("Template")) {
                 if (fromEmailAddress == null || fromEmailAddress.isBlank()) {
                     throw new AwsException("BadRequestException", "Source cannot be empty", 400);
                 }
+                JsonNode template = content.path("Template");
+                SesV2SendContent.Template templateMembers = contentMembers.template();
+                String templateName = templateMembers.name();
+                String templateArn = templateMembers.arn();
                 boolean hasName = templateName != null && !templateName.isBlank();
                 boolean hasArn = templateArn != null && !templateArn.isBlank();
                 boolean hasInline = template.has("TemplateContent");
@@ -204,12 +197,14 @@ public class SesSendController {
                     // An empty inline template is reported before the tenant lookup on AWS; the
                     // inline content is not a stored template resource, so only the identity and
                     // configuration set pass through the gate.
-                    SesService.requireInlineTemplateContent(inlineSubject, inlineText, inlineHtml);
+                    SesService.requireInlineTemplateContent(templateMembers.inlineSubject(),
+                            templateMembers.inlineText(), templateMembers.inlineHtml());
                     sesService.checkTenantSendAccess(tenantName, fromEmailAddress,
                             configurationSetName, null, regionResolver.getAccountId(), region);
                     messageId = sesService.sendEmail(sendRequest
-                            .content(new EmailContent.InlineTemplate(inlineSubject, inlineText, inlineHtml,
-                                    templateData, additionalHeaders))
+                            .content(new EmailContent.InlineTemplate(templateMembers.inlineSubject(),
+                                    templateMembers.inlineText(), templateMembers.inlineHtml(), templateData,
+                                    additionalHeaders))
                             .build());
                 }
             } else {
@@ -250,12 +245,7 @@ public class SesSendController {
             String configurationSetName = typedStringMemberOrAbsent(request, "ConfigurationSetName");
             String tenantName = stringMemberOrAbsent(request, "TenantName");
             JsonNode template = request.path("DefaultContent").path("Template");
-            String templateName = typedStringMemberOrAbsent(template, "TemplateName");
-            String templateArn = typedStringMemberOrAbsent(template, "TemplateArn");
-            JsonNode inline = template.path("TemplateContent");
-            String inlineSubject = typedStringMemberOrAbsent(inline, "Subject");
-            String inlineText = typedStringMemberOrAbsent(inline, "Text");
-            String inlineHtml = typedStringMemberOrAbsent(inline, "Html");
+            SesV2SendContent.Template templateMembers = SesV2SendContent.readTemplate(template);
             JsonNode defaultTemplateData = parseTemplateData(template, "TemplateData");
             List<MessageTag> defaultEmailTags = parseEmailTagsArray(request.path("DefaultEmailTags"), "DefaultEmailTags");
             List<MessageHeader> defaultHeaders =
@@ -278,6 +268,8 @@ public class SesSendController {
                 throw new AwsException("BadRequestException",
                         "DefaultContent.Template is required.", 400);
             }
+            String templateName = templateMembers.name();
+            String templateArn = templateMembers.arn();
             boolean hasName = templateName != null && !templateName.isBlank();
             boolean hasArn = templateArn != null && !templateArn.isBlank();
             boolean hasInline = template.has("TemplateContent");
@@ -299,9 +291,9 @@ public class SesSendController {
             // tenant gate below.
             String gateTemplateName = null;
             if (hasInline) {
-                subject = inlineSubject;
-                text = inlineText;
-                html = inlineHtml;
+                subject = templateMembers.inlineSubject();
+                text = templateMembers.inlineText();
+                html = templateMembers.inlineHtml();
                 // Shape validation belongs before the tenant gate below, as on SendEmail.
                 SesService.requireInlineTemplateContent(subject, text, html);
             } else {
