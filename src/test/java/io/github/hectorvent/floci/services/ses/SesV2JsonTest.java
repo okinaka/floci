@@ -222,9 +222,38 @@ class SesV2JsonTest {
         assertEquals(List.of(), SesV2Json.stringArrayOrAbsent(node, "e"));
         assertNull(SesV2Json.stringArrayOrAbsent(node, "z"));
         assertNull(SesV2Json.stringArrayOrAbsent(node, "missing"));
-        assertAws("SerializationException", 400, () -> SesV2Json.stringArrayOrAbsent(node, "s"));
-        assertAws("SerializationException", 400, () -> SesV2Json.stringArrayOrAbsent(node, "m"));
+        assertEquals("Expected list or null", assertAws("SerializationException", 400,
+                () -> SesV2Json.stringArrayOrAbsent(node, "s")).getMessage());
+        assertEquals("NUMBER_VALUE can not be converted to a String", assertAws("SerializationException", 400,
+                () -> SesV2Json.stringArrayOrAbsent(node, "m")).getMessage());
         assertAws("SerializationException", 400, () -> SesV2Json.stringArrayOrAbsent(node, "n"));
+    }
+
+    @Test
+    void sparseStringArrayOrAbsent_keepsNullElements_namesTheWrongType() {
+        JsonNode node = json("{\"n\":[\"x\",null],\"o\":{},\"i\":1,\"t\":[true],\"l\":[[]]}");
+        assertEquals(Arrays.asList("x", null), SesV2Json.sparseStringArrayOrAbsent(node, "n"));
+        assertEquals("Start of structure or map found where not expected.", assertAws("SerializationException",
+                400, () -> SesV2Json.sparseStringArrayOrAbsent(node, "o")).getMessage());
+        assertEquals("Expected list or null", assertAws("SerializationException", 400,
+                () -> SesV2Json.sparseStringArrayOrAbsent(node, "i")).getMessage());
+        assertEquals("TRUE_VALUE can not be converted to a String", assertAws("SerializationException", 400,
+                () -> SesV2Json.sparseStringArrayOrAbsent(node, "t")).getMessage());
+        assertEquals("Start of list found where not expected", assertAws("SerializationException", 400,
+                () -> SesV2Json.sparseStringArrayOrAbsent(node, "l")).getMessage());
+    }
+
+    @Test
+    void typedBlobMemberOrAbsent_namesTheBlobType() {
+        JsonNode node = json("{\"s\":\"eA==\",\"z\":null,\"i\":1,\"t\":true,\"o\":{}}");
+        assertEquals("eA==", SesV2Json.typedBlobMemberOrAbsent(node, "s"));
+        assertNull(SesV2Json.typedBlobMemberOrAbsent(node, "z"));
+        assertEquals("NUMBER_VALUE can not be converted to a Blob", assertAws("SerializationException", 400,
+                () -> SesV2Json.typedBlobMemberOrAbsent(node, "i")).getMessage());
+        assertEquals("TRUE_VALUE can not be converted to a Blob", assertAws("SerializationException", 400,
+                () -> SesV2Json.typedBlobMemberOrAbsent(node, "t")).getMessage());
+        assertEquals("Start of structure or map found where not expected.", assertAws("SerializationException",
+                400, () -> SesV2Json.typedBlobMemberOrAbsent(node, "o")).getMessage());
     }
 
     @Test

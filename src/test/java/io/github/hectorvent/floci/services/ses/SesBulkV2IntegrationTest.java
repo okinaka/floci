@@ -352,13 +352,6 @@ class SesBulkV2IntegrationTest {
                       "BulkEmailEntries": ["bad"]
                     }
                     """.formatted(validDefaultTemplate)),
-                Arguments.of("Destination as string", """
-                    {
-                      "FromEmailAddress": "bulk@example.com",
-                      %s,
-                      "BulkEmailEntries": [{"Destination": "bad"}]
-                    }
-                    """.formatted(validDefaultTemplate)),
                 Arguments.of("DefaultTemplateData as object", """
                     {
                       "FromEmailAddress": "bulk@example.com",

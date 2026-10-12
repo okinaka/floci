@@ -689,13 +689,6 @@ class SesTemplateV2IntegrationTest {
                 Arguments.of("body is array", "[1,2,3]"),
                 Arguments.of("body is JSON null literal", "null"),
                 Arguments.of("body is JSON string", "\"hello\""),
-                Arguments.of("Destination as string", """
-                    {
-                      "FromEmailAddress": "sender@example.com",
-                      "Destination": "bad",
-                      "Content": {"Simple": {"Subject": {"Data": "s"}, "Body": {"Text": {"Data": "t"}}}}
-                    }
-                    """),
                 Arguments.of("TemplateData as object", """
                     {
                       "FromEmailAddress": "sender@example.com",

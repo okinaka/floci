@@ -171,16 +171,35 @@ final class SesV2Json {
         if (node.isTextual()) {
             return node.textValue();
         }
+        throw scalarTypeError(node, "String");
+    }
+
+    /**
+     * A blob member, such as {@code Content.Raw.Data}: the base64 text as sent, with the AWS
+     * deserializer's message for each wrong JSON type (probe-confirmed).
+     */
+    static String typedBlobMemberOrAbsent(JsonNode parent, String field) {
+        JsonNode node = parent.path(field);
+        if (node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        if (node.isTextual()) {
+            return node.textValue();
+        }
+        throw scalarTypeError(node, "Blob");
+    }
+
+    private static AwsException scalarTypeError(JsonNode node, String target) {
         if (node.isNumber()) {
-            throw new AwsException("SerializationException",
-                    "NUMBER_VALUE can not be converted to a String", 400);
+            return new AwsException("SerializationException",
+                    "NUMBER_VALUE can not be converted to a " + target, 400);
         }
         if (node.isBoolean()) {
-            throw new AwsException("SerializationException",
+            return new AwsException("SerializationException",
                     (node.booleanValue() ? "TRUE_VALUE" : "FALSE_VALUE")
-                            + " can not be converted to a String", 400);
+                            + " can not be converted to a " + target, 400);
         }
-        throw unexpectedStartError(node);
+        return unexpectedStartError(node);
     }
 
     /**
@@ -255,19 +274,38 @@ final class SesV2Json {
     // list (the distinction matters for the suppression-attributes pair rules), and a non-string
     // element is rejected rather than coerced.
     static List<String> stringArrayOrAbsent(JsonNode parent, String field) {
+        List<String> values = sparseStringArrayOrAbsent(parent, field);
+        if (values != null && values.contains(null)) {
+            throw new AwsException("SerializationException", null, 400);
+        }
+        return values;
+    }
+
+    /**
+     * Like {@link #stringArrayOrAbsent} with the AWS deserializer's message for each wrong JSON
+     * type, but a null element is kept: AWS lets one through deserialization and leaves it to the
+     * operation's own validation (probe-confirmed for an address list).
+     */
+    static List<String> sparseStringArrayOrAbsent(JsonNode parent, String field) {
         JsonNode n = parent.path(field);
         if (n.isMissingNode() || n.isNull()) {
             return null;
         }
+        if (n.isObject()) {
+            throw unexpectedStartError(n);
+        }
         if (!n.isArray()) {
-            throw new AwsException("SerializationException", null, 400);
+            throw new AwsException("SerializationException", "Expected list or null", 400);
         }
         List<String> values = new ArrayList<>();
         for (JsonNode item : n) {
-            if (!item.isTextual()) {
-                throw new AwsException("SerializationException", null, 400);
+            if (item.isNull()) {
+                values.add(null);
+            } else if (item.isTextual()) {
+                values.add(item.textValue());
+            } else {
+                throw scalarTypeError(item, "String");
             }
-            values.add(item.textValue());
         }
         return values;
     }
