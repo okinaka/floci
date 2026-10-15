@@ -133,10 +133,11 @@ class TlsProxyServerTest {
     @Test
     @Timeout(20)
     void bindsBothPorts_andRoutesByFirstByte() throws Exception {
-        int httpBe = FreePorts.anyInterfacePort();
-        int httpsBe = FreePorts.anyInterfacePort();
-        int publicPort = FreePorts.anyInterfacePort();
-        int awsHttpsPort = FreePorts.anyInterfacePort();
+        int[] ports = FreePorts.anyInterfacePorts(4);
+        int httpBe = ports[0];
+        int httpsBe = ports[1];
+        int publicPort = ports[2];
+        int awsHttpsPort = ports[3];
         httpBackend = startMarkerBackend(httpBe, "PLAIN");
         httpsBackend = startMarkerBackend(httpsBe, "TLS");
 
