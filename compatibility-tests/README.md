@@ -46,6 +46,17 @@ just test-awscli
 
 The Terraform suite uses the standard `hashicorp/aws` provider against Floci's local endpoint. It validates `init`, `validate`, `plan`, `apply`, resource reads, and `destroy` without creating resources in a real AWS account. See the [Terraform with Floci guide](../docs/getting-started/terraform.md) for a copy-paste setup.
 
+### API Coverage
+
+| Module                                | Measures                                      | Command           |
+| ------------------------------------- | --------------------------------------------- | ----------------- |
+| [`api-coverage`](api-coverage/)       | How many AWS operations the emulator dispatches | `./coverage.sh`   |
+
+Breadth rather than behaviour: every operation of every service in
+aws/api-models-aws is probed once and judged only on whether it reached a
+handler. Standalone Maven module, about 6 seconds for all 19,456 operations.
+See [`api-coverage/README.md`](api-coverage/README.md).
+
 ## Prerequisites
 
 - **Floci running** on `http://localhost:4566` (or set `FLOCI_ENDPOINT`)
