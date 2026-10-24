@@ -279,12 +279,17 @@ public class SesService {
             requireInlineTemplateContent(inline.subject(), inline.textPart(), inline.htmlPart());
         }
         // After a missing sender, AWS reports a malformed address ahead of the destination and
-        // configuration-set checks, then an over-long address, and only then a missing stored
-        // template (probe-confirmed), so the content is resolved after these checks.
+        // configuration-set checks, then an over-long address, then an unverified sender, and only
+        // then a missing stored template (probe-confirmed), so the content is resolved last.
         requireSource(request);
         SesAddressSyntax.requireEnvelope(request);
         String effectiveConfigSet = validateEnvelope(request);
         SesAddressLength.requireEnvelope(request);
+        if (requireVerifiedSender) {
+            requireVerifiedSenders(List.of(
+                    new SendingAddress(request.source(), request.sourceArn()),
+                    new SendingAddress(request.returnPath(), request.returnPathArn())), request.region());
+        }
         EmailContent.Simple content = switch (request.content()) {
             case EmailContent.Simple simple -> simple;
             case EmailContent.Template template ->
@@ -292,11 +297,6 @@ public class SesService {
             case EmailContent.InlineTemplate inline -> SesTemplateService.render(inline);
             case EmailContent.Raw raw -> throw new IllegalStateException("Raw content is sent above");
         };
-        if (requireVerifiedSender) {
-            requireVerifiedSenders(List.of(
-                    new SendingAddress(request.source(), request.sourceArn()),
-                    new SendingAddress(request.returnPath(), request.returnPathArn())), request.region());
-        }
         String templateName = request.content() instanceof EmailContent.Template template
                 ? template.templateName()
                 : null;
@@ -316,8 +316,8 @@ public class SesService {
     // error "could apply to the "From", "Source", "Sender", or "Return-Path" address" (developer
     // guide, Email sending errors). It runs after the request's own validation: a missing
     // configuration set is reported ahead of an unverified sender, and an unverified sender or
-    // return path ahead of a tenant association 403 (probe-confirmed). Where AWS places it among
-    // the other validation errors has not been probed.
+    // return path ahead of a missing stored template and a tenant association 403 (probe-confirmed
+    // on v2). Where AWS places it among the other validation errors has not been probed.
     private void requireVerifiedSenders(List<SendingAddress> senders, String region) {
         String accountId = callerAccountId();
         // A blank address is not used, and neither is the null reverse-path "<>".
@@ -1697,11 +1697,12 @@ public class SesService {
     }
 
     public List<BulkEmailEntryResult> sendBulkEmail(SendBulkEmailRequest request) {
-        EmailContent.InlineTemplate template = request.defaultContent();
         if (request.source() == null || request.source().isBlank()) {
             throw new AwsException("InvalidParameterValue", "Source email is required.", 400);
         }
-        requireInlineTemplateContent(template.subject(), template.textPart(), template.htmlPart());
+        if (request.defaultContent() instanceof EmailContent.InlineTemplate inline) {
+            requireInlineTemplateContent(inline.subject(), inline.textPart(), inline.htmlPart());
+        }
         if (request.entries() == null || request.entries().isEmpty()) {
             throw new AwsException("InvalidParameterValue",
                     "At least one destination entry is required.", 400);
@@ -1731,11 +1732,16 @@ public class SesService {
                             "Destination cannot be empty"))
                     .toList();
         }
-        // The sender and return path are checked once for the whole call, then the tenant
-        // associations, as on a single send (probe-confirmed).
+        // The sender and return path are checked once for the whole call, then a stored template is
+        // looked up, then the tenant associations, as on a single send (probe-confirmed).
         requireVerifiedSenders(List.of(
                 new SendingAddress(request.source(), request.sourceArn()),
                 new SendingAddress(request.returnPath(), request.returnPathArn())), request.region());
+        EmailContent.InlineTemplate template = switch (request.defaultContent()) {
+            case EmailContent.Template stored -> templateService.inline(stored, request.region());
+            case EmailContent.InlineTemplate inline -> inline;
+            default -> throw new IllegalStateException("A bulk send's default content is a template");
+        };
         requireTenantAssociations(request.tenantName(), request.source(),
                 resolveDefaultConfigurationSet(request.configurationSetName(), request.source(), request.region()),
                 request.templateName(), request.region());

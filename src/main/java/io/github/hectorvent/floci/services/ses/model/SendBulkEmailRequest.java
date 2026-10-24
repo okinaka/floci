@@ -6,11 +6,10 @@ import java.util.Objects;
 /**
  * The service-level input of a bulk send, shaped like the v2 {@code SendBulkEmailRequest}: an
  * envelope, the default template every entry renders, and the per-destination entries. The
- * controllers resolve a stored template before building it, so the default content is always
- * {@link EmailContent.InlineTemplate}; its data and headers are the defaults each entry's
- * replacements merge over, and {@code templateName} names the stored template it was resolved
- * from, if any. {@code sourceArn} and {@code returnPathArn} are the sending-authorization identity
- * ARNs of the sender and the return path.
+ * default content is a stored {@link EmailContent.Template}, which the send resolves only after its
+ * sender checks, or an {@link EmailContent.InlineTemplate}; its data and headers are the defaults
+ * each entry's replacements merge over. {@code sourceArn} and {@code returnPathArn} are the
+ * sending-authorization identity ARNs of the sender and the return path.
  */
 public record SendBulkEmailRequest(
         String source,
@@ -22,12 +21,22 @@ public record SendBulkEmailRequest(
         List<MessageTag> defaultEmailTags,
         String tenantName,
         String region,
-        EmailContent.InlineTemplate defaultContent,
-        String templateName,
+        EmailContent defaultContent,
         List<BulkEmailEntry> entries) {
 
     public SendBulkEmailRequest {
         Objects.requireNonNull(defaultContent, "defaultContent");
+        if (!(defaultContent instanceof EmailContent.Template)
+                && !(defaultContent instanceof EmailContent.InlineTemplate)) {
+            throw new IllegalArgumentException("defaultContent must be a template");
+        }
+    }
+
+    /**
+     * The name of the stored template the default content names, or {@code null} for inline content.
+     */
+    public String templateName() {
+        return defaultContent instanceof EmailContent.Template stored ? stored.templateName() : null;
     }
 
     public static Builder builder() {
@@ -44,8 +53,7 @@ public record SendBulkEmailRequest(
         private List<MessageTag> defaultEmailTags = List.of();
         private String tenantName;
         private String region;
-        private EmailContent.InlineTemplate defaultContent;
-        private String templateName;
+        private EmailContent defaultContent;
         private List<BulkEmailEntry> entries = List.of();
 
         private Builder() {
@@ -60,14 +68,12 @@ public record SendBulkEmailRequest(
         public Builder defaultEmailTags(List<MessageTag> defaultEmailTags) { this.defaultEmailTags = defaultEmailTags; return this; }
         public Builder tenantName(String tenantName) { this.tenantName = tenantName; return this; }
         public Builder region(String region) { this.region = region; return this; }
-        public Builder defaultContent(EmailContent.InlineTemplate defaultContent) { this.defaultContent = defaultContent; return this; }
-        public Builder templateName(String templateName) { this.templateName = templateName; return this; }
+        public Builder defaultContent(EmailContent defaultContent) { this.defaultContent = defaultContent; return this; }
         public Builder entries(List<BulkEmailEntry> entries) { this.entries = entries; return this; }
 
         public SendBulkEmailRequest build() {
             return new SendBulkEmailRequest(source, sourceArn, replyToAddresses, returnPath, returnPathArn,
-                    configurationSetName, defaultEmailTags, tenantName, region, defaultContent, templateName,
-                    entries);
+                    configurationSetName, defaultEmailTags, tenantName, region, defaultContent, entries);
         }
     }
 }
