@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.floci.aws.core.common.AwsArnUtils;
 import io.floci.aws.core.common.AwsException;
 import io.floci.aws.core.common.AwsPartitions;
-import io.floci.aws.core.common.AwsRegions;
 import io.floci.aws.core.common.PaginatedResult;
+import io.floci.aws.core.common.RegionResolver;
 import io.floci.aws.core.common.SmithyValidationErrors;
 import io.floci.aws.core.storage.StorageBackend;
 import io.floci.aws.core.storage.StorageFactory;
@@ -74,16 +74,20 @@ public class SesConfigurationSetService implements SesTaggable {
 
     private final SesEventPublisher eventPublisher;
 
+    private final RegionResolver regionResolver;
+
     @Inject
-    public SesConfigurationSetService(StorageFactory storageFactory, SesEventPublisher eventPublisher) {
+    public SesConfigurationSetService(StorageFactory storageFactory, SesEventPublisher eventPublisher,
+                                      RegionResolver regionResolver) {
         this(storageFactory.create("ses", "ses-config-sets.json",
-                new TypeReference<Map<String, ConfigurationSet>>() {}), eventPublisher);
+                new TypeReference<Map<String, ConfigurationSet>>() {}), eventPublisher, regionResolver);
     }
 
     SesConfigurationSetService(StorageBackend<String, ConfigurationSet> configSetStore,
-                               SesEventPublisher eventPublisher) {
+                               SesEventPublisher eventPublisher, RegionResolver regionResolver) {
         this.configSetStore = configSetStore;
         this.eventPublisher = eventPublisher;
+        this.regionResolver = regionResolver;
     }
 
     /**
@@ -708,7 +712,7 @@ public class SesConfigurationSetService implements SesTaggable {
         // Probed: SES judges the value without its padding, and refuses the padding itself last.
         String topicArn = given.strip();
         AwsArnUtils.Arn arn = snsTopicArn(topicArn);
-        if (!arn.partition().equals(AwsRegions.partitionFor(region))
+        if (!arn.partition().equals(regionResolver.partitionForRegion(region))
                 || !SNS_TOPIC_NAME.matcher(arn.resource()).matches()) {
             throw new AwsException(INVALID_SNS_DESTINATION, "Invalid parameter for SNS topic <" + topicArn
                     + ">. Verify the SNS topic configuration is correct.", 400);

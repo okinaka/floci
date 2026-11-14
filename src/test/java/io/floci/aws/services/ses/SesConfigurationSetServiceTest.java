@@ -2,6 +2,7 @@ package io.floci.aws.services.ses;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.floci.aws.core.common.AwsException;
+import io.floci.aws.core.common.RegionResolver;
 import io.floci.aws.core.storage.InMemoryStorage;
 import io.floci.aws.core.storage.PersistentStorage;
 import io.floci.aws.services.ses.model.ConfigurationSet;
@@ -45,7 +46,8 @@ class SesConfigurationSetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SesConfigurationSetService(new InMemoryStorage<>(), mock(SesEventPublisher.class));
+        service = new SesConfigurationSetService(new InMemoryStorage<>(), mock(SesEventPublisher.class),
+                new RegionResolver(REGION, "000000000000"));
     }
 
     @Test
@@ -205,7 +207,7 @@ class SesConfigurationSetServiceTest {
         Path file = dir.resolve("ses-config-sets.json");
         SesConfigurationSetService writer = new SesConfigurationSetService(
                 new PersistentStorage<>(file, new TypeReference<Map<String, ConfigurationSet>>() {}),
-                mock(SesEventPublisher.class));
+                mock(SesEventPublisher.class), new RegionResolver(REGION, "000000000000"));
         writer.create(cs("smime-cs"), REGION);
         writer.create(cs("default-cs"), REGION);
         writer.updateMessageSecurityOptions("smime-cs",
@@ -216,7 +218,8 @@ class SesConfigurationSetServiceTest {
         PersistentStorage<String, ConfigurationSet> reloaded =
                 new PersistentStorage<>(file, new TypeReference<Map<String, ConfigurationSet>>() {});
         reloaded.load();
-        SesConfigurationSetService reader = new SesConfigurationSetService(reloaded, mock(SesEventPublisher.class));
+        SesConfigurationSetService reader = new SesConfigurationSetService(reloaded, mock(SesEventPublisher.class),
+                new RegionResolver(REGION, "000000000000"));
 
         SigningScheme smime = reader.get("smime-cs", REGION).getMessageSecurityOptions().getSigningScheme();
         assertEquals("DETACHED", smime.getSmimeScheme().getSignatureFormat());

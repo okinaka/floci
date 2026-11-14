@@ -1,6 +1,7 @@
 package io.floci.aws.services.ses;
 
 import io.floci.aws.core.common.AwsException;
+import io.floci.aws.core.common.RegionResolver;
 import io.floci.aws.core.storage.InMemoryStorage;
 import io.floci.aws.services.ses.SesEventPublisher.TopicAccess;
 import io.floci.aws.services.ses.model.ConfigurationSet;
@@ -36,7 +37,8 @@ class SesConfigurationSetSnsDestinationTest {
         publisher = mock(SesEventPublisher.class);
         when(publisher.eventDestinationTopicAccess(any(), any(), any(), any())).thenReturn(TopicAccess.NOT_FOUND);
         when(publisher.eventDestinationTopicAccess(TOPIC, CS, ACCOUNT_ID, REGION)).thenReturn(TopicAccess.PUBLISHABLE);
-        service = new SesConfigurationSetService(new InMemoryStorage<>(), publisher);
+        service = new SesConfigurationSetService(new InMemoryStorage<>(), publisher,
+                new RegionResolver(REGION, ACCOUNT_ID));
         ConfigurationSet configurationSet = new ConfigurationSet();
         configurationSet.setName(CS);
         service.create(configurationSet, REGION);
@@ -111,6 +113,28 @@ class SesConfigurationSetSnsDestinationTest {
             assertRefused("Invalid parameter for SNS topic <" + arn
                     + ">. Verify the SNS topic configuration is correct.", arn);
         }
+    }
+
+    @Test
+    void topicOfARegionNoPartitionPublishesIsJudgedByTheDeploymentPartition() {
+        String region = "local-region-1";
+        String topic = "arn:aws-cn:sns:local-region-1:000000000000:events";
+        when(publisher.eventDestinationTopicAccess(topic, CS, ACCOUNT_ID, region)).thenReturn(TopicAccess.PUBLISHABLE);
+        service = new SesConfigurationSetService(new InMemoryStorage<>(), publisher,
+                new RegionResolver("cn-north-1", ACCOUNT_ID, "aws-cn"));
+        ConfigurationSet configurationSet = new ConfigurationSet();
+        configurationSet.setName(CS);
+        service.create(configurationSet, region);
+
+        service.createEventDestination(CS, "to-sns", destination(topic), ACCOUNT_ID, region, false);
+
+        assertEquals(topic, service.getEventDestinations(CS, region).get(0).getSnsDestination().getTopicArn());
+        String commercial = "arn:aws:sns:local-region-1:000000000000:events";
+        AwsException refused = assertThrows(AwsException.class,
+                () -> service.updateEventDestination(CS, "to-sns", destination(commercial), ACCOUNT_ID, region,
+                        false));
+        assertEquals("Invalid parameter for SNS topic <" + commercial
+                + ">. Verify the SNS topic configuration is correct.", refused.getMessage());
     }
 
     @Test

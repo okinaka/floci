@@ -2,6 +2,7 @@ package io.floci.aws.services.ses;
 
 import io.floci.aws.core.common.AwsException;
 import io.floci.aws.core.common.PaginatedResult;
+import io.floci.aws.core.common.RegionResolver;
 import io.floci.aws.core.storage.InMemoryStorage;
 import io.floci.aws.services.ses.model.ConfigurationSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,8 @@ class SesConfigurationSetListFilterServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SesConfigurationSetService(new InMemoryStorage<>(), mock(SesEventPublisher.class));
+        service = new SesConfigurationSetService(new InMemoryStorage<>(), mock(SesEventPublisher.class),
+                new RegionResolver(REGION, "000000000000"));
         for (String name : List.of("Filter-Alpha", "filter-beta", "other-FILTER-gamma", "unrelated")) {
             ConfigurationSet configSet = new ConfigurationSet();
             configSet.setName(name);
