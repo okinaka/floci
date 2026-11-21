@@ -183,6 +183,22 @@ class SesTemplateNameIntegrationTest {
             .body("message", equalTo(notAllowed("name\tprobe")));
     }
 
+    // not probed: U+FFFE and U+FFFF cannot appear in an XML 1.0 document, so v1 spells them out too
+    @Test
+    void v1SpellsOutACharacterXmlForbids() {
+        given()
+            .contentType("application/x-www-form-urlencoded; charset=UTF-8")
+            .header("Authorization", V1_AUTH)
+            .formParam("Action", "GetTemplate")
+            .formParam("TemplateName", "name\uFFFEprobe\uFFFF")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(400)
+            .body("ErrorResponse.Error.Code", equalTo("InvalidParameterValue"))
+            .body("ErrorResponse.Error.Message", equalTo(notAllowed("name0xfffeprobe0xffff")));
+    }
+
     @Test
     void a64CharacterNameOfEveryAllowedKindIsAccepted() {
         String name = "Name_probe-0123456789" + "a".repeat(43);
