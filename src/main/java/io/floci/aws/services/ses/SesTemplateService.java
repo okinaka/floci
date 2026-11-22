@@ -10,8 +10,7 @@ import io.floci.aws.core.common.AwsRegions;
 import io.floci.aws.core.common.PaginatedResult;
 import io.floci.aws.core.storage.StorageBackend;
 import io.floci.aws.core.storage.StorageFactory;
-import io.floci.aws.services.ses.mime.SesMimeEncoding;
-import io.floci.aws.services.ses.mime.SesMimeEncoding.TransferEncoding;
+import io.floci.aws.services.ses.mime.SesRenderedMime;
 import io.floci.aws.services.ses.model.EmailContent;
 import io.floci.aws.services.ses.model.EmailTemplate;
 import io.floci.aws.services.ses.model.Tag;
@@ -19,17 +18,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -59,9 +54,6 @@ public class SesTemplateService implements SesTaggable {
     // both forms verbatim, without HTML escaping (probed on us-west-2, 2026-11-17).
     private static final Pattern TEMPLATE_VARIABLE = Pattern.compile(
             "\\{\\{\\{\\s*([\\w-]+)\\s*\\}\\}\\}|\\{\\{\\s*([\\w-]+)\\s*\\}\\}");
-    private static final DateTimeFormatter RENDER_DATE =
-            DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSX", Locale.ROOT).withZone(ZoneOffset.UTC);
-    private static final Pattern SUBJECT_WHITESPACE_RUN = Pattern.compile("[ \\t\\r\\n]+");
     static final String UNSUBSCRIBE_PLACEHOLDER = "{{amazonSESUnsubscribeUrl}}";
     // What TestRenderTemplate shows in place of the list-management link a send would carry.
     private static final String TEST_RENDER_UNSUBSCRIBE_URL = "http://unsubscribe.example.com";
@@ -333,7 +325,7 @@ public class SesTemplateService implements SesTaggable {
         String subject = applyTemplateData(template.getSubject(), templateData, TEST_RENDER_UNSUBSCRIBE_URL);
         String text = renderStoredPart(template.getTextPart(), templateData);
         String html = renderStoredPart(template.getHtmlPart(), templateData);
-        return buildTestRenderMime(subject, text, html, Instant.now(clock), nextBoundary());
+        return SesRenderedMime.buildTestRenderMime(subject, text, html, Instant.now(clock), nextBoundary());
     }
 
     /**
@@ -407,54 +399,6 @@ public class SesTemplateService implements SesTaggable {
         }
         matcher.appendTail(out);
         return out.toString();
-    }
-
-    /**
-     * A template with both a text and an HTML part renders as multipart/alternative. One with a
-     * single part renders as that part alone, with nothing after its encoded body. A null part
-     * is absent; an empty or blank one is written as it is.
-     */
-    static String buildTestRenderMime(String subject, String text, String html,
-                                       Instant date, String boundary) {
-        boolean hasText = text != null;
-        boolean hasHtml = html != null;
-        StringBuilder out = new StringBuilder();
-        out.append("Date: ").append(RENDER_DATE.format(date)).append("\r\n");
-        out.append("Subject: ").append(SesMimeEncoding.encodeSubject(sanitizeSubject(subject))).append("\r\n");
-        out.append("MIME-Version: 1.0\r\n");
-        if (hasText && hasHtml) {
-            out.append("Content-Type: multipart/alternative; \r\n\tboundary=\"").append(boundary).append("\"\r\n");
-            out.append("\r\n");
-            out.append("--").append(boundary).append("\r\n");
-            appendEntity(out, "text/plain", text);
-            out.append("\r\n--").append(boundary).append("\r\n");
-            appendEntity(out, "text/html", html);
-            out.append("\r\n--").append(boundary).append("--\r\n");
-        } else if (hasHtml) {
-            appendEntity(out, "text/html", html);
-        } else {
-            appendEntity(out, "text/plain", text == null ? "" : text);
-        }
-        return out.toString();
-    }
-
-    private static void appendEntity(StringBuilder out, String mimeType, String body) {
-        byte[] octets = body.getBytes(StandardCharsets.UTF_8);
-        TransferEncoding transferEncoding = TransferEncoding.of(octets);
-        out.append("Content-Type: ").append(mimeType).append("; charset=UTF-8\r\n");
-        out.append("Content-Transfer-Encoding: ").append(transferEncoding.headerValue()).append("\r\n");
-        out.append("\r\n");
-        out.append(transferEncoding.encode(octets));
-    }
-
-    static String sanitizeSubject(String subject) {
-        if (subject == null) {
-            return "";
-        }
-        // SES writes every run of spaces, tabs and line breaks in the Subject as one space, so a
-        // value cannot break the header. Any other control character stays and is written inside
-        // an encoded word.
-        return SUBJECT_WHITESPACE_RUN.matcher(subject).replaceAll(" ");
     }
 
     private String nextBoundary() {
