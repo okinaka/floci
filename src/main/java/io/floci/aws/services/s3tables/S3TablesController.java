@@ -9,6 +9,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -43,7 +44,7 @@ public class S3TablesController {
     @Path("/buckets")
     public Response createTableBucket(@Context HttpHeaders headers, Map<String, Object> request) {
         TableBucket bucket = service.createTableBucket(string(request, "name"), request.get("encryptionConfiguration"),
-                request.get("storageClassConfiguration"), stringMap(request.get("tags")), region(headers));
+                request.get("storageClassConfiguration"), tags(request.get("tags")), region(headers));
         return Response.ok(Map.of("arn", bucket.getArn())).build();
     }
 
@@ -164,7 +165,7 @@ public class S3TablesController {
                                 @PathParam("namespace") String namespace, Map<String, Object> request) {
         S3Table table = service.createTable(decode(tableBucketArn), namespace, string(request, "name"), string(request, "format"),
                 request.get("metadata"), request.get("encryptionConfiguration"), request.get("storageClassConfiguration"),
-                stringMap(request.get("tags")), region(headers));
+                tags(request.get("tags")), region(headers));
         return Response.ok(Map.of("tableARN", table.getArn(), "versionToken", table.getVersionToken())).build();
     }
 
@@ -276,6 +277,29 @@ public class S3TablesController {
                 "configuration", service.getTableMaintenanceConfigurations(arn, namespace, name, region(headers)))).build();
     }
 
+    @POST
+    @Path("/tag/{resourceArn}")
+    public Response tagResource(@Context HttpHeaders headers, @Encoded @PathParam("resourceArn") String resourceArn,
+                                Map<String, Object> request) {
+        service.tagResource(decode(resourceArn), request == null ? null : tags(request.get("tags")), region(headers));
+        return Response.ok(Map.of()).build();
+    }
+
+    @DELETE
+    @Path("/tag/{resourceArn}")
+    public Response untagResource(@Context HttpHeaders headers, @Encoded @PathParam("resourceArn") String resourceArn,
+                                  @QueryParam("tagKeys") List<String> tagKeys) {
+        service.untagResource(decode(resourceArn), tagKeys, region(headers));
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/tag/{resourceArn}")
+    public Response listTagsForResource(@Context HttpHeaders headers,
+                                        @Encoded @PathParam("resourceArn") String resourceArn) {
+        return Response.ok(Map.of("tags", service.listTagsForResource(decode(resourceArn), region(headers)))).build();
+    }
+
     private Map<String, Object> bucketRepresentation(TableBucket bucket) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("arn", bucket.getArn());
@@ -331,13 +355,12 @@ public class S3TablesController {
     private String decode(String value) { return value == null ? null : URLDecoder.decode(value, StandardCharsets.UTF_8); }
     private String string(Map<String, Object> value, String key) { return value == null ? null : (String) value.get(key); }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, String> stringMap(Object value) {
+    private Map<String, String> tags(Object value) {
         if (!(value instanceof Map<?, ?> map)) {
-            return Map.of();
+            return null;
         }
         Map<String, String> result = new LinkedHashMap<>();
-        map.forEach((key, entry) -> result.put(String.valueOf(key), String.valueOf(entry)));
+        map.forEach((key, entry) -> result.put(String.valueOf(key), entry instanceof String text ? text : null));
         return result;
     }
 

@@ -14,9 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mockito;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +36,14 @@ class S3TablesServiceTest {
     private static final String ACCOUNT_ID = "000000000000";
     private static final String REGION = "us-east-1";
     private static final String BUCKET = "unit-test-table-bucket";
+    private static final String BUCKET_NOT_FOUND = "The specified bucket does not exist.";
+    private static final String TABLE_NOT_FOUND = "The specified table does not exist.";
+    private static final String TOO_MANY_TAGS = "The provided tags are invalid. Number of user tags must not exceed 50";
+    private static final String KEY_LENGTH = "Value at 'tags' failed to satisfy constraint: Map keys must satisfy "
+            + "constraint: [Member must have length less than or equal to 128, Member must have length greater than "
+            + "or equal to 1]";
+    private static final String VALUE_LENGTH = "Value at 'tags' failed to satisfy constraint: Map value must satisfy "
+            + "constraint: [Member must have length less than or equal to 256]";
 
     private S3TablesService service;
     private S3Service s3Service;
@@ -235,6 +246,142 @@ class S3TablesServiceTest {
         service.deleteTablePolicy(arn, "analytics", "events", REGION);
         assertError("NotFoundException", () -> service.getTableBucketPolicy(arn, REGION));
         assertError("NotFoundException", () -> service.getTablePolicy(arn, "analytics", "events", REGION));
+    }
+
+    @Test
+    void tagResourceMergesIntoTheBucketsOrTheTablesTagsAndUntagResourceRemovesThem() {
+        TableBucket bucket = service.createTableBucket(BUCKET, null, null, Map.of("team", "data"), REGION);
+        service.createNamespace(bucket.getArn(), List.of("analytics"), REGION);
+        S3Table table = createTable(bucket.getArn(), "analytics", "events");
+        String token = table.getVersionToken();
+
+        service.tagResource(bucket.getArn(), Map.of("team", "platform", "env", "dev"), REGION);
+        service.tagResource(table.getArn(), Map.of("owner", "alice"), REGION);
+
+        assertEquals(Map.of("team", "platform", "env", "dev"), service.listTagsForResource(bucket.getArn(), REGION));
+        assertEquals(Map.of("owner", "alice"), service.listTagsForResource(table.getArn(), REGION));
+        assertEquals(Map.of("team", "platform", "env", "dev"), service.storedTags(bucket.getArn()));
+        assertEquals(token, service.getTable(bucket.getArn(), "analytics", "events", REGION).getVersionToken(),
+                "tagging a table leaves its version token");
+
+        service.untagResource(bucket.getArn(), List.of("env", "absent"), REGION);
+        service.untagResource(table.getArn(), List.of("owner"), REGION);
+
+        assertEquals(Map.of("team", "platform"), service.listTagsForResource(bucket.getArn(), REGION));
+        assertEquals(Map.of(), service.listTagsForResource(table.getArn(), REGION));
+        assertEquals(Map.of(), service.storedTags(table.getArn()));
+    }
+
+    @Test
+    void aRenamedTableKeepsItsTagsUnderItsArn() {
+        String arn = createBucketWithNamespace("analytics");
+        S3Table table = createTable(arn, "analytics", "events");
+        service.tagResource(table.getArn(), Map.of("owner", "alice"), REGION);
+
+        service.renameTable(arn, "analytics", "events", null, "daily_events", null, REGION);
+
+        assertEquals(Map.of("owner", "alice"), service.listTagsForResource(table.getArn(), REGION));
+    }
+
+    @Test
+    void tagOperationsOnAResourceThatDoesNotExistAreNotFound() {
+        String arn = createBucketWithNamespace("analytics");
+        S3Table table = createTable(arn, "analytics", "events");
+        service.deleteTable(arn, "analytics", "events", REGION);
+        String otherBucket = arn.replace(BUCKET, "other-bucket");
+
+        assertNotFound(TABLE_NOT_FOUND, () -> service.listTagsForResource(table.getArn(), REGION));
+        assertNotFound(TABLE_NOT_FOUND, () -> service.tagResource(table.getArn(), Map.of("k", "v"), REGION));
+        assertNotFound(TABLE_NOT_FOUND, () -> service.untagResource(table.getArn(), List.of("k"), REGION));
+        assertNotFound(TABLE_NOT_FOUND, () -> service.listTagsForResource(otherBucket + "/table/" + UUID.randomUUID(),
+                REGION));
+        assertNotFound(BUCKET_NOT_FOUND, () -> service.listTagsForResource(otherBucket, REGION));
+        assertNotFound(BUCKET_NOT_FOUND, () -> service.listTagsForResource(arn.replace(REGION, "eu-west-1"), REGION));
+        assertNotFound(BUCKET_NOT_FOUND, () -> service.listTagsForResource(arn + "/namespace/analytics", REGION));
+        assertNotFound(BUCKET_NOT_FOUND, () -> service.listTagsForResource("not-an-arn", REGION));
+    }
+
+    @Test
+    void tagResourceRefusesTagsAwsWouldNotStore() {
+        TableBucket bucket = createBucket();
+        String arn = bucket.getArn();
+
+        assertBadRequest("Tags beginning with 'aws:' are reserved for system use.",
+                () -> service.tagResource(arn, Map.of("aws:team", "data"), REGION));
+        assertBadRequest("The provided tags are invalid. Tag key can only contain alphanumeric characters, "
+                + "spaces, and _.:/=+@-", () -> service.tagResource(arn, Map.of("team#1", "data"), REGION));
+        assertBadRequest(oneViolation("Value at 'tags' failed to satisfy constraint: Member must not be null"),
+                () -> service.tagResource(arn, null, REGION));
+        assertBadRequest(oneViolation(KEY_LENGTH), () -> service.tagResource(arn, Map.of("", "data"), REGION));
+        assertBadRequest(oneViolation(KEY_LENGTH), () -> service.tagResource(arn, Map.of("k".repeat(129), "v"), REGION));
+        assertBadRequest(oneViolation(VALUE_LENGTH),
+                () -> service.tagResource(arn, Map.of("k", "v".repeat(257)), REGION));
+        assertBadRequest("2 validation errors detected: " + KEY_LENGTH + "; " + VALUE_LENGTH,
+                () -> service.tagResource(arn, Map.of("k".repeat(129), "v".repeat(257)), REGION));
+        Map<String, String> nullValue = new HashMap<>();
+        nullValue.put("k", null);
+        assertBadRequest(oneViolation(VALUE_LENGTH), () -> service.tagResource(arn, nullValue, REGION));
+        assertBadRequest(oneViolation("Value at 'tagKeys' failed to satisfy constraint: Member must not be null"),
+                () -> service.untagResource(arn, List.of(), REGION));
+        assertBadRequest(oneViolation("Value at 'tagKeys' failed to satisfy constraint: Member must satisfy "
+                + "constraint: [Member must have length less than or equal to 128, Member must have length greater "
+                + "than or equal to 1]"), () -> service.untagResource(arn, List.of("k".repeat(129)), REGION));
+        assertEquals(Map.of(), service.listTagsForResource(arn, REGION));
+
+        service.tagResource(arn, Map.of("k".repeat(128), "v".repeat(256), "empty", ""), REGION);
+        assertEquals(2, service.listTagsForResource(arn, REGION).size());
+    }
+
+    @Test
+    void tagResourceCountsTheTagsTheResourceAlreadyHasAgainstTheLimitOfFifty() {
+        String arn = createBucket().getArn();
+        service.tagResource(arn, numberedTags(0, 49), REGION);
+        service.tagResource(arn, Map.of("key-0", "replaced"), REGION);
+
+        assertBadRequest(TOO_MANY_TAGS,
+                () -> service.tagResource(arn, numberedTags(49, 51), REGION));
+        assertEquals(49, service.listTagsForResource(arn, REGION).size());
+        service.tagResource(arn, numberedTags(49, 50), REGION);
+        assertEquals(50, service.listTagsForResource(arn, REGION).size());
+    }
+
+    @Test
+    void createRefusesTheTagsTagResourceRefuses() {
+        assertBadRequest("Tags beginning with 'aws:' are reserved for system use.",
+                () -> service.createTableBucket(BUCKET, null, null, Map.of("aws:team", "data"), REGION));
+        assertBadRequest(TOO_MANY_TAGS,
+                () -> service.createTableBucket(BUCKET, null, null, numberedTags(0, 51), REGION));
+        assertEquals(List.of(), service.listTableBuckets(null, REGION));
+        String arn = createBucketWithNamespace("analytics");
+        assertBadRequest("Tags beginning with 'aws:' are reserved for system use.",
+                () -> service.createTable(arn, "analytics", "events", "ICEBERG", null, null, null,
+                        Map.of("aws:team", "data"), REGION));
+        assertError("NotFoundException", () -> service.getTable(arn, "analytics", "events", REGION));
+    }
+
+    private static Map<String, String> numberedTags(int from, int to) {
+        Map<String, String> tags = new LinkedHashMap<>();
+        for (int i = from; i < to; i++) {
+            tags.put("key-" + i, "value");
+        }
+        return tags;
+    }
+
+    private static String oneViolation(String violation) {
+        return "1 validation error detected: " + violation;
+    }
+
+    private void assertNotFound(String expectedMessage, Executable action) {
+        AwsException exception = assertThrows(AwsException.class, action);
+        assertEquals("NotFoundException", exception.getErrorCode());
+        assertEquals(expectedMessage, exception.getMessage());
+    }
+
+    private void assertBadRequest(String expectedMessage, Executable action) {
+        AwsException exception = assertThrows(AwsException.class, action);
+        assertEquals("BadRequestException", exception.getErrorCode());
+        assertEquals(400, exception.getHttpStatus());
+        assertEquals(expectedMessage, exception.getMessage());
     }
 
     private TableBucket createBucket() {

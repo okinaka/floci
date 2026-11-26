@@ -212,6 +212,29 @@ class S3TablesTest {
 
     @Test
     @Order(8)
+    void tagsAndUntagsTheTableBucketAndTheTable() {
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(bucketArn).build())
+                .tags()).containsExactlyEntriesOf(Map.of("suite", "sdk-java"));
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(tableArn).build())
+                .tags()).containsExactlyEntriesOf(Map.of("suite", "sdk-java"));
+
+        client.tagResource(TagResourceRequest.builder().resourceArn(bucketArn).tags(Map.of("team", "data")).build());
+        client.tagResource(TagResourceRequest.builder().resourceArn(tableArn).tags(Map.of("owner", "alice")).build());
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(bucketArn).build())
+                .tags()).containsOnly(Map.entry("suite", "sdk-java"), Map.entry("team", "data"));
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(tableArn).build())
+                .tags()).containsOnly(Map.entry("suite", "sdk-java"), Map.entry("owner", "alice"));
+
+        client.untagResource(UntagResourceRequest.builder().resourceArn(bucketArn).tagKeys("suite", "team").build());
+        client.untagResource(UntagResourceRequest.builder().resourceArn(tableArn).tagKeys("suite").build());
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(bucketArn).build())
+                .tags()).isEmpty();
+        assertThat(client.listTagsForResource(ListTagsForResourceRequest.builder().resourceArn(tableArn).build())
+                .tags()).containsOnly(Map.entry("owner", "alice"));
+    }
+
+    @Test
+    @Order(9)
     void deletesPoliciesAndResourceHierarchy() {
         client.deleteTablePolicy(DeleteTablePolicyRequest.builder()
                 .tableBucketARN(bucketArn).namespace(NAMESPACE).name(tableName).build());

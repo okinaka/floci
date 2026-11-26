@@ -44,6 +44,14 @@ was stored with, which ends in its name.
 | Metadata location | GetTableMetadataLocation, UpdateTableMetadataLocation |
 | Table policy | PutTablePolicy, GetTablePolicy, DeleteTablePolicy |
 | Table maintenance | PutTableMaintenanceConfiguration, GetTableMaintenanceConfiguration |
+| Tags | TagResource, UntagResource, ListTagsForResource |
+
+The tag operations take a table bucket's ARN or a table's ARN. They read and
+change the same tags `CreateTableBucket` and `CreateTable` store, which IAM
+also reads for `aws:ResourceTag/<key>` conditions. A table keeps its tags
+through a rename, and tagging leaves its `versionToken` as it is. A resource
+holds at most 50 tags, and keys beginning with `aws:` are refused, on create as
+on `TagResource`.
 
 Tables must use `ICEBERG` format. `UpdateTableMetadataLocation` implements
 optimistic concurrency: supply the table's current `versionToken`; a stale

@@ -201,6 +201,130 @@ class S3TablesIntegrationTest {
                 .body("configuration.icebergCompaction.status", equalTo("enabled"));
     }
 
+    @Test
+    @Order(6)
+    void tagsTheTableBucketAndTheTableOnTheTagRoute() {
+        String tableArn = s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/get-table?tableBucketARN=" + ENCODED_BUCKET_ARN + "&namespace=" + NAMESPACE + "&name=" + TABLE_NAME)
+        .then()
+                .statusCode(200)
+                .extract().path("tableARN");
+        String encodedTableArn = URLEncoder.encode(tableArn, StandardCharsets.UTF_8);
+
+        s3tables()
+                .urlEncodingEnabled(false)
+                .contentType(JSON_CONTENT_TYPE)
+                .body("{ \"tags\": { \"team\": \"data\", \"env\": \"dev\" } }")
+        .when()
+                .post("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(200)
+                .body(equalTo("{}"));
+        s3tables()
+                .urlEncodingEnabled(false)
+                .contentType(JSON_CONTENT_TYPE)
+                .body("{ \"tags\": { \"owner\": \"alice\" } }")
+        .when()
+                .post("/tag/" + encodedTableArn)
+        .then()
+                .statusCode(200);
+
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(200)
+                .contentType(containsString(JSON_CONTENT_TYPE))
+                .body("tags.team", equalTo("data"))
+                .body("tags.env", equalTo("dev"));
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + encodedTableArn)
+        .then()
+                .statusCode(200)
+                .body("tags.owner", equalTo("alice"))
+                .body("tags", not(hasKey("team")));
+
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .delete("/tag/" + ENCODED_BUCKET_ARN + "?tagKeys=env&tagKeys=absent")
+        .then()
+                .statusCode(204);
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(200)
+                .body("tags.team", equalTo("data"))
+                .body("tags", not(hasKey("env")));
+    }
+
+    @Test
+    @Order(7)
+    void refusesTagsOnAnUnknownResourceReservedKeysAndMalformedBodies() {
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + URLEncoder.encode(BUCKET_ARN + "/table/unknown", StandardCharsets.UTF_8))
+        .then()
+                .statusCode(404)
+                .body("__type", equalTo("NotFoundException"))
+                .body("message", equalTo("The specified table does not exist."));
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + URLEncoder.encode(BUCKET_ARN + "-missing", StandardCharsets.UTF_8))
+        .then()
+                .statusCode(404)
+                .body("__type", equalTo("NotFoundException"))
+                .body("message", equalTo("The specified bucket does not exist."));
+
+        s3tables()
+                .urlEncodingEnabled(false)
+                .contentType(JSON_CONTENT_TYPE)
+                .body("{ \"tags\": { \"aws:team\": \"data\" } }")
+        .when()
+                .post("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(400)
+                .body("__type", equalTo("BadRequestException"))
+                .body("message", equalTo("Tags beginning with 'aws:' are reserved for system use."));
+
+        for (String body : new String[] {"{ \"tags\": { \"rejected\": null } }", "{ \"tags\": { \"rejected\": 1 } }",
+                "{ \"tags\": [\"rejected\"] }", "{ \"tags\": \"rejected\" }", "{}"}) {
+            s3tables()
+                    .urlEncodingEnabled(false)
+                    .contentType(JSON_CONTENT_TYPE)
+                    .body(body)
+            .when()
+                    .post("/tag/" + ENCODED_BUCKET_ARN)
+            .then()
+                    .statusCode(400)
+                    .body("__type", equalTo("BadRequestException"));
+        }
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .get("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(200)
+                .body("tags", not(hasKey("rejected")));
+
+        s3tables()
+                .urlEncodingEnabled(false)
+        .when()
+                .delete("/tag/" + ENCODED_BUCKET_ARN)
+        .then()
+                .statusCode(400)
+                .body("__type", equalTo("BadRequestException"));
+    }
+
     private static RequestSpecification s3tables() {
         return given().header("Authorization",
                 "AWS4-HMAC-SHA256 Credential=000000000000/20260101/us-east-1/s3tables/aws4_request");
