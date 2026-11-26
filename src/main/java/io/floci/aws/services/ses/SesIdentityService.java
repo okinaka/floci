@@ -110,11 +110,33 @@ public class SesIdentityService implements SesTaggable {
             if (existing != null) {
                 return existing;
             }
-            identity = newDomainIdentity(domain);
+            identity = newDomainIdentityWithoutEasyDkim(domain);
             identityStore.put(key, identity);
         }
         LOG.infov("Verified domain identity: {0} in region {1}", domain, region);
         return identity;
+    }
+
+    /**
+     * A domain registered by v1 VerifyDomainIdentity has no Easy DKIM until VerifyDomainDkim starts
+     * it (probed 2026-11-26): signing is off, the status is NotStarted, there are no tokens and no
+     * current key, and the next key reads RSA_1024_BIT. The token list is empty rather than null,
+     * since null marks a record stored before tokens existed, which a read fills in.
+     */
+    private Identity newDomainIdentityWithoutEasyDkim(String domain) {
+        Identity identity = new Identity(domain, "Domain");
+        identity.setVerificationStatus("Pending");
+        identity.setDkimTokens(new ArrayList<>());
+        identity.setDkimNextSigningKeyLength("RSA_1024_BIT");
+        identity.setDkimCurrentSigningKeyLength(null);
+        return identity;
+    }
+
+    /** True for a domain that only v1 VerifyDomainIdentity has set up: see {@link #verifyDomainIdentity}. */
+    public static boolean easyDkimNotStarted(Identity identity) {
+        return "Domain".equals(identity.getIdentityType())
+                && "AWS_SES".equals(identity.getDkimSigningAttributesOrigin())
+                && identity.getDkimTokens() != null && identity.getDkimTokens().isEmpty();
     }
 
     private Identity newDomainIdentity(String domain) {
@@ -566,20 +588,22 @@ public class SesIdentityService implements SesTaggable {
         // DKIM is a domain concept and an email reports its parent domain's DKIM (via effectiveDkimSource),
         // so toggling DKIM on an email whose parent domain is a registered identity is a no-op that leaves
         // the domain untouched, matching real AWS, regardless of whether the email identity itself exists.
+        // A domain without Easy DKIM refuses the toggle, for itself and for an address under it.
+        String domain = identityValue.contains("@")
+                ? identityValue.substring(identityValue.indexOf('@') + 1)
+                : identityValue;
         if (identityValue.contains("@")) {
-            String domain = identityValue.substring(identityValue.indexOf('@') + 1);
-            if (identityStore.get(identityKey(region, domain)).isPresent()) {
+            Identity parent = identityStore.get(identityKey(region, domain)).orElse(null);
+            if (parent != null) {
+                if (easyDkimNotStarted(parent)) {
+                    throw notVerifiedForDkimSigning(domain);
+                }
                 return;
             }
         }
         Identity identity = identityStore.get(identityKey(region, identityValue)).orElse(null);
-        if (identity == null) {
-            String domain = identityValue.contains("@")
-                    ? identityValue.substring(identityValue.indexOf('@') + 1)
-                    : identityValue;
-            // v1-native code; the v2 controller remaps InvalidParameterValue -> BadRequestException.
-            throw new AwsException("InvalidParameterValue",
-                    "Domain " + domain + " is not verified for DKIM signing.", 400);
+        if (identity == null || easyDkimNotStarted(identity)) {
+            throw notVerifiedForDkimSigning(domain);
         }
 
         // Only toggle the signing flag. DkimVerificationStatus tracks DNS record detection (via the
@@ -588,6 +612,12 @@ public class SesIdentityService implements SesTaggable {
         identity.setDkimEnabled(signingEnabled);
         identityStore.put(identityKey(region, identityValue), identity);
         LOG.infov("Updated DKIM attributes for {0}: signingEnabled={1}", identityValue, signingEnabled);
+    }
+
+    /** v1-native code; the v2 controller remaps InvalidParameterValue to BadRequestException. */
+    private static AwsException notVerifiedForDkimSigning(String domain) {
+        return new AwsException("InvalidParameterValue",
+                "Domain <" + domain + "> is not verified for DKIM signing.", 400);
     }
 
     private List<String> generateDkimTokens() {
