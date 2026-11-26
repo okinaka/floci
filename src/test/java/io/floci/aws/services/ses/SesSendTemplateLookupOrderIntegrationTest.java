@@ -5,6 +5,8 @@ import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.floci.aws.services.ses.SesV2Requests.ENTRY;
 import static io.floci.aws.services.ses.SesV2Requests.TO;
@@ -19,9 +21,11 @@ import static org.hamcrest.Matchers.nullValue;
  * Without a tenant, the v2 sends look a stored template up last: an unknown configuration set is
  * reported first, then an unverified sender or feedback forwarding address, and only then an
  * unknown template (probe-confirmed). A SendBulkEmail in which no entry names a recipient answers
- * every entry before any of them. The v1 SendTemplatedEmail and SendBulkTemplatedEmail follow the
- * same order with Source and ReturnPath, and the bulk send counts its destinations first
- * (probe-confirmed).
+ * every entry before any of them, an unknown configuration set included, and a template send
+ * without its template data is refused ahead of all of these (probe-confirmed; on SendEmail only
+ * against the sender check, the rest follows SendBulkEmail). The v1 SendTemplatedEmail and
+ * SendBulkTemplatedEmail follow the same order with Source and ReturnPath, and the bulk send
+ * counts its destinations first (probe-confirmed).
  */
 @QuarkusTest
 class SesSendTemplateLookupOrderIntegrationTest {
@@ -36,6 +40,9 @@ class SesSendTemplateLookupOrderIntegrationTest {
     private static final String NOT_VERIFIED_MESSAGE =
             "Email address is not verified. The following identities failed the check in region US-EAST-1: ";
     private static final String V1_GHOST_TEMPLATE = "template-order-v1-ghost";
+    private static final String GHOST_CONFIG_SET_MEMBER = "\"ConfigurationSetName\": \"" + GHOST_CONFIG_SET + "\", ";
+    private static final String NO_RECIPIENT_ENTRIES =
+            "{\"Destination\": {}}, {\"Destination\": {\"ToAddresses\": []}}";
 
     // Not @BeforeAll: the Quarkus test port is only bound once the first test starts.
     @BeforeEach
@@ -114,6 +121,24 @@ class SesSendTemplateLookupOrderIntegrationTest {
             .body("message", equalTo("Configuration set <" + GHOST_CONFIG_SET + "> does not exist."));
     }
 
+    private static void assertBadRequest(ValidatableResponse response, String message) {
+        response
+            .statusCode(400)
+            .body("__type", equalTo("BadRequestException"))
+            .body("message", equalTo(message));
+    }
+
+    private static void assertEveryEntryEmpty(ValidatableResponse response) {
+        response
+            .statusCode(200)
+            .body("BulkEmailEntryResults", hasSize(2))
+            .body("BulkEmailEntryResults[0].Status", equalTo("INVALID_PARAMETER"))
+            .body("BulkEmailEntryResults[0].Error", equalTo("Destination cannot be empty"))
+            .body("BulkEmailEntryResults[0].MessageId", nullValue())
+            .body("BulkEmailEntryResults[1].Status", equalTo("INVALID_PARAMETER"))
+            .body("BulkEmailEntryResults[1].Error", equalTo("Destination cannot be empty"));
+    }
+
     private static void assertTemplateNotFound(ValidatableResponse response) {
         response
             .statusCode(404)
@@ -166,14 +191,60 @@ class SesSendTemplateLookupOrderIntegrationTest {
     @Test
     void sendBulkEmail_noEntryWithARecipient_answersEveryEntryBeforeSenderAndTemplate() {
         for (String sender : new String[] {UNVERIFIED, VERIFIED}) {
-            bulk(sender, GHOST_TEMPLATE, "", "{\"Destination\": {}}, {\"Destination\": {\"ToAddresses\": []}}")
-                .statusCode(200)
-                .body("BulkEmailEntryResults", hasSize(2))
-                .body("BulkEmailEntryResults[0].Status", equalTo("INVALID_PARAMETER"))
-                .body("BulkEmailEntryResults[0].Error", equalTo("Destination cannot be empty"))
-                .body("BulkEmailEntryResults[0].MessageId", nullValue())
-                .body("BulkEmailEntryResults[1].Status", equalTo("INVALID_PARAMETER"))
-                .body("BulkEmailEntryResults[1].Error", equalTo("Destination cannot be empty"));
+            assertEveryEntryEmpty(bulk(sender, GHOST_TEMPLATE, "", NO_RECIPIENT_ENTRIES));
+        }
+    }
+
+    @Test
+    void sendBulkEmail_noEntryWithARecipient_answersEveryEntryBeforeUnknownConfigurationSet() {
+        assertEveryEntryEmpty(bulk(UNVERIFIED, GHOST_TEMPLATE, GHOST_CONFIG_SET_MEMBER, NO_RECIPIENT_ENTRIES));
+        assertEveryEntryEmpty(bulk(UNVERIFIED, INLINE_TEMPLATE, GHOST_CONFIG_SET_MEMBER, NO_RECIPIENT_ENTRIES));
+    }
+
+    @Test
+    void sendBulkEmail_oneEntryWithARecipient_stillReportsUnknownConfigurationSet() {
+        assertConfigSetNotFound(bulk(UNVERIFIED, GHOST_TEMPLATE, GHOST_CONFIG_SET_MEMBER,
+                "{\"Destination\": {}}, " + ENTRY));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "\"TemplateName\": \"template-order-ghost\"",
+        "\"TemplateName\": \"template-order-ghost\", \"TemplateData\": \"\"",
+        "\"TemplateName\": \"template-order-ghost\", \"TemplateData\": null",
+        "\"TemplateContent\": {\"Subject\": \"s\", \"Text\": \"b\"}",
+        "\"TemplateContent\": {\"Subject\": \"s\", \"Text\": \"b\"}, \"TemplateData\": \"\""
+    })
+    void sendBulkEmail_missingDefaultTemplateDataPrecedesEveryLookup(String template) {
+        String content = "{\"Template\": {" + template + "}}";
+
+        assertBadRequest(bulk(UNVERIFIED, content, "", ENTRY), "The default template data does not exist");
+        assertBadRequest(bulk(UNVERIFIED, content, GHOST_CONFIG_SET_MEMBER, ENTRY),
+                "The default template data does not exist");
+        assertBadRequest(bulk(UNVERIFIED, content, GHOST_CONFIG_SET_MEMBER, NO_RECIPIENT_ENTRIES),
+                "The default template data does not exist");
+    }
+
+    @Test
+    void sendBulkEmail_replacementTemplateDataStaysOptional() {
+        assertTemplateNotFound(bulk(VERIFIED, GHOST_TEMPLATE, "",
+                "{\"Destination\": {\"ToAddresses\": [\"" + TO + "\"]}, \"ReplacementEmailContent\": "
+                        + "{\"ReplacementTemplate\": {}}}"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "\"TemplateName\": \"template-order-ghost\"",
+        "\"TemplateName\": \"template-order-ghost\", \"TemplateData\": \"\"",
+        "\"TemplateName\": \"template-order-ghost\", \"TemplateData\": null",
+        "\"TemplateContent\": {\"Subject\": \"s\", \"Text\": \"b\"}",
+        "\"TemplateContent\": {\"Subject\": \"s\", \"Text\": \"b\"}, \"TemplateData\": \"\""
+    })
+    void sendEmail_missingTemplateDataPrecedesEveryLookup(String template) {
+        for (String members : new String[] {"", GHOST_CONFIG_SET_MEMBER}) {
+            assertBadRequest(post("/v2/email/outbound-emails", "{\"FromEmailAddress\": \"" + UNVERIFIED + "\", "
+                    + members + "\"Destination\": {\"ToAddresses\": [\"" + TO + "\"]}, \"Content\": {\"Template\": {"
+                    + template + "}}}"), "Template data cannot be empty");
         }
     }
 
@@ -235,6 +306,24 @@ class SesSendTemplateLookupOrderIntegrationTest {
     @Test
     void sendBulkTemplatedEmail_unknownConfigurationSetPrecedesUnverifiedSource() {
         assertV1Error(bulkTemplated(UNVERIFIED, 1, "ConfigurationSetName", GHOST_CONFIG_SET),
+                "ConfigurationSetDoesNotExist", "Configuration set &lt;" + GHOST_CONFIG_SET + "&gt; does not exist.");
+    }
+
+    @Test
+    void templateArnChecksPrecedeMissingTemplateData() {
+        String content = "{\"Template\": {\"TemplateArn\": \"not-an-arn\"}}";
+
+        assertBadRequest(bulk(UNVERIFIED, content, "", ENTRY), "ARNs must start with 'arn:': not-an-arn");
+        assertBadRequest(post("/v2/email/outbound-emails", "{\"FromEmailAddress\": \"" + UNVERIFIED + "\", "
+                + "\"Destination\": {\"ToAddresses\": [\"" + TO + "\"]}, \"Content\": " + content + "}"),
+                "ARNs must start with 'arn:': not-an-arn");
+    }
+
+    @Test
+    void sendBulkTemplatedEmail_noEntryWithARecipient_stillReportsUnknownConfigurationSet() {
+        // Not probed on v1: it keeps the order it had, unlike SendBulkEmail.
+        assertV1Error(bulkTemplated(UNVERIFIED, 0, "ConfigurationSetName", GHOST_CONFIG_SET,
+                        "Destinations.member.1.Destination.ToAddresses", ""),
                 "ConfigurationSetDoesNotExist", "Configuration set &lt;" + GHOST_CONFIG_SET + "&gt; does not exist.");
     }
 

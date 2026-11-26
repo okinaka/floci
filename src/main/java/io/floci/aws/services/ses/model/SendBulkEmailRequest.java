@@ -11,7 +11,10 @@ import java.util.Objects;
  * each entry's replacements merge over. {@code sourceArn} and {@code returnPathArn} are the
  * sending-authorization identity ARNs of the sender and the return path. With
  * {@code recipientLimitPerEntry} an entry over the recipient limit fails on its own, as on v1
- * (probe-confirmed); without it the whole call is rejected.
+ * (probe-confirmed); without it the whole call is rejected. With
+ * {@code configurationSetBeforeEmptyDestinations} an unknown or paused configuration set is
+ * reported even when no entry names a recipient, the order v1 keeps because AWS has not been
+ * probed there; without it every entry is answered on its own first, as on v2 (probe-confirmed).
  */
 public record SendBulkEmailRequest(
         String source,
@@ -24,6 +27,7 @@ public record SendBulkEmailRequest(
         String tenantName,
         String region,
         boolean recipientLimitPerEntry,
+        boolean configurationSetBeforeEmptyDestinations,
         EmailContent.TemplateContent defaultContent,
         List<BulkEmailEntry> entries) {
 
@@ -53,6 +57,7 @@ public record SendBulkEmailRequest(
         private String tenantName;
         private String region;
         private boolean recipientLimitPerEntry;
+        private boolean configurationSetBeforeEmptyDestinations;
         private EmailContent.TemplateContent defaultContent;
         private List<BulkEmailEntry> entries = List.of();
 
@@ -69,13 +74,14 @@ public record SendBulkEmailRequest(
         public Builder tenantName(String tenantName) { this.tenantName = tenantName; return this; }
         public Builder region(String region) { this.region = region; return this; }
         public Builder recipientLimitPerEntry(boolean recipientLimitPerEntry) { this.recipientLimitPerEntry = recipientLimitPerEntry; return this; }
+        public Builder configurationSetBeforeEmptyDestinations(boolean configurationSetBeforeEmptyDestinations) { this.configurationSetBeforeEmptyDestinations = configurationSetBeforeEmptyDestinations; return this; }
         public Builder defaultContent(EmailContent.TemplateContent defaultContent) { this.defaultContent = defaultContent; return this; }
         public Builder entries(List<BulkEmailEntry> entries) { this.entries = entries; return this; }
 
         public SendBulkEmailRequest build() {
             return new SendBulkEmailRequest(source, sourceArn, replyToAddresses, returnPath, returnPathArn,
-                    configurationSetName, defaultEmailTags, tenantName, region, recipientLimitPerEntry, defaultContent,
-                    entries);
+                    configurationSetName, defaultEmailTags, tenantName, region, recipientLimitPerEntry,
+                    configurationSetBeforeEmptyDestinations, defaultContent, entries);
         }
     }
 }

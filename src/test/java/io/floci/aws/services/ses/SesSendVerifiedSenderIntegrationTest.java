@@ -550,7 +550,8 @@ class SesSendVerifiedSenderIntegrationTest {
                 {
                     "FromEmailAddress": "%s",
                     %s
-                    "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "b"}}},
+                    "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "b"},
+                                                    "TemplateData": "{}"}},
                     "BulkEmailEntries": %s
                 }
                 """.formatted(from, extraMembers, entries);

@@ -1746,6 +1746,12 @@ public class SesService {
         Tenant tenant = anyBulkRecipient(request.entries())
                 ? requireSendingTenant(request.tenantName(), request.region(), null, () -> null)
                 : null;
+        // SendBulkEmail answers a request in which no entry names a recipient entry by entry even
+        // when its configuration set is unknown or paused (probe-confirmed). SendBulkTemplatedEmail
+        // has not been probed there and keeps looking the configuration set up first.
+        if (!request.configurationSetBeforeEmptyDestinations() && !anyBulkRecipient(request.entries())) {
+            return emptyDestinationResults(request);
+        }
         configSetService.validateForSending(request.configurationSetName(), request.region());
         if (!request.recipientLimitPerEntry()) {
             for (BulkEmailEntry entry : request.entries()) {
@@ -1758,15 +1764,8 @@ public class SesService {
             }
         }
 
-        // When no entry names a recipient, SES answers every entry the same, whatever its lists hold
-        // (probe-confirmed for null elements, empty lists and an empty Destination). No sender is
-        // checked then, so a paused account is still refused (unprobed).
         if (!anyBulkRecipient(request.entries())) {
-            accountService.requireAccountSendingEnabled(request.region());
-            return request.entries().stream()
-                    .map(entry -> BulkEmailEntryResult.failure(BulkEmailEntryResult.Status.INVALID_PARAMETER,
-                            "Destination cannot be empty"))
-                    .toList();
+            return emptyDestinationResults(request);
         }
         if (request.templateName() != null) {
             SesTemplateService.requireSendTemplateName(request.templateName());
@@ -1837,6 +1836,17 @@ public class SesService {
             }
         }
         return results;
+    }
+
+    // When no entry names a recipient, SES answers every entry the same, whatever its lists hold
+    // (probe-confirmed for null elements, empty lists and an empty Destination). No sender is
+    // checked then, so a paused account is still refused (unprobed).
+    private List<BulkEmailEntryResult> emptyDestinationResults(SendBulkEmailRequest request) {
+        accountService.requireAccountSendingEnabled(request.region());
+        return request.entries().stream()
+                .map(entry -> BulkEmailEntryResult.failure(BulkEmailEntryResult.Status.INVALID_PARAMETER,
+                        "Destination cannot be empty"))
+                .toList();
     }
 
     private static boolean anyBulkRecipient(List<BulkEmailEntry> entries) {

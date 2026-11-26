@@ -107,7 +107,8 @@ class SesAccountSendingPausedV2IntegrationTest {
     private static String bulkBody(String sender) {
         return """
                 {"FromEmailAddress": "%s",
-                 "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "t"}}},
+                 "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "t"},
+                                                 "TemplateData": "{}"}},
                  "BulkEmailEntries": [{"Destination": {"ToAddresses": ["to@example.com"]}}]}
                 """.formatted(sender);
     }
