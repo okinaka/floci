@@ -59,7 +59,6 @@ class SesServiceHelperTest {
     static Stream<Arguments> mapErrorCodeToBulkStatusCases() {
         return Stream.of(
                 Arguments.of("InvalidParameterValue",     BulkEmailEntryResult.Status.INVALID_PARAMETER),
-                Arguments.of("MissingRenderingAttribute", BulkEmailEntryResult.Status.INVALID_PARAMETER),
                 Arguments.of("InvalidRenderingParameter", BulkEmailEntryResult.Status.INVALID_PARAMETER),
                 Arguments.of("SomethingElse",             BulkEmailEntryResult.Status.FAILED)
         );

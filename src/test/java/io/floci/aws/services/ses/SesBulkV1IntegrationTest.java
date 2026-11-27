@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration tests for SES V1 Query-protocol SendBulkTemplatedEmail.
@@ -261,10 +262,9 @@ class SesBulkV1IntegrationTest {
 
     @Test
     @Order(12)
-    void sendBulkTemplatedEmail_perEntryMissingVariable_mapsToInvalidParameterValue() {
-        // Per-entry rendering failure (missing {{name}}) surfaces as
-        // <Status>InvalidParameterValue</Status> in the bulk Query response,
-        // not as Failed.
+    void sendBulkTemplatedEmail_perEntryMissingVariable_isASuccess() {
+        // SES accepts an entry whose data misses {{name}} and reports it afterwards as a
+        // Rendering Failure event (probed 2026-11-27).
         String body = given()
             .contentType("application/x-www-form-urlencoded")
             .header("Authorization", SesV1Requests.AUTH)
@@ -280,8 +280,8 @@ class SesBulkV1IntegrationTest {
             .statusCode(200)
             .extract().body().asString();
 
-        assertEquals(1L, body.split("<Status>InvalidParameterValue</Status>", -1).length - 1L,
-                "expected per-entry Status=InvalidParameterValue for missing rendering variable");
+        assertEquals(1L, body.split("<Status>Success</Status>", -1).length - 1L, body);
+        assertTrue(MESSAGE_ID_PATTERN.matcher(body).find(), body);
     }
 
     // Each of these fails its own entry with a 200 for the call (probed 2026-10-25).

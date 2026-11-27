@@ -436,7 +436,9 @@ class SesTemplateV2IntegrationTest {
 
     @Test
     @Order(19)
-    void sendEmail_templateWithNameAndArn_returns400() {
+    void sendEmail_templateWithNameAndArnOfTheSameTemplate_isAccepted() {
+        // A name beside the ARN of the same template is fine, and so is data that misses the
+        // template's variable: SES accepts the send and reports a Rendering Failure event.
         v2()
             .body("""
                 {
@@ -454,8 +456,8 @@ class SesTemplateV2IntegrationTest {
         .when()
             .post("/v2/email/outbound-emails")
         .then()
-            .statusCode(400)
-            .body("__type", equalTo("BadRequestException"));
+            .statusCode(200)
+            .body("MessageId", notNullValue());
     }
 
     // ──────────────── Cross-region isolation ────────────────

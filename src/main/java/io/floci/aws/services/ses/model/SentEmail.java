@@ -1,6 +1,7 @@
 package io.floci.aws.services.ses.model;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.runtime.annotations.RegisterForReflection;
@@ -73,6 +74,13 @@ public class SentEmail {
      */
     @JsonProperty("RejectReason")
     private String rejectReason;
+
+    /**
+     * Set when a templated send was accepted but its data missed a template variable: the message
+     * SES reports in the Rendering Failure event. Such a record has no content, as none was built.
+     */
+    @JsonProperty("RenderingFailure")
+    private String renderingFailure;
 
     @JsonProperty("EmailTags")
     private List<MessageTag> emailTags;
@@ -187,6 +195,19 @@ public class SentEmail {
      */
     public void discardContent(String reason) {
         this.rejectReason = reason;
+        dropContent();
+    }
+
+    /**
+     * Records that the message was accepted but never rendered, keeping the sender, the envelope
+     * and the Rendering Failure message.
+     */
+    public void markRenderingFailed(String errorMessage) {
+        this.renderingFailure = errorMessage;
+        dropContent();
+    }
+
+    private void dropContent() {
         this.replyToAddresses = null;
         this.subject = null;
         this.headers = null;
@@ -196,6 +217,13 @@ public class SentEmail {
         this.attachments = null;
         this.mimeData = null;
     }
+
+    public String getRenderingFailure() { return renderingFailure; }
+    public void setRenderingFailure(String renderingFailure) { this.renderingFailure = renderingFailure; }
+
+    /** True for a record that holds an envelope and no content: a rejected or unrendered message. */
+    @JsonIgnore
+    public boolean isWithoutContent() { return rejectReason != null || renderingFailure != null; }
 
     public List<MessageTag> getEmailTags() { return emailTags; }
     public void setEmailTags(List<MessageTag> emailTags) { this.emailTags = emailTags; }

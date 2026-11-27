@@ -1,7 +1,6 @@
 package io.floci.aws.services.ses;
 
 import io.quarkus.test.junit.QuarkusTest;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,9 @@ import static io.floci.aws.services.ses.SesV2Requests.v2;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 /**
@@ -286,7 +287,9 @@ class SesBulkV2IntegrationTest {
 
     @Test
     @Order(10)
-    void sendBulkEmail_perEntryMissingVariable_mapsToInvalidParameter() {
+    void sendBulkEmail_perEntryMissingVariable_isASuccess() {
+        // SES accepts an entry whose data misses {{name}} and reports it afterwards as a
+        // Rendering Failure event (probed 2026-11-27).
         v2()
             .body("""
                 {
@@ -308,8 +311,9 @@ class SesBulkV2IntegrationTest {
             .post("/v2/email/outbound-bulk-emails")
         .then()
             .statusCode(200)
-            .body("BulkEmailEntryResults[0].Status", equalTo("INVALID_PARAMETER"))
-            .body("BulkEmailEntryResults[0].Error", Matchers.containsString("name"));
+            .body("BulkEmailEntryResults[0].Status", equalTo("SUCCESS"))
+            .body("BulkEmailEntryResults[0].MessageId", notNullValue())
+            .body("BulkEmailEntryResults[0]", not(hasKey("Error")));
     }
 
     @ParameterizedTest(name = "{0}")

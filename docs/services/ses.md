@@ -235,6 +235,9 @@ Alongside the LocalStack fields, each captured message carries a
 [SMTP Relay](#smtp-relay). A message the content scan rejected carries
 `RejectReason` and none of its content: no `Subject`, `Body`, `Headers`,
 `ReplyToAddresses` or `RawData`, in neither the Simple nor the raw shape.
+A templated send whose data missed a template variable is listed the same
+way, with `RenderingFailure` holding the error message in place of
+`RejectReason`.
 
 A v2 `SendEmail` with `Content.Simple.Attachments` keeps the Simple shape and
 adds two fields: `Attachments`, one entry per attachment with `FileName`,
@@ -454,6 +457,8 @@ A successful send without a simulator-address recipient emits only the `Send` ev
 A recipient on the [account-level suppression list](https://docs.aws.amazon.com/ses/latest/dg/sending-email-suppression-list.html) produces a `Bounce` with `bounceSubType: OnAccountSuppressionList` or a `Complaint` with `complaintSubType: OnAccountSuppressionList`, following the stored reason, and never a `Delivery`. Events are split by cause: a message that reaches both `bounce@simulator` and a suppressed address publishes two `Bounce` events, each listing only its own recipients, with `mail.destination` carrying the full envelope on both. These shapes were verified against real SES on 2026-09-21.
 
 `Reject` is emitted the way AWS documents it: a message carrying the [EICAR test file](https://www.eicar.org/download-anti-malware-testfile/) in its subject, a header, any text body or MIME part, including a base64 attachment or a forwarded message, is accepted (the send returns a `MessageId`) and then rejected with a `Reject` event whose `reason` is `Bad content`. The message is not relayed, the stored record keeps only its source, its envelope and `RejectReason`, and its `Send` and `Reject` events carry the envelope but no subject or headers in `mail`, where SES would include them, so the scanned content reaches neither the mailbox store nor an event destination. What the request itself supplied, its envelope and its tags, is kept. The test string itself is deliberately not reproduced here.
+
+`Rendering Failure` is emitted for a templated send (`SendTemplatedEmail`, `SendBulkTemplatedEmail`, and v2 `SendEmail` and `SendBulkEmail` with a stored or inline template) whose template data does not cover a template variable, including a dotted path such as `{{user.name}}` and a variable whose value is JSON `null`. The send is accepted and returns a `MessageId` (a bulk entry reports `SUCCESS`), the message is not relayed, and the `Send` event is followed by a `Rendering Failure` event instead of any delivery outcome. Its `failure` block holds `errorMessage` (`Attribute '<name>' is not present in the rendering data.`) and `templateName`, which is `null` for inline template content, and its `mail` block has no `headers` or `commonHeaders`. `GetMessageInsights` reports the message as `SEND` then `RENDERING_FAILURE`. `TestRenderTemplate` and `TestRenderEmailTemplate` still answer a missing variable with `MissingRenderingAttribute`. One deviation: the `Send` event of a templated send that renders carries the rendered `Subject`, where SES publishes it before rendering, without one.
 
 Account-level VDM (Virtual Deliverability Manager) attributes are stored per region. `PutAccountVdmAttributes` sets `VdmEnabled` (opt-in, defaults `DISABLED`) plus the optional `DashboardAttributes.EngagementMetrics` and `GuardianAttributes.OptimizedSharedDelivery`. `GetAccount` omits `VdmAttributes` until VDM has been configured for the region, then returns `VdmEnabled`, adding the `DashboardAttributes`/`GuardianAttributes` sub-objects only while `VdmEnabled` is `ENABLED`. Floci stores the settings but does not run VDM analytics.
 

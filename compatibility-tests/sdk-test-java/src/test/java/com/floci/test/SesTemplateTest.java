@@ -808,7 +808,7 @@ class SesTemplateTest {
 
     @Test
     @Order(51)
-    void v1SendTemplatedEmailMissingVariableRaises() {
+    void v1SendTemplatedEmailMissingVariableIsAccepted() {
         String name = "sdk-v1-send-miss-" + TestFixtures.uniqueName();
         try {
             sesV1.createTemplate(CreateTemplateRequest.builder()
@@ -819,13 +819,13 @@ class SesTemplateTest {
                             .build())
                     .build());
 
-            assertThatThrownBy(() -> sesV1.sendTemplatedEmail(SendTemplatedEmailRequest.builder()
+            // SES accepts the send and reports the missing variable as a Rendering Failure event.
+            assertThat(sesV1.sendTemplatedEmail(SendTemplatedEmailRequest.builder()
                     .source(v1Sender)
                     .destination(d -> d.toAddresses("recipient@example.com"))
                     .template(name)
                     .templateData("{\"name\":\"Alice\"}")
-                    .build()))
-                    .isInstanceOf(MissingRenderingAttributeException.class);
+                    .build()).messageId()).isNotBlank();
         } finally {
             safelyDeleteV1Template(name);
         }

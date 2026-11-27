@@ -55,10 +55,13 @@ public class SesTemplateService implements SesTaggable {
 
     private static final Logger LOG = Logger.getLogger(SesTemplateService.class);
 
+    // A variable names a member of the rendering data, or a dotted path into its nested objects.
+    private static final String VARIABLE_PATH = "[\\w-]+(?:\\.[\\w-]+)*";
     // The triple-stash form comes first so its braces are consumed with the variable. SES renders
     // both forms verbatim, without HTML escaping (probed on us-west-2, 2026-11-17).
     private static final Pattern TEMPLATE_VARIABLE = Pattern.compile(
-            "\\{\\{\\{\\s*([\\w-]+)\\s*\\}\\}\\}|\\{\\{\\s*([\\w-]+)\\s*\\}\\}");
+            "\\{\\{\\{\\s*(" + VARIABLE_PATH + ")\\s*\\}\\}\\}|\\{\\{\\s*(" + VARIABLE_PATH + ")\\s*\\}\\}");
+    private static final Pattern ARRAY_INDEX = Pattern.compile("\\d{1,9}");
     private static final DateTimeFormatter RENDER_DATE =
             DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSX", Locale.ROOT).withZone(ZoneOffset.UTC);
     private static final Pattern SUBJECT_WHITESPACE_RUN = Pattern.compile("[ \\t\\r\\n]+");
@@ -414,16 +417,54 @@ public class SesTemplateService implements SesTaggable {
                 matcher.appendReplacement(out, Matcher.quoteReplacement(unsubscribeReplacement));
                 continue;
             }
-            if (data == null || !data.hasNonNull(key)) {
-                throw new AwsException("MissingRenderingAttribute",
-                        "Attribute '" + key + "' is not present in the rendering data.", 400);
+            if (key.startsWith("this.")) {
+                // A path relative to a block's context: blocks are not evaluated, so it stays as written.
+                matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group()));
+                continue;
             }
-            JsonNode value = data.get(key);
+            JsonNode value = resolve(data, key);
+            if (value == null) {
+                throw new MissingAttributeException(key);
+            }
             String replacement = value.isValueNode() ? value.asText() : value.toString();
             matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(out);
         return out.toString();
+    }
+
+    /**
+     * The value a variable names, or null when the data does not hold it. SES names the whole
+     * dotted path in its message whichever segment is missing, and reads a JSON {@code null} as
+     * a missing value (probe-confirmed on the sends).
+     */
+    private static JsonNode resolve(JsonNode data, String path) {
+        JsonNode node = data;
+        for (String segment : path.split("\\.")) {
+            if (node == null) {
+                return null;
+            }
+            // A numeric segment under an array is an index, as in {{items.0.name}}.
+            node = node.isArray() && ARRAY_INDEX.matcher(segment).matches()
+                    ? node.get(Integer.parseInt(segment))
+                    : node.get(segment);
+            if (node != null && node.isNull()) {
+                return null;
+            }
+        }
+        return node;
+    }
+
+    /**
+     * A template variable the rendering data does not cover. {@code TestRenderTemplate} answers
+     * it as the 400 it is; a send accepts the message and reports it as a Rendering Failure event.
+     */
+    static final class MissingAttributeException extends AwsException {
+
+        MissingAttributeException(String attribute) {
+            super("MissingRenderingAttribute",
+                    "Attribute '" + attribute + "' is not present in the rendering data.", 400);
+        }
     }
 
     /**

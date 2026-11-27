@@ -60,13 +60,17 @@ public class SesInspectionController {
             if (email.getRejectReason() != null) {
                 node.put("RejectReason", email.getRejectReason());
             }
+            if (email.getRenderingFailure() != null) {
+                node.put("RenderingFailure", email.getRenderingFailure());
+            }
             if (email.getReturnPath() != null) {
                 node.put("ReturnPath", email.getReturnPath());
             }
 
-            if (email.getRejectReason() != null) {
-                // A record the content scan rejected holds nothing the scan looked at, so neither
-                // the raw nor the Simple content shape applies: only the envelope is shown.
+            if (email.isWithoutContent()) {
+                // A record the content scan rejected holds nothing the scan looked at, and one
+                // that failed to render has no content, so neither the raw nor the Simple content
+                // shape applies: only the envelope is shown.
                 putDestination(node, email);
             } else if (email.isRaw()) {
                 // LocalStack returns RawData for raw emails, without

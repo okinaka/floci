@@ -8,6 +8,7 @@ import io.floci.aws.core.common.AwsException;
 import io.floci.aws.core.common.AwsRegions;
 import io.floci.aws.core.common.PaginatedResult;
 import io.floci.aws.core.common.RegionResolver;
+import io.floci.aws.services.ses.SesRecipientEvent.RenderingFailure;
 import io.floci.aws.services.ses.address.SesAddressLength;
 import io.floci.aws.services.ses.address.SesAddressSyntax;
 import io.floci.aws.services.ses.mime.SesContentScan;
@@ -306,18 +307,36 @@ public class SesService {
                     new SendingAddress(request.source(), request.sourceArn()),
                     new SendingAddress(request.returnPath(), request.returnPathArn())), request.region());
         }
-        EmailContent.Simple content = switch (request.content()) {
-            case EmailContent.Simple simple -> simple;
-            case EmailContent.Template template ->
-                    SesTemplateService.render(templateService.inline(template, request.region()));
-            case EmailContent.InlineTemplate inline -> SesTemplateService.render(inline);
-            case EmailContent.Raw raw -> throw new IllegalStateException("Raw content is sent above");
-        };
         String templateName = request.content() instanceof EmailContent.Template template
                 ? template.templateName()
                 : null;
+        RenderedContent rendered = switch (request.content()) {
+            case EmailContent.Simple simple -> new RenderedContent(simple, null);
+            case EmailContent.Template template ->
+                    render(templateService.inline(template, request.region()), templateName);
+            case EmailContent.InlineTemplate inline -> render(inline, null);
+            case EmailContent.Raw raw -> throw new IllegalStateException("Raw content is sent above");
+        };
         requireTenantAssociations(tenant, request.source(), effectiveConfigSet, templateName, request.region());
-        return sendSimpleEmail(request.toBuilder().content(content).build(), content, effectiveConfigSet);
+        return sendSimpleEmail(request.toBuilder().content(rendered.content()).build(), rendered.content(),
+                effectiveConfigSet, rendered.failure());
+    }
+
+    /** What a send's content rendered to, or the reason a template could not be rendered. */
+    private record RenderedContent(EmailContent.Simple content, RenderingFailure failure) {
+    }
+
+    // SES accepts a templated send whose data misses a variable, on v1 and v2, single and bulk,
+    // stored and inline: the caller gets a MessageId, and the Rendering Failure event that follows
+    // the Send event is the only report (probe-confirmed). The send goes on with no content, so
+    // every request-level check still answers as it would for a message that rendered.
+    private static RenderedContent render(EmailContent.InlineTemplate template, String templateName) {
+        try {
+            return new RenderedContent(SesTemplateService.render(template), null);
+        } catch (SesTemplateService.MissingAttributeException e) {
+            return new RenderedContent(new EmailContent.Simple(null, null, null, template.headers()),
+                    new RenderingFailure(e.getMessage(), templateName));
+        }
     }
 
     /**
@@ -408,7 +427,8 @@ public class SesService {
         }
     }
 
-    private String sendSimpleEmail(SendEmailRequest request, EmailContent.Simple content, String effectiveConfigSet) {
+    private String sendSimpleEmail(SendEmailRequest request, EmailContent.Simple content, String effectiveConfigSet,
+                                   RenderingFailure renderingFailure) {
         String source = request.source();
         String region = request.region();
 
@@ -448,9 +468,9 @@ public class SesService {
         String effectiveReturnPath = firstNonBlank(request.returnPath(), source);
         // SES accepts the message and then rejects it as a whole when the content scan trips, so
         // the send still succeeds and a REJECT event is published in place of any delivery.
-        boolean rejected = SesContentScan.containsTestVirus(content.subject(), content.bodyText(),
-                content.bodyHtml())
-                || SesContentScan.containsTestVirus(headerText(content.headers()));
+        boolean rejected = renderingFailure == null
+                && (SesContentScan.containsTestVirus(content.subject(), content.bodyText(), content.bodyHtml())
+                || SesContentScan.containsTestVirus(headerText(content.headers())));
         // Attachments make the message multipart, so it is assembled once as the MIME the relay
         // delivers (Bcc stays off it, as on the wire) and scanned the way a raw send is.
         byte[] mime = null;
@@ -481,8 +501,11 @@ public class SesService {
         }
         email.setEmailTags(request.emailTags());
         email.setInsights(SesMessageInsights.build(envelope,
-                SesRecipientEvents.classify(envelope, suppressedReasons, rejected), email.getSentAt()));
-        if (rejected) {
+                SesRecipientEvents.classify(envelope, suppressedReasons, rejected, renderingFailure),
+                email.getSentAt()));
+        if (renderingFailure != null) {
+            email.markRenderingFailed(renderingFailure.errorMessage());
+        } else if (rejected) {
             email.discardContent(SesRecipientEvents.CONTENT_REJECT_REASON);
         }
         sentEmailService.record(region, messageId, email);
@@ -490,22 +513,30 @@ public class SesService {
         List<String> relayedTo = filterUnsuppressed(request.toAddresses(), suppressedReasons);
         List<String> relayedCc = filterUnsuppressed(request.ccAddresses(), suppressedReasons);
         List<String> relayedBcc = filterUnsuppressed(request.bccAddresses(), suppressedReasons);
-        if (!rejected && sizeOf(relayedTo) + sizeOf(relayedCc) + sizeOf(relayedBcc) > 0) {
+        boolean undelivered = rejected || renderingFailure != null;
+        if (!undelivered && sizeOf(relayedTo) + sizeOf(relayedCc) + sizeOf(relayedBcc) > 0) {
             smtpRelay.relay(simpleRelayMessage(request, content, effectiveReturnPath, messageId,
                     relayedTo, relayedCc, relayedBcc));
         } else {
-            LOG.infov("SES email accepted but not relayed ({0}): messageId={1}",
-                    rejected ? "content rejected" : "all recipients suppressed", messageId);
+            LOG.infov("SES email accepted but not relayed ({0}): messageId={1}", notRelayedReason(rejected,
+                    renderingFailure), messageId);
         }
 
-        if (!rejected) {
+        if (!undelivered) {
             LOG.infov("SES email sent: from={0}, to={1}, subject={2}, messageId={3}",
                     source, request.toAddresses(), content.subject(), messageId);
         }
         publishSendEvents(effectiveConfigSet, messageId, source, content.subject(),
                 request.toAddresses(), request.ccAddresses(), request.bccAddresses(), envelope,
-                suppressedReasons, rejected, request.emailTags(), content.headers(), region);
+                suppressedReasons, rejected, renderingFailure, request.emailTags(), content.headers(), region);
         return messageId;
+    }
+
+    private static String notRelayedReason(boolean rejected, RenderingFailure renderingFailure) {
+        if (renderingFailure != null) {
+            return "rendering failed";
+        }
+        return rejected ? "content rejected" : "all recipients suppressed";
     }
 
     private static SmtpRelay.RelayMessage simpleRelayMessage(SendEmailRequest request, EmailContent.Simple content,
@@ -666,7 +697,7 @@ public class SesService {
         publishSendEvents(effectiveConfigSet, messageId, effectiveSource,
                 headers.subject(), publishedTo, publishedCc, publishedBcc,
                 effectiveDestinations,
-                suppressedReasons, rejected, rejected ? requestTags(request.emailTags()) : effectiveTags,
+                suppressedReasons, rejected, null, rejected ? requestTags(request.emailTags()) : effectiveTags,
                 List.of(), region);
         return messageId;
     }
@@ -676,7 +707,7 @@ public class SesService {
                                    List<String> ccAddresses, List<String> bccAddresses,
                                    List<String> envelopeDestinations,
                                    Map<String, String> suppressedReasons, boolean contentRejected,
-                                   List<MessageTag> emailTags,
+                                   RenderingFailure renderingFailure, List<MessageTag> emailTags,
                                    List<MessageHeader> additionalHeaders, String region) {
         if (eventPublisher == null || messageId == null) {
             return;
@@ -713,10 +744,13 @@ public class SesService {
         // A rejected message publishes none of the scanned content: its Send and Reject events
         // carry the envelope but no subject and no headers, where SES would include them, so the
         // string reaches no event destination either.
+        // A send that failed to render publishes no request headers either: they were not
+        // scanned, and SES publishes its Send event before rendering, without them.
         String publishedSubject = contentRejected ? null : subject;
-        List<MessageHeader> publishedHeaders = contentRejected ? List.of() : additionalHeaders;
+        List<MessageHeader> publishedHeaders = contentRejected || renderingFailure != null
+                ? List.of() : additionalHeaders;
         for (SesRecipientEvent event : SesRecipientEvents.classify(envelope, suppressedReasons,
-                contentRejected)) {
+                contentRejected, renderingFailure)) {
             if (configSetActive) {
                 eventPublisher.publish(cs, event, messageId, source, sourceArn, sendingAccountId,
                         publishedSubject, toAddresses, ccAddresses, bccAddresses, envelope,
@@ -1035,7 +1069,7 @@ public class SesService {
         }
         publishSendEvents(effectiveConfigSet, messageId, template.getFromEmailAddress(),
                 template.getTemplateSubject(), List.of(emailAddress), List.of(), List.of(),
-                List.of(emailAddress), suppressedReasons, rejected, List.of(), List.of(), region);
+                List.of(emailAddress), suppressedReasons, rejected, null, List.of(), List.of(), region);
         return messageId;
     }
 
@@ -1806,8 +1840,8 @@ public class SesService {
                 JsonNode merged = mergeTemplateData(template.templateData(), entry.replacementTemplateData());
                 List<MessageTag> mergedTags = mergeEmailTags(request.defaultEmailTags(), entry.replacementEmailTags());
                 List<MessageHeader> mergedHeaders = mergeHeaders(template.headers(), entry.replacementHeaders());
-                EmailContent.Simple rendered = SesTemplateService.render(new EmailContent.InlineTemplate(
-                        template.subject(), template.textPart(), template.htmlPart(), merged, mergedHeaders));
+                RenderedContent rendered = render(new EmailContent.InlineTemplate(template.subject(),
+                        template.textPart(), template.htmlPart(), merged, mergedHeaders), request.templateName());
                 // SendBulkEmail has no ListManagementOptions field, so list-managed suppression
                 // does not apply to bulk sends and the entry request leaves it unset.
                 SendEmailRequest entryRequest = SendEmailRequest.builder()
@@ -1821,13 +1855,14 @@ public class SesService {
                         .emailTags(mergedTags)
                         .tenantName(request.tenantName())
                         .region(request.region())
-                        .content(rendered)
+                        .content(rendered.content())
                         .build();
                 // SesAddressLength is not applied to entries: an over-long bulk destination did not
                 // fail the length check ahead of sender verification (probe-confirmed; the
                 // verified-sender case is unprobed). The bulk sender and return path were checked
                 // above, their syntax by requireBulkAddress and their verification once for the call.
-                String messageId = sendSimpleEmail(entryRequest, rendered, validateEnvelope(entryRequest));
+                String messageId = sendSimpleEmail(entryRequest, rendered.content(), validateEnvelope(entryRequest),
+                        rendered.failure());
                 results.add(BulkEmailEntryResult.success(messageId));
             } catch (AwsException e) {
                 results.add(BulkEmailEntryResult.failure(
@@ -1884,7 +1919,6 @@ public class SesService {
 
     static BulkEmailEntryResult.Status mapErrorCodeToBulkStatus(String errorCode) {
         if ("InvalidParameterValue".equals(errorCode)
-                || "MissingRenderingAttribute".equals(errorCode)
                 || "InvalidRenderingParameter".equals(errorCode)) {
             return BulkEmailEntryResult.Status.INVALID_PARAMETER;
         }
