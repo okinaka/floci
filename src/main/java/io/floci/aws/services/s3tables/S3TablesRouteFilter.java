@@ -27,7 +27,8 @@ public class S3TablesRouteFilter implements ContainerRequestFilter {
     private static final Predicate<String> PUBLIC_PATHS = SignedServiceRoute.under("/buckets")
             .or(SignedServiceRoute.under("/get-table"))
             .or(SignedServiceRoute.under("/namespaces"))
-            .or(SignedServiceRoute.under("/tables"));
+            .or(SignedServiceRoute.under("/tables"))
+            .or(SignedServiceRoute.under("/tag"));
 
     private final SignedServiceRoute route;
 

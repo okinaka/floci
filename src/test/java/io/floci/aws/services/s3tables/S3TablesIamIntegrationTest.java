@@ -200,6 +200,45 @@ class S3TablesIamIntegrationTest {
         }
     }
 
+    /**
+     * The tag operations are checked on the table bucket or the table their path names, and the tags
+     * {@code TagResource} sets are the ones a resource-tag condition then reads.
+     */
+    @Test
+    void tagOperationsAreCheckedOnTheResourceTheirPathNames() throws Exception {
+        String bucket = createBucket();
+        String events = createTable(bucket, "analytics", "events");
+        String orders = createTable(bucket, "analytics", "orders");
+        String tagging = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":"
+                + "[\"s3tables:TagResource\",\"s3tables:UntagResource\",\"s3tables:ListTagsForResource\"],"
+                + "\"Resource\":\"" + events + "\"},{\"Effect\":\"Allow\",\"Action\":\"s3tables:GetTable\","
+                + "\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"aws:ResourceTag/team\":\"data\"}}}]}";
+        try (SignedIamUsers.User user = SignedIamUsers.createUser(endpoint, "s3t-iam-", "tagging", tagging)) {
+            String tags = "{\"tags\":{\"team\":\"data\"}}";
+            send(user.signer("s3tables"), "POST", "/tag/" + encoded(events), tags).then().statusCode(200);
+            denied(send(user.signer("s3tables"), "POST", "/tag/" + encoded(orders), tags), "s3tables:TagResource");
+            denied(send(user.signer("s3tables"), "POST", "/tag/" + encoded(bucket), tags), "s3tables:TagResource");
+            send(user.signer("s3tables"), "GET", "/tag/" + encoded(events), null).then().statusCode(200)
+                    .body("tags.team", equalTo("data"));
+            denied(send(user.signer("s3tables"), "GET", "/tag/" + encoded(bucket), null),
+                    "s3tables:ListTagsForResource");
+
+            send(user.signer("s3tables"), "GET", "/get-table?tableArn=" + encoded(events), null).then()
+                    .statusCode(200);
+            denied(send(user.signer("s3tables"), "GET", "/get-table?tableArn=" + encoded(orders), null),
+                    "s3tables:GetTable");
+
+            denied(send(user.signer("s3tables"), "DELETE", "/tag/" + encoded(orders) + "?tagKeys=team", null),
+                    "s3tables:UntagResource");
+            send(user.signer("s3tables"), "DELETE", "/tag/" + encoded(events) + "?tagKeys=team", null).then()
+                    .statusCode(204);
+            denied(send(user.signer("s3tables"), "GET", "/get-table?tableArn=" + encoded(events), null),
+                    "s3tables:GetTable");
+        } finally {
+            deleteBucket(bucket, "analytics");
+        }
+    }
+
     @Test
     void encryptionReadbackRequiresPermissionOnTheRequestedBucket() throws Exception {
         String bucket = createBucket();

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.floci.aws.core.common.AwsArnUtils;
 import io.floci.aws.core.common.AwsException;
 import io.floci.aws.core.common.RegionResolver;
+import io.floci.aws.core.common.SmithyValidationErrors;
 import io.floci.aws.core.storage.AccountAwareStorageBackend;
 import io.floci.aws.core.storage.StorageBackend;
 import io.floci.aws.core.storage.StorageFactory;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class S3TablesService {
@@ -31,6 +33,15 @@ public class S3TablesService {
     private static final String BUCKET_PREFIX = "bucket/";
     private static final String TABLE_INFIX = "/table/";
     private static final int LIST_PAGE_SIZE = 1000;
+    private static final int MAX_TAGS = 50;
+    private static final int TAG_KEY_MAX = 128;
+    private static final int TAG_VALUE_MAX = 256;
+    private static final String RESERVED_TAG_PREFIX = "aws:";
+    private static final List<String> TAG_KEY_RULES = SmithyValidationErrors.constraintSet(1, TAG_KEY_MAX, null, null);
+    private static final List<String> TAG_VALUE_RULES = SmithyValidationErrors.constraintSet(0, TAG_VALUE_MAX, null, null);
+    private static final Pattern TAG_KEY_CHARS = Pattern.compile("[\\p{L}\\p{N}\\p{Z}_.:/=+@-]*");
+    private static final String TAGGED_BUCKET_NOT_FOUND = "The specified bucket does not exist.";
+    private static final String TAGGED_TABLE_NOT_FOUND = "The specified table does not exist.";
 
     private final StorageBackend<String, TableBucket> store;
     private final RegionResolver regionResolver;
@@ -46,6 +57,7 @@ public class S3TablesService {
     public synchronized TableBucket createTableBucket(String name, Object encryptionConfiguration,
                                          Object storageClassConfiguration, Map<String, String> tags, String region) {
         validateBucketName(name);
+        validateCreateTags(tags);
         String key = storageKey(region, name);
         String arn = bucketArn(region, name);
         if (findTableBucket(key, arn).isPresent()) {
@@ -134,6 +146,7 @@ public class S3TablesService {
         if (!"ICEBERG".equals(format)) {
             throw badRequest("format must be ICEBERG.");
         }
+        validateCreateTags(tags);
         TableBucket bucket = getTableBucket(tableBucketArn, region);
         Namespace namespace = getNamespace(bucket, namespaceName);
         if (namespace.getTables().containsKey(name)) {
@@ -174,13 +187,47 @@ public class S3TablesService {
             throw notFound("The table does not exist.");
         }
         TableBucket bucket = getTableBucket(tableArn.substring(0, infix), region);
-        S3Table table = bucket.getNamespaces().values().stream()
-                .flatMap(namespace -> namespace.getTables().values().stream())
-                .filter(candidate -> tableArn.equals(candidate.getArn()))
-                .findFirst()
-                .orElseThrow(() -> notFound("The table does not exist."));
+        S3Table table = tableByArn(bucket, tableArn).orElseThrow(() -> notFound("The table does not exist."));
         withWarehouses(bucket, List.of(table), region);
         return table;
+    }
+
+    /** The tags of the table bucket or the table {@code resourceArn} names, as {@code ListTagsForResource} reads them. */
+    public synchronized Map<String, String> listTagsForResource(String resourceArn, String region) {
+        return new LinkedHashMap<>(resourceTags(taggedBucket(resourceArn, region), resourceArn));
+    }
+
+    /**
+     * Adds {@code tags} to the table bucket or the table {@code resourceArn} names, replacing the value of a key it
+     * already has. A table keeps its version token: tagging does not change the table's metadata.
+     */
+    public synchronized void tagResource(String resourceArn, Map<String, String> tags, String region) {
+        if (tags == null) {
+            throw SmithyValidationErrors.badRequest(SmithyValidationErrors.Violations.WITHOUT_VALUES.notNull("tags"));
+        }
+        validateTags(tags);
+        TableBucket bucket = taggedBucket(resourceArn, region);
+        Map<String, String> current = resourceTags(bucket, resourceArn);
+        Map<String, String> merged = new LinkedHashMap<>(current);
+        merged.putAll(tags);
+        requireTagCount(merged);
+        current.putAll(tags);
+        persist(bucket, region);
+    }
+
+    /** Removes the {@code tagKeys} the table bucket or the table {@code resourceArn} names has; others are ignored. */
+    public synchronized void untagResource(String resourceArn, List<String> tagKeys, String region) {
+        if (tagKeys == null || tagKeys.isEmpty()) {
+            throw SmithyValidationErrors.badRequest(
+                    SmithyValidationErrors.Violations.WITHOUT_VALUES.notNull("tagKeys"));
+        }
+        if (tagKeys.stream().anyMatch(key -> !tagKeyLengthValid(key))) {
+            throw SmithyValidationErrors.badRequest(SmithyValidationErrors.Violations.WITHOUT_VALUES.constraint(
+                    "tagKeys", null, "Member must satisfy constraint: " + TAG_KEY_RULES));
+        }
+        TableBucket bucket = taggedBucket(resourceArn, region);
+        tagKeys.forEach(resourceTags(bucket, resourceArn)::remove);
+        persist(bucket, region);
     }
 
     /**
@@ -479,6 +526,76 @@ public class S3TablesService {
             throw notFound("The table does not exist.");
         }
         return table;
+    }
+
+    private Optional<S3Table> tableByArn(TableBucket bucket, String tableArn) {
+        return bucket.getNamespaces().values().stream()
+                .flatMap(namespace -> namespace.getTables().values().stream())
+                .filter(candidate -> tableArn.equals(candidate.getArn()))
+                .findFirst();
+    }
+
+    /**
+     * The table bucket that holds the resource {@code resourceArn} names: that bucket, or the bucket of that table. A
+     * table ARN whose bucket is missing is a missing table, as AWS answers it.
+     */
+    private TableBucket taggedBucket(String resourceArn, String region) {
+        int infix = resourceArn == null ? -1 : resourceArn.lastIndexOf(TABLE_INFIX);
+        try {
+            return getTableBucket(infix < 0 ? resourceArn : resourceArn.substring(0, infix), region);
+        } catch (AwsException e) {
+            if (!"NotFoundException".equals(e.getErrorCode())) {
+                throw e;
+            }
+            throw notFound(infix < 0 ? TAGGED_BUCKET_NOT_FOUND : TAGGED_TABLE_NOT_FOUND);
+        }
+    }
+
+    /** The stored, mutable tags of {@code bucket} or of its table {@code resourceArn} names. */
+    private Map<String, String> resourceTags(TableBucket bucket, String resourceArn) {
+        if (resourceArn.equals(bucket.getArn())) {
+            return bucket.getTags();
+        }
+        return tableByArn(bucket, resourceArn).orElseThrow(() -> notFound(TAGGED_TABLE_NOT_FOUND)).getTags();
+    }
+
+    private void validateCreateTags(Map<String, String> tags) {
+        if (tags != null) {
+            validateTags(tags);
+            requireTagCount(tags);
+        }
+    }
+
+    private void validateTags(Map<String, String> tags) {
+        List<String> violations = new ArrayList<>();
+        if (tags.keySet().stream().anyMatch(key -> !tagKeyLengthValid(key))) {
+            violations.add(SmithyValidationErrors.Violations.WITHOUT_VALUES.mapKeys("tags", null, TAG_KEY_RULES));
+        }
+        if (tags.values().stream().anyMatch(value -> value == null || value.length() > TAG_VALUE_MAX)) {
+            violations.add(SmithyValidationErrors.Violations.WITHOUT_VALUES.mapValues("tags", null, TAG_VALUE_RULES));
+        }
+        if (!violations.isEmpty()) {
+            throw SmithyValidationErrors.badRequest(violations);
+        }
+        for (String key : tags.keySet()) {
+            if (!TAG_KEY_CHARS.matcher(key).matches()) {
+                throw badRequest("The provided tags are invalid. Tag key can only contain alphanumeric characters, "
+                        + "spaces, and _.:/=+@-");
+            }
+            if (key.startsWith(RESERVED_TAG_PREFIX)) {
+                throw badRequest("Tags beginning with '" + RESERVED_TAG_PREFIX + "' are reserved for system use.");
+            }
+        }
+    }
+
+    private boolean tagKeyLengthValid(String key) {
+        return key != null && !key.isEmpty() && key.length() <= TAG_KEY_MAX;
+    }
+
+    private void requireTagCount(Map<String, String> tags) {
+        if (tags.size() > MAX_TAGS) {
+            throw badRequest("The provided tags are invalid. Number of user tags must not exceed " + MAX_TAGS);
+        }
     }
 
     private String bucketArn(String region, String name) {

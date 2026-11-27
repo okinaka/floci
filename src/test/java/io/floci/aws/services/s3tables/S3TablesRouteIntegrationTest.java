@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3tables.S3TablesClient;
 import software.amazon.awssdk.services.s3tables.model.CreateTableBucketResponse;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class S3TablesRouteIntegrationTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"buckets", "get-table", "namespaces", "tables"})
+    @ValueSource(strings = {"buckets", "get-table", "namespaces", "tables", "tag"})
     void pathStyleS3RequestsForABucketNamedAfterAnS3TablesRouteReachS3(String bucket) {
         try (S3Client s3 = AwsTestClients.create(S3Client.builder().forcePathStyle(true),
                 "000000000000", Region.US_EAST_1)) {
@@ -36,7 +38,7 @@ class S3TablesRouteIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"buckets", "tables"})
+    @ValueSource(strings = {"buckets", "tables", "tag"})
     void s3TablesRequestsStillReachS3TablesWhileAnS3BucketHasTheSameName(String name) {
         try (S3Client s3 = AwsTestClients.create(S3Client.builder().forcePathStyle(true),
                 "000000000000", Region.US_EAST_1);
@@ -46,6 +48,9 @@ class S3TablesRouteIntegrationTest {
             CreateTableBucketResponse created = tables.createTableBucket(r -> r.name("route-" + name));
             try {
                 assertEquals(created.arn(), tables.getTableBucket(r -> r.tableBucketARN(created.arn())).arn());
+                tables.tagResource(r -> r.resourceArn(created.arn()).tags(Map.of("env", "test")));
+                assertEquals(Map.of("env", "test"),
+                        tables.listTagsForResource(r -> r.resourceArn(created.arn())).tags());
                 assertTrue(tables.listTableBuckets(r -> { }).tableBuckets().stream()
                         .anyMatch(b -> b.arn().equals(created.arn())));
                 s3.headBucket(r -> r.bucket(name));
