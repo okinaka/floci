@@ -171,4 +171,17 @@ class SesRecipientEventsTest {
         assertEquals(List.of("unsub@example.com"),
                 find(events, "BOUNCE", Cause.LIST_MANAGEMENT).recipients());
     }
+
+    @Test
+    void renderingFailurePublishesOnlySendAndTheFailure() {
+        SesRecipientEvent.RenderingFailure failure = new SesRecipientEvent.RenderingFailure(
+                "Attribute 'name' is not present in the rendering data.", "welcome");
+
+        // Probed 2026-11-27: no Delivery follows, even for the success simulator.
+        List<SesRecipientEvent> events = SesRecipientEvents.classify(
+                List.of("success@simulator.amazonses.com"), Map.of(), false, failure);
+
+        assertEquals(List.of("SEND", "RENDERING_FAILURE"), types(events));
+        assertEquals(failure, find(events, "RENDERING_FAILURE", Cause.RENDERING_FAILED).failure());
+    }
 }

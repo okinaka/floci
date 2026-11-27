@@ -1,6 +1,7 @@
 package io.floci.aws.services.ses;
 
 import io.floci.aws.services.ses.SesRecipientEvent.Cause;
+import io.floci.aws.services.ses.SesRecipientEvent.RenderingFailure;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,7 +23,9 @@ import java.util.Map;
  * the suppression, not a {@code Reject}), and {@code complaint@} is delivered and then complained
  * about. An ordinary recipient produces nothing beyond {@code SEND} here; whether it counts as
  * delivered is the caller's question. A rejected message publishes only {@code SEND} and
- * {@code REJECT}, since SES accepts it and then refuses the whole message.
+ * {@code REJECT}, since SES accepts it and then refuses the whole message. A templated send whose
+ * data misses a variable is accepted the same way and publishes only {@code SEND} and
+ * {@code RENDERING_FAILURE} (probed 2026-11-27).
  */
 final class SesRecipientEvents {
 
@@ -36,8 +39,18 @@ final class SesRecipientEvents {
 
     static List<SesRecipientEvent> classify(List<String> envelope, Map<String, String> suppressedReasons,
                                             boolean contentRejected) {
+        return classify(envelope, suppressedReasons, contentRejected, null);
+    }
+
+    /** {@code renderingFailure} is null for a send that rendered, or had nothing to render. */
+    static List<SesRecipientEvent> classify(List<String> envelope, Map<String, String> suppressedReasons,
+                                            boolean contentRejected, RenderingFailure renderingFailure) {
         List<SesRecipientEvent> events = new ArrayList<>();
         events.add(SesRecipientEvent.of("SEND", Cause.SIMULATOR, List.of()));
+        if (renderingFailure != null) {
+            events.add(SesRecipientEvent.renderingFailure(renderingFailure));
+            return events;
+        }
         if (contentRejected) {
             events.add(SesRecipientEvent.of("REJECT", Cause.CONTENT_REJECTED, List.of()));
             return events;

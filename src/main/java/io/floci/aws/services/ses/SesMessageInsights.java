@@ -89,9 +89,9 @@ final class SesMessageInsights {
         boolean outcome = false;
         for (SesRecipientEvent event : events) {
             switch (event.eventType()) {
-                case "REJECT" -> {
+                case "REJECT", "RENDERING_FAILURE" -> {
                     // The whole message is refused, so every recipient's timeline ends here.
-                    timeline.add(InsightsEvent.of(next(sentAt, timeline), "REJECT"));
+                    timeline.add(InsightsEvent.of(next(sentAt, timeline), event.eventType()));
                     outcome = true;
                 }
                 case "DELIVERY" -> {

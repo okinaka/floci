@@ -232,6 +232,42 @@ class SesEventPayloadTest {
         assertNotNull(node.get("reject").get("reason"));
     }
 
+    private ObjectNode renderingFailure(String templateName) {
+        return SesEventPayload.build(mapper,
+                SesRecipientEvent.renderingFailure(new SesRecipientEvent.RenderingFailure(
+                        "Attribute 'name' is not present in the rendering data.", templateName)),
+                "msg-1", "from@example.com", "arn:aws:ses:us-east-1:000000000000:identity/from@example.com",
+                "000000000000", null, List.of("to@example.com"), List.of(), List.of(), List.of("to@example.com"),
+                "cs", List.of(new MessageTag("campaign", "launch")), List.of(), ts);
+    }
+
+    // Probed 2026-11-27: the failure block holds the message and the template name, and mail keeps
+    // headersTruncated and its tags but has neither header block.
+    @Test
+    void renderingFailure_namesTheAttributeAndTheTemplateAndCarriesNoHeaders() {
+        ObjectNode node = renderingFailure("welcome");
+
+        assertEquals("Rendering Failure", node.get("eventType").asText());
+        assertEquals("Attribute 'name' is not present in the rendering data.",
+                node.get("failure").get("errorMessage").asText());
+        assertEquals("welcome", node.get("failure").get("templateName").asText());
+        ObjectNode mail = (ObjectNode) node.get("mail");
+        assertFalse(mail.has("headers"));
+        assertFalse(mail.has("commonHeaders"));
+        assertFalse(mail.get("headersTruncated").asBoolean());
+        assertEquals("to@example.com", mail.get("destination").get(0).asText());
+        assertEquals("cs", mail.get("tags").get("ses:configuration-set").get(0).asText());
+        assertEquals("launch", mail.get("tags").get("campaign").get(0).asText());
+    }
+
+    @Test
+    void renderingFailure_ofInlineContent_hasANullTemplateName() {
+        ObjectNode failure = (ObjectNode) renderingFailure(null).get("failure");
+
+        assertTrue(failure.has("templateName"));
+        assertTrue(failure.get("templateName").isNull());
+    }
+
     /**
      * AWS CloudWatch metric names for SES events are mostly the same as the SNS
      * {@code eventType} value, except {@code RENDERING_FAILURE} is emitted as

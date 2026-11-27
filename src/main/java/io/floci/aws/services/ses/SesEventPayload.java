@@ -78,10 +78,16 @@ final class SesEventPayload {
                             boolean includeHeaders, boolean includeTags) {
         ObjectNode root = mapper.createObjectNode();
         root.put(typeField, eventTypeLabel(event.eventType()));
-        root.set("mail", buildMail(mapper, messageId, source, sourceArn, sendingAccountId,
+        ObjectNode mail = buildMail(mapper, messageId, source, sourceArn, sendingAccountId,
                 subject, toAddresses, ccAddresses, bccAddresses, envelopeDestinations,
                 configurationSetName, emailTags, additionalHeaders, timestamp,
-                includeHeaders, includeTags));
+                includeHeaders, includeTags);
+        if (event.failure() != null) {
+            // No message was built, so a Rendering Failure names no headers: its mail keeps
+            // headersTruncated and drops both header blocks (probed 2026-11-27).
+            mail.remove(List.of("headers", "commonHeaders"));
+        }
+        root.set("mail", mail);
         root.set(blockName(event.eventType()), buildEventBlock(mapper, event, messageId, timestamp));
         return root;
     }
@@ -244,6 +250,11 @@ final class SesEventPayload {
                 body.put("feedbackId", feedbackId(messageId, event));
             }
             case "REJECT" -> body.put("reason", SesRecipientEvents.CONTENT_REJECT_REASON);
+            case "RENDERING_FAILURE" -> {
+                // templateName is present and null for inline template content.
+                body.put("errorMessage", event.failure().errorMessage());
+                body.put("templateName", event.failure().templateName());
+            }
             default -> {
                 // SEND and other not-yet-modelled event types: empty block.
             }
