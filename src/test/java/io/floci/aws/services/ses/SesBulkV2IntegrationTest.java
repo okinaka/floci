@@ -208,7 +208,7 @@ class SesBulkV2IntegrationTest {
                 {
                   "FromEmailAddress": "bulk-v2@floci.test",
                   "DefaultContent": {
-                    "Template": {"TemplateName": "ghost"}
+                    "Template": {"TemplateName": "ghost", "TemplateData": "{}"}
                   },
                   "BulkEmailEntries": [
                     {"Destination": {"ToAddresses": ["alice@example.com"]}}
@@ -468,7 +468,7 @@ class SesBulkV2IntegrationTest {
                 {
                   "FromEmailAddress": "bulk-v2@floci.test",
                   "DefaultContent": {
-                    "Template": {"TemplateName": "v2-bulk-welcome"}
+                    "Template": {"TemplateName": "v2-bulk-welcome", "TemplateData": "{}"}
                   },
                   "BulkEmailEntries": [
                     {"Destination": {"ToAddresses": [%s]}}
@@ -614,7 +614,8 @@ class SesBulkV2IntegrationTest {
             .body("""
                 {
                   "FromEmailAddress": "bulk-v2-inline@floci.test",
-                  "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "t"}}},
+                  "DefaultContent": {"Template": {"TemplateContent": {"Subject": "s", "Text": "t"},
+                                                  "TemplateData": "{}"}},
                   "BulkEmailEntries": [
                     {"Destination": {"ToAddresses": ["alice@example.com"]}},
                     {"Destination": {"ToAddresses": []}}

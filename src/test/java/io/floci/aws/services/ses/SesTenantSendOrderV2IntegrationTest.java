@@ -49,7 +49,8 @@ class SesTenantSendOrderV2IntegrationTest {
 
     private static ValidatableResponse bulk(String members) {
         return v2().body("{" + member("TenantName", TENANT) + members
-                        + "\"DefaultContent\":{\"Template\":{\"TemplateContent\":{\"Subject\":\"s\",\"Text\":\"t\"}}},"
+                        + "\"DefaultContent\":{\"Template\":{\"TemplateContent\":{\"Subject\":\"s\",\"Text\":\"t\"},"
+                        + "\"TemplateData\":\"{}\"}},"
                         + "\"BulkEmailEntries\":[{\"Destination\":{\"ToAddresses\":"
                         + "[\"success@simulator.amazonses.com\"]}}]}")
                 .when().post("/v2/email/outbound-bulk-emails").then();

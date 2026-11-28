@@ -518,6 +518,7 @@ class SesTemplateTest {
                 .defaultContent(BulkEmailContent.builder()
                         .template(Template.builder()
                                 .templateName("sdk-v2-bulk-missing-" + System.currentTimeMillis())
+                                .templateData("{}")
                                 .build())
                         .build())
                 .bulkEmailEntries(BulkEmailEntry.builder()

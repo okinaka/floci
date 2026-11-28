@@ -452,6 +452,7 @@ class SesEventPublishingTest {
                                         .subject("bulk-subject")
                                         .text("bulk body")
                                         .build())
+                                .templateData("{}")
                                 .headers(MessageHeader.builder()
                                         .name("X-Mailer").value("default").build())
                                 .build())

@@ -854,6 +854,7 @@ public class SesQueryHandler {
                 .defaultEmailTags(defaultEmailTags)
                 .region(region)
                 .recipientLimitPerEntry(true)
+                .configurationSetBeforeEmptyDestinations(true)
                 .defaultContent(new EmailContent.Template(resolvedName, defaultTemplateData, List.of()))
                 .entries(entries)
                 .build());

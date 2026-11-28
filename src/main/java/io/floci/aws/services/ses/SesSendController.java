@@ -176,13 +176,14 @@ public class SesSendController {
                             "TemplateName and TemplateArn cannot be both empty", 400);
                 }
                 selector.requireNameAlignsWithArn(region);
-                JsonNode templateData = parseTemplateData(template, "TemplateData");
+                String storedTemplateName = selector.namesStoredTemplate() ? selector.storedName(region) : null;
+                JsonNode templateData = requireTemplateData(template, "Template data cannot be empty");
                 List<MessageHeader> additionalHeaders =
                         parseHeadersArray(template.path("Headers"), "content.template.headers");
-                if (selector.namesStoredTemplate()) {
+                if (storedTemplateName != null) {
                     requireNoNullAddress(toAddresses, ccAddresses, bccAddresses, replyToAddresses);
                     SendEmailRequest templateRequest = sendRequest
-                            .content(new EmailContent.Template(selector.storedName(region), templateData,
+                            .content(new EmailContent.Template(storedTemplateName, templateData,
                                     additionalHeaders))
                             .build();
                     messageId = sesService.sendEmail(templateRequest);
@@ -280,7 +281,8 @@ public class SesSendController {
                 storedTemplateName = selector.storedName(region);
             }
 
-            JsonNode defaultTemplateData = parseTemplateData(template, "TemplateData");
+            JsonNode defaultTemplateData =
+                    requireTemplateData(template, "The default template data does not exist");
             List<MessageTag> defaultEmailTags = parseEmailTagsArray(request.path("DefaultEmailTags"), "DefaultEmailTags");
             List<MessageHeader> defaultHeaders =
                     parseHeadersArray(template.path("Headers"), "defaultContent.template.headers");
@@ -456,6 +458,20 @@ public class SesSendController {
                 SesTemplateService.requireNameAlignsWithArn(name, arn, region);
             }
         }
+    }
+
+    // A template send without its data is refused ahead of the configuration set lookup and the
+    // sender verification, whether the template is inline, stored or missing, and SendBulkEmail
+    // also ahead of the answer it gives when no entry names a recipient. SendBulkEmail refuses an
+    // empty string the same way and accepts "{}" (probe-confirmed). SendEmail was probed for an
+    // absent value and against the sender verification only: the rest follows SendBulkEmail. Both
+    // run the TemplateArn checks first, which is a choice.
+    private JsonNode requireTemplateData(JsonNode template, String missingMessage) {
+        String raw = template.path("TemplateData").asText(null);
+        if (raw == null || raw.isEmpty()) {
+            throw new AwsException("BadRequestException", missingMessage, 400);
+        }
+        return parseTemplateData(raw);
     }
 
     private JsonNode parseTemplateData(JsonNode parent, String fieldName) {
