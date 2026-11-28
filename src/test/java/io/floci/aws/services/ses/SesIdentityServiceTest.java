@@ -1,5 +1,7 @@
 package io.floci.aws.services.ses;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.floci.aws.core.common.AwsException;
 import io.floci.aws.core.storage.InMemoryStorage;
 import io.floci.aws.services.ses.model.Identity;
@@ -27,9 +29,11 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.floci.aws.testing.ThreadStates.awaitBlockedOrDone;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -41,8 +45,8 @@ import static org.mockito.Mockito.doAnswer;
  * find/save escape hatches the facade's notification flows rely on, and what SES does to an
  * identity's notification settings when it may not publish to a topic. The DKIM state machine moved
  * here too and keeps its behavioral coverage in the existing facade-level unit and integration
- * tests, which now exercise it through the delegation; only its creation-time surface is pinned
- * here.
+ * tests, which now exercise it through the delegation; pinned here are its creation-time surface
+ * and the domain that VerifyDomainIdentity registers without Easy DKIM.
  */
 class SesIdentityServiceTest {
 
@@ -80,16 +84,154 @@ class SesIdentityServiceTest {
     }
 
     @Test
-    void verifyDomainIdentity_generatesDkimTokens_reportsNotStarted() {
+    void verifyDomainIdentity_startsNoEasyDkim() {
         Identity domain = service.verifyDomainIdentity("example.com", REGION);
         assertEquals("Domain", domain.getIdentityType());
         assertEquals("Pending", domain.getVerificationStatus());
+        assertFalse(domain.isDkimEnabled());
         assertEquals("NotStarted", domain.getDkimVerificationStatus());
-        assertEquals(3, domain.getDkimTokens().size());
-        // Tokens are stable across repeated calls.
-        assertEquals(domain.getDkimTokens(),
-                service.verifyDomainIdentity("example.com", REGION).getDkimTokens());
-        assertEquals(domain.getDkimTokens(), service.verifyDomainDkim("example.com", REGION));
+        assertEquals(List.of(), domain.getDkimTokens());
+        assertEquals("AWS_SES", domain.getDkimSigningAttributesOrigin());
+        assertEquals("RSA_1024_BIT", domain.getDkimNextSigningKeyLength());
+        assertNull(domain.getDkimCurrentSigningKeyLength());
+        assertNull(domain.getDkimLastKeyGenerationTimestamp());
+    }
+
+    @Test
+    void verifyDomainIdentity_staysWithoutEasyDkimAcrossReadsAndRepeats() {
+        service.verifyDomainIdentity("example.com", REGION);
+
+        Identity read = service.getIdentityVerificationAttributes("example.com", REGION);
+        assertEquals("NotStarted", read.getDkimVerificationStatus());
+        assertEquals(List.of(), read.getDkimTokens());
+        assertEquals(List.of(), service.verifyDomainIdentity("example.com", REGION).getDkimTokens());
+    }
+
+    @Test
+    void verifyDomainIdentity_withoutEasyDkimSurvivesStorage() throws Exception {
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        Identity domain = service.verifyDomainIdentity("example.com", REGION);
+
+        Identity stored = mapper.readValue(mapper.writeValueAsString(domain), Identity.class);
+
+        assertTrue(SesIdentityService.easyDkimNotStarted(stored));
+        assertNull(stored.getDkimCurrentSigningKeyLength());
+    }
+
+    @ParameterizedTest
+    @MethodSource("dkimToggles")
+    void setDkimAttributes_refusesADomainWithoutEasyDkim(String identity, boolean enabled) {
+        service.verifyDomainIdentity("example.com", REGION);
+
+        AwsException refused = assertThrows(AwsException.class,
+                () -> service.setDkimAttributes(identity, enabled, REGION));
+
+        assertEquals("InvalidParameterValue", refused.getErrorCode());
+        assertEquals(400, refused.getHttpStatus());
+        assertEquals("Domain <example.com> is not verified for DKIM signing.", refused.getMessage());
+        assertFalse(service.getIdentityVerificationAttributes("example.com", REGION).isDkimEnabled());
+    }
+
+    static Stream<Arguments> dkimToggles() {
+        return Stream.of(
+                Arguments.of("example.com", true),
+                Arguments.of("example.com", false),
+                Arguments.of("alice@example.com", true),
+                Arguments.of("alice@example.com", false));
+    }
+
+    @Test
+    void setDkimAttributes_refusesAnAddressUnderADomainWithoutEasyDkimThatIsAnIdentityItself() {
+        service.verifyDomainIdentity("example.com", REGION);
+        service.verifyEmailIdentity("alice@example.com", REGION);
+
+        AwsException refused = assertThrows(AwsException.class,
+                () -> service.setDkimAttributes("alice@example.com", true, REGION));
+
+        assertEquals("Domain <example.com> is not verified for DKIM signing.", refused.getMessage());
+    }
+
+    @Test
+    void verifyDomainDkim_startsEasyDkimOnADomainWithoutIt() {
+        service.verifyDomainIdentity("example.com", REGION);
+
+        List<String> tokens = service.verifyDomainDkim("example.com", REGION);
+
+        assertEquals(3, tokens.size());
+        assertEquals(tokens, service.verifyDomainDkim("example.com", REGION));
+        Identity domain = service.getIdentityVerificationAttributes("example.com", REGION);
+        assertEquals("Pending", domain.getDkimVerificationStatus());
+        assertEquals(tokens, domain.getDkimTokens());
+        assertFalse(SesIdentityService.easyDkimNotStarted(domain));
+
+        service.setDkimAttributes("example.com", true, REGION);
+        assertTrue(service.getIdentityVerificationAttributes("example.com", REGION).isDkimEnabled());
+        service.setDkimAttributes("example.com", false, REGION);
+        assertFalse(service.getIdentityVerificationAttributes("example.com", REGION).isDkimEnabled());
+        assertDoesNotThrow(() -> service.setDkimAttributes("alice@example.com", true, REGION));
+    }
+
+    @Test
+    void putDkimSigningAttributes_awsSes_startsEasyDkimOnADomainWithoutIt() {
+        service.verifyDomainIdentity("example.com", REGION);
+
+        SesIdentityService.DkimSigningResult result =
+                service.putDkimSigningAttributes("example.com", "AWS_SES", null, null, REGION);
+
+        assertEquals(3, result.dkimTokens().size());
+        assertEquals("Pending", result.dkimStatus());
+        assertDoesNotThrow(() -> service.setDkimAttributes("example.com", true, REGION));
+        assertTrue(service.getIdentityVerificationAttributes("example.com", REGION).isDkimEnabled());
+    }
+
+    @Test
+    void putDkimSigningAttributes_external_letsADomainWithoutEasyDkimToggleSigning() {
+        service.verifyDomainIdentity("example.com", REGION);
+
+        service.putDkimSigningAttributes("example.com", "EXTERNAL", "selector", null, REGION);
+
+        Identity domain = service.getIdentityVerificationAttributes("example.com", REGION);
+        assertFalse(SesIdentityService.easyDkimNotStarted(domain));
+        assertDoesNotThrow(() -> service.setDkimAttributes("example.com", true, REGION));
+        assertTrue(service.getIdentityVerificationAttributes("example.com", REGION).isDkimEnabled());
+    }
+
+    @Test
+    void aDomainStoredWithTokensBeforeKeepsThemAndItsToggle() {
+        Identity legacy = new Identity("legacy.example.com", "Domain");
+        legacy.setVerificationStatus("Pending");
+        legacy.setDkimEnabled(true);
+        legacy.setDkimTokens(List.of("token-one", "token-two", "token-three"));
+        service.save(legacy, REGION);
+
+        service.setDkimAttributes("legacy.example.com", false, REGION);
+
+        Identity read = service.getIdentityVerificationAttributes("legacy.example.com", REGION);
+        assertFalse(read.isDkimEnabled());
+        assertEquals(List.of("token-one", "token-two", "token-three"), read.getDkimTokens());
+        assertEquals(read.getDkimTokens(), service.verifyDomainDkim("legacy.example.com", REGION));
+    }
+
+    @Test
+    void aDomainStoredBeforeTokensExistedGetsThemOnARead() {
+        Identity legacy = new Identity("older.example.com", "Domain");
+        legacy.setVerificationStatus("Pending");
+        service.save(legacy, REGION);
+
+        Identity read = service.getIdentityVerificationAttributes("older.example.com", REGION);
+
+        assertEquals(3, read.getDkimTokens().size());
+        assertEquals("Pending", read.getDkimVerificationStatus());
+    }
+
+    @Test
+    void setDkimAttributes_unknownIdentity_namesTheDomain() {
+        AwsException domain = assertThrows(AwsException.class,
+                () -> service.setDkimAttributes("ghost.example.com", true, REGION));
+        assertEquals("Domain <ghost.example.com> is not verified for DKIM signing.", domain.getMessage());
+        AwsException address = assertThrows(AwsException.class,
+                () -> service.setDkimAttributes("alice@ghost.example.com", true, REGION));
+        assertEquals("Domain <ghost.example.com> is not verified for DKIM signing.", address.getMessage());
     }
 
     @Test

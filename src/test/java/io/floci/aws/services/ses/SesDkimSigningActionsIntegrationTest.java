@@ -20,6 +20,7 @@ import static io.floci.aws.services.ses.SesV2SerializationErrors.assertSerializa
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -62,7 +63,7 @@ class SesDkimSigningActionsIntegrationTest {
     @Test
     void setIdentityDkimEnabled_togglesFlag_andUnknownIdentityErrors() {
         String domain = "dkim-toggle.floci.test";
-        v1("VerifyDomainIdentity").formParam("Domain", domain).when().post("/").then().statusCode(200);
+        v1("VerifyDomainDkim").formParam("Domain", domain).when().post("/").then().statusCode(200);
 
         v1("SetIdentityDkimEnabled").formParam("Identity", domain).formParam("DkimEnabled", "false")
         .when().post("/").then().statusCode(200)
@@ -73,11 +74,123 @@ class SesDkimSigningActionsIntegrationTest {
                 .body(containsString("<DkimEnabled>false</DkimEnabled>"));
 
         // Unknown identity -> v1-native InvalidParameterValue.
-        v1("SetIdentityDkimEnabled").formParam("Identity", "unknown-dkim.floci.test")
+        String unknown = v1("SetIdentityDkimEnabled").formParam("Identity", "unknown-dkim.floci.test")
                 .formParam("DkimEnabled", "true")
         .when().post("/").then().statusCode(400)
                 .body(containsString("<Code>InvalidParameterValue</Code>"))
-                .body(containsString("is not verified for DKIM signing."));
+                .extract().asString();
+        assertEquals("Domain <unknown-dkim.floci.test> is not verified for DKIM signing.",
+                XmlParser.extractFirst(unknown, "Message", null));
+    }
+
+    @Test
+    void verifyDomainIdentity_alone_readsNoEasyDkimOnV1AndV2() {
+        String domain = "dkim-v1-only-read.floci.test";
+        v1("VerifyDomainIdentity").formParam("Domain", domain).when().post("/").then().statusCode(200);
+
+        String v1Attributes = v1("GetIdentityDkimAttributes").formParam("Identities.member.1", domain)
+        .when().post("/").then().statusCode(200)
+                .body(containsString("<DkimEnabled>false</DkimEnabled>"))
+                .body(containsString("<DkimVerificationStatus>NotStarted</DkimVerificationStatus>"))
+                .extract().asString();
+        assertEquals(List.of(), XmlParser.extractAll(v1Attributes, "member"));
+
+        given().header("Authorization", SesV2Requests.AUTH)
+        .when().get("/v2/email/identities/" + domain).then().statusCode(200)
+                .body("DkimAttributes.SigningEnabled", equalTo(false))
+                .body("DkimAttributes.Status", equalTo("NOT_STARTED"))
+                .body("DkimAttributes.SigningAttributesOrigin", equalTo("AWS_SES"))
+                .body("DkimAttributes.NextSigningKeyLength", equalTo("RSA_1024_BIT"))
+                .body("DkimAttributes", not(hasKey("Tokens")))
+                .body("DkimAttributes", not(hasKey("CurrentSigningKeyLength")))
+                .body("DkimAttributes", not(hasKey("SigningHostedZone")))
+                .body("DkimAttributes", not(hasKey("LastKeyGenerationTimestamp")));
+    }
+
+    @Test
+    void verifyDomainIdentity_alone_anAddressUnderTheDomainReadsNoEasyDkim() {
+        String domain = "dkim-v1-only-address.floci.test";
+        String address = "alice@" + domain;
+        v1("VerifyDomainIdentity").formParam("Domain", domain).when().post("/").then().statusCode(200);
+        SesV2Requests.v2().body("{\"EmailIdentity\":\"" + address + "\"}")
+        .when().post("/v2/email/identities").then().statusCode(200);
+
+        String v1Attributes = v1("GetIdentityDkimAttributes").formParam("Identities.member.1", address)
+        .when().post("/").then().statusCode(200)
+                .body(containsString("<DkimEnabled>false</DkimEnabled>"))
+                .body(containsString("<DkimVerificationStatus>NotStarted</DkimVerificationStatus>"))
+                .extract().asString();
+        assertEquals(List.of(), XmlParser.extractAll(v1Attributes, "member"));
+
+        given().header("Authorization", SesV2Requests.AUTH)
+        .when().get("/v2/email/identities/" + address).then().statusCode(200)
+                .body("DkimAttributes.SigningEnabled", equalTo(false))
+                .body("DkimAttributes.Status", equalTo("NOT_STARTED"))
+                .body("DkimAttributes", not(hasKey("Tokens")))
+                .body("DkimAttributes", not(hasKey("SigningHostedZone")));
+    }
+
+    @Test
+    void verifyDomainIdentity_alone_refusesTheDkimToggleOnV1AndV2() {
+        String domain = "dkim-v1-only-toggle.floci.test";
+        v1("VerifyDomainIdentity").formParam("Domain", domain).when().post("/").then().statusCode(200);
+        String refusal = "Domain <" + domain + "> is not verified for DKIM signing.";
+
+        for (String identity : List.of(domain, "alice@" + domain)) {
+            for (String enabled : List.of("true", "false")) {
+                String body = v1("SetIdentityDkimEnabled").formParam("Identity", identity)
+                        .formParam("DkimEnabled", enabled)
+                .when().post("/").then().statusCode(400).extract().asString();
+                assertEquals("InvalidParameterValue", XmlParser.extractFirst(body, "Code", null));
+                assertEquals(refusal, XmlParser.extractFirst(body, "Message", null));
+
+                SesV2Requests.v2().body("{\"SigningEnabled\":" + enabled + "}")
+                .when().put("/v2/email/identities/" + identity + "/dkim")
+                .then().statusCode(400).body("__type", equalTo("BadRequestException"))
+                        .body("message", equalTo(refusal));
+            }
+        }
+    }
+
+    @Test
+    void verifyDomainDkim_startsEasyDkimForADomainVerifyDomainIdentityRegistered() {
+        String domain = "dkim-v1-then-dkim.floci.test";
+        v1("VerifyDomainIdentity").formParam("Domain", domain).when().post("/").then().statusCode(200);
+
+        List<String> tokens = XmlParser.extractAll(v1("VerifyDomainDkim").formParam("Domain", domain)
+        .when().post("/").then().statusCode(200).extract().asString(), "member");
+        assertEquals(3, tokens.size());
+
+        v1("SetIdentityDkimEnabled").formParam("Identity", domain).formParam("DkimEnabled", "true")
+        .when().post("/").then().statusCode(200);
+        SesV2Requests.v2().body("{\"SigningEnabled\":false}")
+        .when().put("/v2/email/identities/" + domain + "/dkim").then().statusCode(200);
+
+        v1("GetIdentityDkimAttributes").formParam("Identities.member.1", domain)
+        .when().post("/").then().statusCode(200)
+                .body(containsString("<DkimEnabled>false</DkimEnabled>"))
+                .body(containsString("<DkimVerificationStatus>Pending</DkimVerificationStatus>"));
+        given().header("Authorization", SesV2Requests.AUTH)
+        .when().get("/v2/email/identities/" + domain).then().statusCode(200)
+                .body("DkimAttributes.Status", equalTo("PENDING"))
+                .body("DkimAttributes.Tokens", equalTo(tokens));
+    }
+
+    @Test
+    void createEmailIdentity_domain_acceptsTheV1DkimToggle() {
+        String domain = "dkim-v2-created.floci.test";
+        SesV2Requests.v2().body("{\"EmailIdentity\":\"" + domain + "\"}")
+        .when().post("/v2/email/identities").then().statusCode(200)
+                .body("DkimAttributes.Tokens", hasSize(3));
+
+        v1("SetIdentityDkimEnabled").formParam("Identity", domain).formParam("DkimEnabled", "false")
+        .when().post("/").then().statusCode(200);
+
+        given().header("Authorization", SesV2Requests.AUTH)
+        .when().get("/v2/email/identities/" + domain).then().statusCode(200)
+                .body("DkimAttributes.SigningEnabled", equalTo(false))
+                .body("DkimAttributes.NextSigningKeyLength", equalTo("RSA_2048_BIT"))
+                .body("DkimAttributes.CurrentSigningKeyLength", equalTo("RSA_2048_BIT"));
     }
 
     @Test

@@ -216,7 +216,7 @@ class SesIdentityAttributesV2IntegrationTest {
             .statusCode(400)
             .body("__type", equalTo("BadRequestException"))
             .body("message", equalTo(
-                    "Domain ghost-dkim.floci.test is not verified for DKIM signing."));
+                    "Domain <ghost-dkim.floci.test> is not verified for DKIM signing."));
     }
 
     @Test
@@ -234,7 +234,7 @@ class SesIdentityAttributesV2IntegrationTest {
             .statusCode(400)
             .body("__type", equalTo("BadRequestException"))
             .body("message", equalTo(
-                    "Domain no-such-parent.floci.test is not verified for DKIM signing."));
+                    "Domain <no-such-parent.floci.test> is not verified for DKIM signing."));
     }
 
     @Test

@@ -343,9 +343,9 @@ class SesIntegrationTest {
         .then()
             .statusCode(200)
             .body(containsString("example.com"))
-            .body(containsString("<DkimEnabled>true</DkimEnabled>"))
-            .body(containsString("<DkimVerificationStatus>Pending</DkimVerificationStatus>"))
-            .body(containsString("<DkimTokens><member>"));
+            .body(containsString("<DkimEnabled>false</DkimEnabled>"))
+            .body(containsString("<DkimVerificationStatus>NotStarted</DkimVerificationStatus>"))
+            .body(not(containsString("<member>")));
     }
 
     @Test

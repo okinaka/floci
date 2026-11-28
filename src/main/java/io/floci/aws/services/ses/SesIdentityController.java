@@ -550,11 +550,14 @@ public class SesIdentityController {
         ObjectNode dkim = objectMapper.createObjectNode();
         dkim.put("SigningEnabled", src.isDkimEnabled());
         dkim.put("Status", toV2Status(src.getDkimVerificationStatus()));
-        ArrayNode tokens = dkim.putArray("Tokens");
+        ArrayNode tokens = objectMapper.createArrayNode();
         if (src.getDkimTokens() != null) {
             for (String token : src.getDkimTokens()) {
                 tokens.add(token);
             }
+        }
+        if (!SesIdentityService.easyDkimNotStarted(src)) {
+            dkim.set("Tokens", tokens);
         }
         if ("Domain".equals(src.getIdentityType()) && "AWS_SES".equals(src.getDkimSigningAttributesOrigin())
                 && !tokens.isEmpty()) {
@@ -562,7 +565,9 @@ public class SesIdentityController {
         }
         dkim.put("SigningAttributesOrigin", src.getDkimSigningAttributesOrigin());
         dkim.put("NextSigningKeyLength", src.getDkimNextSigningKeyLength());
-        dkim.put("CurrentSigningKeyLength", src.getDkimCurrentSigningKeyLength());
+        if (src.getDkimCurrentSigningKeyLength() != null) {
+            dkim.put("CurrentSigningKeyLength", src.getDkimCurrentSigningKeyLength());
+        }
         putTimestamp(dkim, "LastKeyGenerationTimestamp", src.getDkimLastKeyGenerationTimestamp());
         return dkim;
     }
