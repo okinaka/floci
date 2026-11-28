@@ -107,6 +107,17 @@ class MavenExternalConnectionClientTest {
     }
 
     @Test
+    void fetchAssetReturnsEmptyOnARateLimitedResponse() throws IOException {
+        server.createContext("/com/example/widget/1.0/widget-1.0.pom",
+                exchange -> respondEmpty(exchange, 429));
+
+        Optional<MavenExternalConnectionClient.FetchedAsset> result =
+                client.fetchAsset("fake", "com/example/widget/1.0/widget-1.0.pom");
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
     void fetchAssetReturnsEmptyForAnUnknownConnectionName() {
         Optional<MavenExternalConnectionClient.FetchedAsset> result =
                 client.fetchAsset("public:maven-central", "com/example/widget/1.0/widget-1.0.pom");
@@ -126,6 +137,14 @@ class MavenExternalConnectionClientTest {
     void existsReturnsFalseOnA404HeadResponse() throws IOException {
         server.createContext("/com/example/widget/1.0/widget-1.0.jar",
                 exchange -> respondEmpty(exchange, 404));
+
+        assertFalse(client.exists("fake", "com/example/widget/1.0/widget-1.0.jar"));
+    }
+
+    @Test
+    void existsReturnsFalseOnARateLimitedHeadResponse() throws IOException {
+        server.createContext("/com/example/widget/1.0/widget-1.0.jar",
+                exchange -> respondEmpty(exchange, 429));
 
         assertFalse(client.exists("fake", "com/example/widget/1.0/widget-1.0.jar"));
     }

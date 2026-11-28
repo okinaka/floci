@@ -145,6 +145,7 @@ public class MavenExternalConnectionClient {
         }
         if (response.statusCode() != 200) {
             StreamingResponses.closeQuietly(response.body());
+            warnUnlessMissing(response.statusCode(), gav, externalConnectionName);
             return false;
         }
         try (InputStream body = response.body()) {
@@ -168,7 +169,11 @@ public class MavenExternalConnectionClient {
                     .timeout(Duration.ofSeconds(20))
                     .method("HEAD", HttpRequest.BodyPublishers.noBody())
                     .build();
-            return httpClient.send(request, BodyHandlers.discarding()).statusCode() == 200;
+            int status = httpClient.send(request, BodyHandlers.discarding()).statusCode();
+            if (status != 200) {
+                warnUnlessMissing(status, gav, externalConnectionName);
+            }
+            return status == 200;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;
@@ -176,6 +181,18 @@ public class MavenExternalConnectionClient {
             LOG.warnv("Could not check {0} in external connection {1}: {2}", gav, externalConnectionName,
                     e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * A 404 is the ordinary answer for an asset the repository does not carry, such as a version
+     * with no sources jar, and stays silent. Any other refusal, a 429 from a rate limit above all,
+     * still reads as "not found" to the caller, so this line is the only trace of why.
+     */
+    private static void warnUnlessMissing(int status, String gav, String externalConnectionName) {
+        if (status != 404) {
+            LOG.warnv("External connection {0} answered {1} for {2}, treating it as not found",
+                    externalConnectionName, status, gav);
         }
     }
 
