@@ -169,6 +169,15 @@ jobs:
           fi
           exit "$status"
 
+      # A class that reaches a live public registry skips itself while that registry rate-limits
+      # the runner, and a skip passes the shard. Name it here, so a class that skips run after run
+      # is seen as coverage nobody is getting. The phrase is the class's own assumption message.
+      - name: Live registry skips
+        if: always()
+        run: |
+          grep -lF 'answers this host with 429' target/surefire-reports/TEST-*.xml 2>/dev/null \
+            | sed -E 's|.*/TEST-(.*)\.xml$|::warning title=Live registry::\1 was skipped: the registry rate-limited this runner|' || true
+
       # The prefetch runs in the background past its own step, so its per-image
       # results are only complete once the tests are done. A pull still running
       # here (after an early exit) has no result line yet, so list it. The

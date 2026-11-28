@@ -4,13 +4,20 @@ import io.floci.aws.testing.RestAssuredJsonUtils;
 import io.floci.aws.testing.SidecarContainersProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import static io.floci.aws.testing.CodeArtifactRequests.putPackageOriginConfiguration;
 import static io.restassured.RestAssured.given;
@@ -30,6 +37,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * does not re-exercise, and {@code ReposiliteSidecarClientTest} for the same of the
  * {@code maven-metadata.xml} merge a Maven version range or Gradle dynamic version actually relies
  * on to resolve at all.
+ *
+ * <p>Skipped while Maven Central answers this host with 429. It rate-limits a shared CI address
+ * now and then, and {@code MavenExternalConnectionClient} reads any non-200 as "asset not found",
+ * so every retention assertion here would fail on a refusal Floci has no part in. Any other
+ * answer, or no answer at all, still runs the class and fails it. The skip passes the shard, so
+ * CI names it in a warning ({@code ci.yml}, "Live registry skips"), which matches the assumption
+ * message below.
  */
 @QuarkusTest
 @TestProfile(SidecarContainersProfile.class)
@@ -44,13 +58,33 @@ class CodeArtifactMavenExternalConnectionDockerIntegrationTest {
     private static final String JUNIT_JAR = "junit/junit/4.13.2/junit-4.13.2.jar";
     private static final String JUNIT_POM = "junit/junit/4.13.2/junit-4.13.2.pom";
     private static final String JUNIT_METADATA = "junit/junit/maven-metadata.xml";
+    private static final URI MAVEN_CENTRAL_JUNIT_JAR = URI.create("https://repo.maven.apache.org/maven2/" + JUNIT_JAR);
+    private static final int TOO_MANY_REQUESTS = 429;
 
     private static String bearerToken;
 
     @BeforeAll
     static void setUp() {
         SidecarContainersProfile.requireDockerAndImage("floci.services.codeartifact.maven-image");
+        Assumptions.assumeFalse(mavenCentralIsRateLimiting(), "Maven Central answers this host with 429");
         RestAssuredJsonUtils.configureAwsContentTypes();
+    }
+
+    private static boolean mavenCentralIsRateLimiting() {
+        HttpRequest request = HttpRequest.newBuilder(MAVEN_CENTRAL_JUNIT_JAR)
+                .timeout(Duration.ofSeconds(10))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+        try (HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))
+                .followRedirects(HttpClient.Redirect.NORMAL).build()) {
+            return client.send(request, BodyHandlers.discarding()).statusCode() == TOO_MANY_REQUESTS;
+        } catch (IOException expected) {
+            // An unreachable Maven Central is not a rate limit: the tests run and report it.
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     @Test
